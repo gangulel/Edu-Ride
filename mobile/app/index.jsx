@@ -25,9 +25,9 @@ export default function Index() {
       <View style={styles.content} pointerEvents="box-none">
         <View style={styles.headlineWrap}>
           <Text style={styles.headline}>
-            Simple way to
-            {'\n'}help control your
-            {'\n'}Savings
+            Sample text
+            {'\n'}Sample text
+            {'\n'}Sample text
           </Text>
         </View>
 
