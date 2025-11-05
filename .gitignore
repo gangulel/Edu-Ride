@@ -1,0 +1,3 @@
+# Repo-level gitignore
+# Ignore backend environment file containing secrets
+backend/.env
