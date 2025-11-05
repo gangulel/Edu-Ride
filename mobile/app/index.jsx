@@ -16,7 +16,7 @@ export default function Index() {
     <SafeAreaView style={styles.container}>
       {/* Background gradient to approximate provided design */}
       <LinearGradient
-        colors={["#0E2A63", "#17346B", "#3B2D92"]}
+        colors={["#0E2A63", "#17376bff", "#2d5c92ff"]}
         start={[0, 0]}
         end={[1, 1]}
         style={StyleSheet.absoluteFill}
@@ -31,18 +31,16 @@ export default function Index() {
           </Text>
         </View>
 
-        <View style={styles.footer}>
-          <TouchableOpacity onPress={() => router.push("/login")}> 
-            <Text style={styles.skip}>Skip</Text>
-          </TouchableOpacity>
+        {/* Get Started button placed above footer */}
+        <TouchableOpacity
+          style={styles.getStarted}
+          activeOpacity={0.9}
+          onPress={() => router.push('/register')}
+        >
+          <Text style={styles.getStartedText}>Get Started</Text>
+        </TouchableOpacity>
 
-          <TouchableOpacity
-            onPress={() => router.push("/login")}
-            style={styles.circleButton}
-            activeOpacity={0.8}
-          >
-            <Text style={styles.chev}>{'>'}</Text>
-          </TouchableOpacity>
+        <View style={styles.footer}>
         </View>
       </View>
     </SafeAreaView>
@@ -101,5 +99,19 @@ const styles = StyleSheet.create({
     color: "#fff",
     fontSize: 28,
     fontWeight: "700",
+  },
+  getStarted: {
+    width: '100%',
+    backgroundColor: '#fff',
+    paddingVertical: 16,
+    borderRadius: 12,
+    alignItems: 'center',
+    justifyContent: 'center',
+    marginBottom: 14,
+  },
+  getStartedText: {
+    color: '#0E2A63',
+    fontSize: 16,
+    fontWeight: '700',
   },
 });

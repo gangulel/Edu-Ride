@@ -30,11 +30,34 @@ export default function Login() {
     setError("");
     if (!validate()) return;
     setLoading(true);
-    // Mock login
-    setTimeout(() => {
-      setLoading(false);
-      router.replace("/");
-    }, 800);
+    // Real login: call backend API. Use emulator-friendly host for Android.
+    const baseUrl = Platform.OS === "android" ? "http://10.0.2.2:3000" : "http://localhost:3000";
+
+    (async () => {
+      try {
+        const res = await fetch(`${baseUrl}/api/auth/login`, {
+          method: "POST",
+          headers: { "Content-Type": "application/json" },
+          body: JSON.stringify({ email, password }),
+        });
+
+        const text = await res.text();
+
+        if (!res.ok) {
+          // backend returns plain text in current placeholder implementation
+          setError(text || "Login failed");
+          return;
+        }
+
+        // On success navigate to the home screen (replace so user can't go back to login)
+        router.replace("/");
+      } catch (err) {
+        console.error(err);
+        setError("Network error. Please try again.");
+      } finally {
+        setLoading(false);
+      }
+    })();
   };
 
   return (
