@@ -1,11 +1,12 @@
-import React, { useState } from "react";
-import { View, Text, TouchableOpacity, ActivityIndicator, TextInput } from "react-native";
+import React, { useState, useRef } from "react";
+import { View, Text, TouchableOpacity, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
 import { Input } from "./components/ui/Input";
 import PasswordInput from "./components/PasswordInput";
 
 export default function Login() {
   const router = useRouter();
+  const scrollRef = useRef(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
@@ -37,41 +38,51 @@ export default function Login() {
   };
 
   return (
-    <View style={styles.container}>
-      <Text style={styles.title}>Welcome Back EduRide</Text>
+    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={Platform.select({ ios: 0, android: 20 })}>
+      <ScrollView
+        ref={scrollRef}
+        contentContainerStyle={{ flexGrow: 1, justifyContent: "flex-end", padding: 24, paddingBottom: 48, backgroundColor: "#fff" }}
+        keyboardShouldPersistTaps="handled"
+      >
+        <View>
+          <Text style={styles.title}>Sign in</Text>
 
-      <View style={{ marginBottom: 8 }}>
-        <Text style={styles.label}>Email</Text>
-        <Input
-          placeholder="Email"
-          value={email}
-          onChangeText={setEmail}
-          keyboardType="email-address"
-          autoCapitalize="none"
-          placeholderTextColor="#999"
-        />
-      </View>
+          <View style={{ marginBottom: 8 }}>
+            <Text style={styles.label}>Email</Text>
+            <Input
+              placeholder="Email"
+              value={email}
+              onChangeText={setEmail}
+              keyboardType="email-address"
+              autoCapitalize="none"
+              placeholderTextColor="#999"
+              autoFocus={true}
+              onFocus={() => scrollRef.current?.scrollTo({ y: 0, animated: true })}
+            />
+          </View>
 
-      <View style={{ marginBottom: 8 }}>
-        <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
-          <Text style={styles.label}>Password</Text>
-          <TouchableOpacity onPress={() => router.push("/forgot") }>
-            <Text style={styles.linkText}>Forgot password?</Text>
+          <View style={{ marginBottom: 8 }}>
+            <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
+              <Text style={styles.label}>Password</Text>
+              <TouchableOpacity onPress={() => router.push("/forgot") }>
+                <Text style={styles.linkText}>Forgot password?</Text>
+              </TouchableOpacity>
+            </View>
+            <PasswordInput password={password} setPassword={setPassword} showOnlyStrengthBar={true} showStrength={false} />
+          </View>
+
+          {error ? <Text style={styles.error}>{error}</Text> : null}
+
+          <TouchableOpacity style={styles.button} onPress={onSubmit} disabled={loading}>
+            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Log in</Text>}
+          </TouchableOpacity>
+
+          <TouchableOpacity onPress={() => router.replace("/register")} style={styles.link}>
+            <Text style={styles.linkText}>Don't have an account? Sign up</Text>
           </TouchableOpacity>
         </View>
-        <PasswordInput password={password} setPassword={setPassword} showOnlyStrengthBar={true} showStrength={false} />
-      </View>
-
-      {error ? <Text style={styles.error}>{error}</Text> : null}
-
-      <TouchableOpacity style={styles.button} onPress={onSubmit} disabled={loading}>
-        {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Log in</Text>}
-      </TouchableOpacity>
-
-      <TouchableOpacity onPress={() => router.replace("/register")} style={styles.link}>
-        <Text style={styles.linkText}>Don't have an account? Sign up</Text>
-      </TouchableOpacity>
-    </View>
+      </ScrollView>
+    </KeyboardAvoidingView>
   );
 }
 
