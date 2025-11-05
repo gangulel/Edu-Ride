@@ -35,7 +35,7 @@ export default function Index() {
         <TouchableOpacity
           style={styles.getStarted}
           activeOpacity={0.9}
-          onPress={() => router.push('/register')}
+          onPress={() => router.push('/login/login')}
         >
           <Text style={styles.getStartedText}>Get Started</Text>
         </TouchableOpacity>

@@ -77,7 +77,7 @@ export default function Forgot() {
         </LinearGradient>
       </TouchableOpacity>
 
-      <TouchableOpacity onPress={() => router.replace("/login")} style={styles.link}>
+      <TouchableOpacity onPress={() => router.replace("/login/login")} style={styles.link}>
         <Text style={styles.linkText}>Back to login</Text>
       </TouchableOpacity>
     </View>

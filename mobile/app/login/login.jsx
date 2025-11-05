@@ -1,8 +1,8 @@
 import React, { useState, useRef } from "react";
 import { View, Text, TouchableOpacity, ActivityIndicator, TextInput, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
 import { useRouter } from "expo-router";
-import { Input } from "./components/ui/Input";
-import PasswordInput from "./components/PasswordInput";
+import { Input } from "../components/ui/Input";
+import PasswordInput from "../components/PasswordInput";
 
 export default function Login() {
   const router = useRouter();
@@ -87,7 +87,7 @@ export default function Login() {
           <View style={{ marginBottom: 8 }}>
             <View style={{ flexDirection: "row", justifyContent: "space-between", alignItems: "center", marginBottom: 6 }}>
               <Text style={styles.label}>Password</Text>
-              <TouchableOpacity onPress={() => router.push("/forgot") }>
+              <TouchableOpacity onPress={() => router.push("/login/forgot") }>
                 <Text style={styles.linkText}>Forgot password?</Text>
               </TouchableOpacity>
             </View>
@@ -100,7 +100,7 @@ export default function Login() {
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Log in</Text>}
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => router.replace("/register")} style={styles.link}>
+          <TouchableOpacity onPress={() => router.replace("/login/register")} style={styles.link}>
             <Text style={styles.linkText}>Don't have an account? Sign up</Text>
           </TouchableOpacity>
         </View>

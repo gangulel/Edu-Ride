@@ -1,9 +1,9 @@
 import React, { useState, useId, useRef } from "react";
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Linking, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
-import { Input } from "./components/ui/Input";
-import { Label } from "./components/ui/Label";
-import PasswordInput from "./components/PasswordInput";
-import Checkbox from "./components/ui/Checkbox";
+import { Input } from "../components/ui/Input";
+import { Label } from "../components/ui/Label";
+import PasswordInput from "../components/PasswordInput";
+import Checkbox from "../components/ui/Checkbox";
 import { useRouter } from "expo-router";
 
 export default function Register() {
@@ -160,7 +160,7 @@ export default function Register() {
             {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Sign up</Text>}
           </TouchableOpacity>
 
-          <TouchableOpacity onPress={() => router.replace("/login")} style={styles.link}>
+          <TouchableOpacity onPress={() => router.replace("/login/login")} style={styles.link}>
             <Text style={styles.linkText}>Already have an account? Log in</Text>
           </TouchableOpacity>
         </View>
