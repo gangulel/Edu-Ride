@@ -1,27 +1,31 @@
 import React, { useState, useId } from "react";
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator } from "react-native";
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Linking } from "react-native";
 import { Input } from "./components/ui/Input";
 import { Label } from "./components/ui/Label";
 import PasswordInput from "./components/PasswordInput";
+import Checkbox from "./components/ui/Checkbox";
 import { useRouter } from "expo-router";
 
 export default function Register() {
   const router = useRouter();
   const id = useId();
+  const passwordId = `${id}-password`;
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
+  const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
   const [emailTouched, setEmailTouched] = useState(false);
   // confirm password removed per request
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
+  const [termsChecked, setTermsChecked] = useState(false);
 
   const re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\\.,;:\s@\"]+\.)+[^<>()[\]\\.,;:\s@\"]{2,})$/i;
 
   // password strength helpers moved to PasswordInput component
 
   const validate = () => {
-    if (!name || !email || !password) {
+    if (!name || !email || !mobile || !password) {
       setError("All fields are required.");
       return false;
     }
@@ -29,8 +33,17 @@ export default function Register() {
       setError("Please enter a valid email address.");
       return false;
     }
+    // basic mobile number check: optional +, then 7-15 digits
+    if (!/^\+?\d{7,15}$/.test(mobile)) {
+      setError("Please enter a valid mobile number.");
+      return false;
+    }
     if (password.length < 6) {
       setError("Password should be at least 6 characters.");
+      return false;
+    }
+    if (!termsChecked) {
+      setError("You must agree to the terms of service.");
       return false;
     }
     return true;
@@ -62,6 +75,7 @@ export default function Register() {
           placeholderTextColor="#999"
         />
       </View>
+
 
       {/* Labeled email input with accessibility linking; show inline error next to label */}
       <View style={styles.emailLabelRow}>
@@ -96,8 +110,42 @@ export default function Register() {
         accessible
       />
 
+      <View style={{ marginBottom: 8 }}>
+        <Label htmlFor={`${id}-mobile`}>Mobile number</Label>
+        <Input
+          nativeID={`${id}-mobile`}
+          placeholder="Mobile number"
+          value={mobile}
+          onChangeText={setMobile}
+          keyboardType="phone-pad"
+          placeholderTextColor="#999"
+          maxLength={15}
+        />
+      </View>
+
       {/* Password input with visibility toggle and strength indicator (componentized) */}
-  <PasswordInput id={id} password={password} setPassword={setPassword} showOnlyStrengthBar={true} />
+      <View style={{ marginBottom: 8 }}>
+        <Label htmlFor={passwordId}>Password</Label>
+        <PasswordInput id={passwordId} password={password} setPassword={setPassword} showOnlyStrengthBar={true} />
+      </View>
+
+      {/* Terms of service checkbox */}
+      <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
+        <Checkbox id={id} value={termsChecked} onValueChange={setTermsChecked} />
+        <Text
+          style={{ marginLeft: 8, color: "#111" }}
+          accessibilityRole="text"
+        >
+          I agree to the
+          {' '}
+          <Text
+            style={{ textDecorationLine: "underline", color: "#007AFF" }}
+            onPress={() => Linking.openURL("https://coss.com/origin")}
+          >
+            terms of service
+          </Text>
+        </Text>
+      </View>
 
       {/* Password strength meter */}
       {/* compute strength */}
