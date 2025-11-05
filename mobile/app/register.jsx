@@ -97,7 +97,7 @@ export default function Register() {
       />
 
       {/* Password input with visibility toggle and strength indicator (componentized) */}
-      <PasswordInput id={id} password={password} setPassword={setPassword} />
+  <PasswordInput id={id} password={password} setPassword={setPassword} showOnlyStrengthBar={true} />
 
       {/* Password strength meter */}
       {/* compute strength */}

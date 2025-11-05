@@ -2,7 +2,7 @@ import React, { useId, useMemo, useState } from "react";
 import { View, TextInput, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { AntDesign, Feather } from "@expo/vector-icons";
 
-export default function PasswordInput({ id, password, setPassword }) {
+export default function PasswordInput({ id, password, setPassword, showOnlyStrengthBar = false }) {
   const generatedId = useId();
   const _id = id || generatedId;
   const [isVisible, setIsVisible] = useState(false);
@@ -40,9 +40,11 @@ export default function PasswordInput({ id, password, setPassword }) {
 
   return (
     <View>
-      <Text nativeID={`${_id}-password-label`} style={localStyles.label} accessibilityRole="text">
-        Password
-      </Text>
+      {!showOnlyStrengthBar ? (
+        <Text nativeID={`${_id}-password-label`} style={localStyles.label} accessibilityRole="text">
+          Password
+        </Text>
+      ) : null}
 
       <View style={localStyles.passwordContainer}>
         <TextInput
@@ -75,21 +77,24 @@ export default function PasswordInput({ id, password, setPassword }) {
           <View style={[localStyles.strengthFill, { backgroundColor: getStrengthColor(strengthScore), width: `${(strengthScore / 4) * 100}%` }]} />
         </View>
       </View>
+      {!showOnlyStrengthBar ? (
+        <>
+          <Text style={localStyles.strengthText} nativeID={`${_id}-password-description`}>
+            {getStrengthText(strengthScore)}. Must contain:
+          </Text>
 
-      <Text style={localStyles.strengthText} nativeID={`${_id}-password-description`}>
-        {getStrengthText(strengthScore)}. Must contain:
-      </Text>
-
-      <View style={localStyles.requirementsList} accessibilityLabel="Password requirements">
-        {strength.map((req, index) => (
-          <View key={index} style={localStyles.requirementRow}>
-            {req.met ? <AntDesign name="checkcircle" size={16} color="#10b981" /> : <AntDesign name="closecircleo" size={16} color="#9aa0a6" />}
-            <Text style={[localStyles.requirementText, { color: req.met ? '#065f46' : '#9aa0a6' }]}>
-              {req.text}
-            </Text>
+          <View style={localStyles.requirementsList} accessibilityLabel="Password requirements">
+            {strength.map((req, index) => (
+              <View key={index} style={localStyles.requirementRow}>
+                {req.met ? <AntDesign name="checkcircle" size={16} color="#10b981" /> : <AntDesign name="closecircleo" size={16} color="#9aa0a6" />}
+                <Text style={[localStyles.requirementText, { color: req.met ? '#065f46' : '#9aa0a6' }]}>
+                  {req.text}
+                </Text>
+              </View>
+            ))}
           </View>
-        ))}
-      </View>
+        </>
+      ) : null}
     </View>
   );
 }
