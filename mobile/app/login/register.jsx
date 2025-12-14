@@ -15,6 +15,7 @@ export default function Register() {
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
+  const [userType, setUserType] = useState(""); // "student" or "driver"
   const [emailTouched, setEmailTouched] = useState(false);
   // confirm password removed per request
   const [loading, setLoading] = useState(false);
@@ -26,7 +27,7 @@ export default function Register() {
   // password strength helpers moved to PasswordInput component
 
   const validate = () => {
-    if (!name || !email || !mobile || !password) {
+    if (!name || !email || !mobile || !password || !userType) {
       setError("All fields are required.");
       return false;
     }
@@ -57,8 +58,12 @@ export default function Register() {
     // Mock API signup
     setTimeout(() => {
       setLoading(false);
-      // After successful signup, navigate to login so user can sign in
-      router.replace("/login");
+      // After successful signup, navigate based on user type
+      if (userType === "student") {
+        router.replace("/home"); // Navigate to student page
+      } else if (userType === "driver") {
+        router.replace("/driver"); // Navigate to driver page
+      }
     }, 1000);
   };
 
@@ -81,6 +86,40 @@ export default function Register() {
             />
           </View>
 
+          {/* User Type Selection */}
+          <View style={{ marginBottom: 12 }}>
+            <Label htmlFor={`${id}-usertype`}>I am a</Label>
+            <View style={styles.userTypeContainer}>
+              <TouchableOpacity
+                style={[
+                  styles.userTypeButton,
+                  userType === "student" && styles.userTypeButtonActive
+                ]}
+                onPress={() => setUserType("student")}
+              >
+                <Text style={[
+                  styles.userTypeText,
+                  userType === "student" && styles.userTypeTextActive
+                ]}>
+                  Student
+                </Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[
+                  styles.userTypeButton,
+                  userType === "driver" && styles.userTypeButtonActive
+                ]}
+                onPress={() => setUserType("driver")}
+              >
+                <Text style={[
+                  styles.userTypeText,
+                  userType === "driver" && styles.userTypeTextActive
+                ]}>
+                  Driver
+                </Text>
+              </TouchableOpacity>
+            </View>
+          </View>
 
           {/* Labeled email input with accessibility linking; show inline error next to label */}
           <View style={styles.emailLabelRow}>
@@ -282,5 +321,32 @@ const styles = {
   },
   requirementText: {
     fontSize: 12,
+  },
+  userTypeContainer: {
+    flexDirection: "row",
+    gap: 12,
+    marginTop: 4,
+  },
+  userTypeButton: {
+    flex: 1,
+    paddingVertical: 14,
+    paddingHorizontal: 16,
+    borderWidth: 1.5,
+    borderColor: "#e6e6e6",
+    borderRadius: 8,
+    alignItems: "center",
+    backgroundColor: "#fff",
+  },
+  userTypeButtonActive: {
+    borderColor: "#007AFF",
+    backgroundColor: "#007AFF",
+  },
+  userTypeText: {
+    fontSize: 16,
+    fontWeight: "600",
+    color: "#666",
+  },
+  userTypeTextActive: {
+    color: "#fff",
   },
 };
