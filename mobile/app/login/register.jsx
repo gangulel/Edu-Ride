@@ -5,6 +5,7 @@ import { Label } from "../components/ui/Label";
 import PasswordInput from "../components/PasswordInput";
 import Checkbox from "../components/ui/Checkbox";
 import { useRouter } from "expo-router";
+import { responsive, wp, hp } from "../utils/responsive";
 
 export default function Register() {
   const router = useRouter();
@@ -69,7 +70,7 @@ export default function Register() {
 
   return (
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={Platform.select({ ios: 0, android: 20 })}>
-      <ScrollView ref={scrollRef} contentContainerStyle={{ flexGrow: 1, justifyContent: "center", padding: 24, backgroundColor: "#fff" }} keyboardShouldPersistTaps="handled">
+      <ScrollView ref={scrollRef} contentContainerStyle={{ flexGrow: 1, justifyContent: "center", padding: responsive.paddingXL, backgroundColor: "#fff" }} keyboardShouldPersistTaps="handled">
         <View>
           <Text style={styles.title}>Create account</Text>
 
@@ -179,7 +180,7 @@ export default function Register() {
           <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
             <Checkbox id={id} value={termsChecked} onValueChange={setTermsChecked} />
             <Text
-              style={{ marginLeft: 8, color: "#111" }}
+              style={{ marginLeft: responsive.paddingSM, color: "#111", fontSize: responsive.fontMD }}
               accessibilityRole="text"
             >
               I agree to the
@@ -211,129 +212,134 @@ export default function Register() {
 const styles = {
   container: {
     flex: 1,
-    padding: 24,
+    padding: responsive.paddingXL,
     justifyContent: "center",
     backgroundColor: "#fff",
   },
   title: {
-    fontSize: 28,
+    fontSize: responsive.font4XL,
     fontWeight: "700",
-    marginBottom: 20,
+    marginBottom: responsive.paddingLG,
     color: "#111",
   },
   input: {
     borderWidth: 1,
     borderColor: "#e6e6e6",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-    fontSize: 16,
+    padding: responsive.paddingMD,
+    borderRadius: responsive.radiusMD,
+    marginBottom: responsive.paddingMD,
+    fontSize: responsive.fontLG,
+    minHeight: responsive.inputHeight,
   },
   button: {
     backgroundColor: "#007AFF",
-    padding: 14,
-    borderRadius: 8,
+    padding: responsive.paddingMD,
+    borderRadius: responsive.radiusMD,
     alignItems: "center",
-    marginTop: 8,
+    marginTop: responsive.paddingSM,
+    minHeight: responsive.buttonHeight,
+    justifyContent: "center",
   },
   buttonText: {
     color: "#fff",
     fontWeight: "600",
-    fontSize: 16,
+    fontSize: responsive.fontLG,
   },
   error: {
     color: "#c0392b",
-    marginBottom: 8,
+    marginBottom: responsive.paddingSM,
+    fontSize: responsive.fontMD,
   },
   link: {
-    marginTop: 16,
+    marginTop: responsive.paddingLG,
     alignItems: "center",
   },
   linkText: {
     color: "#007AFF",
+    fontSize: responsive.fontMD,
   },
   label: {
-    fontSize: 14,
+    fontSize: responsive.fontMD,
     fontWeight: "600",
-    marginBottom: 6,
+    marginBottom: responsive.paddingSM,
     color: "#111",
   },
   inputInvalid: {
     borderColor: "#c0392b",
   },
   emailError: {
-    marginBottom: 8,
+    marginBottom: responsive.paddingSM,
   },
   emailLabelRow: {
     flexDirection: "row",
     alignItems: "center",
     justifyContent: "space-between",
-    marginBottom: 6,
+    marginBottom: responsive.paddingSM,
   },
   errorInline: {
     color: "#c0392b",
-    fontSize: 12,
-    marginLeft: 8,
+    fontSize: responsive.fontSM,
+    marginLeft: responsive.paddingSM,
     fontWeight: "600",
   },
   passwordContainer: {
     position: "relative",
-    marginBottom: 12,
+    marginBottom: responsive.paddingMD,
   },
   toggleButton: {
     position: "absolute",
-    right: 10,
-    top: 12,
-    height: 24,
-    width: 24,
+    right: wp(10),
+    top: hp(12),
+    height: wp(24),
+    width: wp(24),
     alignItems: "center",
     justifyContent: "center",
   },
   strengthBarWrap: {
-    marginTop: 6,
-    marginBottom: 6,
+    marginTop: responsive.paddingSM,
+    marginBottom: responsive.paddingSM,
   },
   strengthBar: {
-    height: 6,
+    height: hp(6),
     width: "100%",
-    borderRadius: 6,
+    borderRadius: responsive.radiusSM,
     backgroundColor: "#e6eef7",
     overflow: "hidden",
   },
   strengthFill: {
     height: "100%",
-    borderRadius: 6,
+    borderRadius: responsive.radiusSM,
   },
   strengthText: {
-    marginBottom: 6,
-    fontSize: 14,
+    marginBottom: responsive.paddingSM,
+    fontSize: responsive.fontMD,
     fontWeight: "600",
     color: "#111",
   },
   requirementsList: {
-    marginBottom: 8,
+    marginBottom: responsive.paddingSM,
   },
   requirementRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 4,
+    gap: responsive.paddingSM,
+    marginBottom: responsive.paddingXS,
   },
   requirementText: {
-    fontSize: 12,
+    fontSize: responsive.fontSM,
   },
   userTypeContainer: {
     flexDirection: "row",
-    gap: 12,
-    marginTop: 4,
+    gap: responsive.paddingMD,
+    marginTop: responsive.paddingXS,
   },
   userTypeButton: {
     flex: 1,
-    paddingVertical: 14,
-    paddingHorizontal: 16,
+    paddingVertical: responsive.paddingMD,
+    paddingHorizontal: responsive.paddingLG,
     borderWidth: 1.5,
     borderColor: "#e6e6e6",
-    borderRadius: 8,
+    borderRadius: responsive.radiusMD,
     alignItems: "center",
     backgroundColor: "#fff",
   },
@@ -342,7 +348,7 @@ const styles = {
     backgroundColor: "#007AFF",
   },
   userTypeText: {
-    fontSize: 16,
+    fontSize: responsive.fontLG,
     fontWeight: "600",
     color: "#666",
   },

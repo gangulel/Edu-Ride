@@ -2,6 +2,7 @@ import React from "react";
 import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, usePathname } from "expo-router";
+import { responsive, hp, wp } from "../utils/responsive";
 
 const DriverBottomNav = () => {
   const router = useRouter();
@@ -74,9 +75,9 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderTopWidth: 1,
     borderTopColor: "#E5E5EA",
-    paddingBottom: 8,
-    paddingTop: 8,
-    height: 60,
+    paddingBottom: responsive.paddingSM,
+    paddingTop: responsive.paddingSM,
+    height: responsive.headerHeight,
     justifyContent: "space-around",
     alignItems: "center",
   },
@@ -86,9 +87,9 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   label: {
-    fontSize: 12,
+    fontSize: responsive.fontSM,
     fontWeight: "500",
-    marginTop: 4,
+    marginTop: responsive.paddingXS,
     color: "#8E8E93",
   },
   activeLabel: {

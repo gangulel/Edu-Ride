@@ -1,6 +1,7 @@
 import React, { useId, useMemo, useState } from "react";
 import { View, TextInput, Text, TouchableOpacity, StyleSheet } from "react-native";
 import { AntDesign, Feather } from "@expo/vector-icons";
+import { responsive, wp, hp } from "../utils/responsive";
 
 export default function PasswordInput({ id, password, setPassword, showOnlyStrengthBar = false, showStrength = true }) {
   const generatedId = useId();
@@ -107,61 +108,62 @@ const localStyles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: "#e6e6e6",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-    fontSize: 16,
+    padding: responsive.paddingMD,
+    borderRadius: responsive.radiusMD,
+    marginBottom: responsive.paddingMD,
+    fontSize: responsive.fontLG,
+    minHeight: responsive.inputHeight,
   },
   passwordContainer: {
     position: "relative",
-    marginBottom: 12,
+    marginBottom: responsive.paddingMD,
   },
   toggleButton: {
     position: "absolute",
-    right: 10,
-    top: 12,
-    height: 24,
-    width: 24,
+    right: wp(10),
+    top: hp(12),
+    height: wp(24),
+    width: wp(24),
     alignItems: "center",
     justifyContent: "center",
   },
   strengthBarWrap: {
-    marginTop: 6,
-    marginBottom: 6,
+    marginTop: responsive.paddingSM,
+    marginBottom: responsive.paddingSM,
   },
   strengthBar: {
-    height: 6,
+    height: hp(6),
     width: "100%",
-    borderRadius: 6,
+    borderRadius: responsive.radiusSM,
     backgroundColor: "#e6eef7",
     overflow: "hidden",
   },
   strengthFill: {
     height: "100%",
-    borderRadius: 6,
+    borderRadius: responsive.radiusSM,
   },
   strengthText: {
-    marginBottom: 6,
-    fontSize: 14,
+    marginBottom: responsive.paddingSM,
+    fontSize: responsive.fontMD,
     fontWeight: "600",
     color: "#111",
   },
   requirementsList: {
-    marginBottom: 8,
+    marginBottom: responsive.paddingSM,
   },
   requirementRow: {
     flexDirection: "row",
     alignItems: "center",
-    gap: 8,
-    marginBottom: 4,
+    gap: responsive.paddingSM,
+    marginBottom: responsive.paddingXS,
   },
   requirementText: {
-    fontSize: 12,
+    fontSize: responsive.fontSM,
   },
   label: {
-    fontSize: 14,
+    fontSize: responsive.fontMD,
     fontWeight: "600",
-    marginBottom: 6,
+    marginBottom: responsive.paddingSM,
     color: "#111",
   },
 });

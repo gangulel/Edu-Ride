@@ -18,14 +18,16 @@ export default function Checkbox({ id, value = false, onValueChange }) {
   );
 }
 
+import { responsive, wp } from "../../utils/responsive";
+
 const styles = StyleSheet.create({
   touch: {
-    padding: 4,
+    padding: responsive.paddingXS,
   },
   box: {
-    width: 20,
-    height: 20,
-    borderRadius: 4,
+    width: wp(20),
+    height: wp(20),
+    borderRadius: responsive.radiusXS,
     borderWidth: 1,
     borderColor: "#ccc",
     alignItems: "center",
@@ -38,8 +40,8 @@ const styles = StyleSheet.create({
   },
   check: {
     color: "#fff",
-    fontSize: 14,
-    lineHeight: 16,
+    fontSize: responsive.fontMD,
+    lineHeight: responsive.fontLG,
     fontWeight: "700",
   },
 });

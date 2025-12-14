@@ -2,6 +2,7 @@ import React from "react";
 import { View, Image, StyleSheet, SafeAreaView, TouchableOpacity, Text } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
+import { wp, hp, fs, responsive } from "./utils/responsive";
 
 export default function Onboarding() {
   const router = useRouter();
@@ -48,16 +49,16 @@ const styles = StyleSheet.create({
     alignItems: "center",
   },
   logo: {
-    width: 200,
-    height: 200,
+    width: wp(180),
+    height: hp(180),
   },
   getStartedButton: {
     position: "absolute",
-    bottom: 50,
+    bottom: hp(50),
     backgroundColor: "#FFFFFF",
-    paddingVertical: 16,
-    paddingHorizontal: 60,
-    borderRadius: 30,
+    paddingVertical: responsive.paddingLG,
+    paddingHorizontal: wp(60),
+    borderRadius: responsive.radiusFull,
     shadowColor: "#000",
     shadowOffset: {
       width: 0,
@@ -69,7 +70,7 @@ const styles = StyleSheet.create({
   },
   getStartedText: {
     color: "#0E2A63",
-    fontSize: 18,
+    fontSize: responsive.fontXL,
     fontWeight: "600",
     textAlign: "center",
   },

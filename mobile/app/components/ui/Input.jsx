@@ -1,5 +1,6 @@
 import React from "react";
 import { TextInput, StyleSheet } from "react-native";
+import { responsive } from "../../utils/responsive";
 
 export function Input(props) {
   // Thin wrapper around TextInput so we can reuse web-like API
@@ -10,10 +11,11 @@ const styles = StyleSheet.create({
   input: {
     borderWidth: 1,
     borderColor: "#e6e6e6",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-    fontSize: 16,
+    padding: responsive.paddingMD,
+    borderRadius: responsive.radiusMD,
+    marginBottom: responsive.paddingMD,
+    fontSize: responsive.fontLG,
+    minHeight: responsive.inputHeight,
   },
 });
 
