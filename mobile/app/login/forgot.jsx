@@ -2,6 +2,7 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import { responsive, wp, hp } from "../utils/responsive";
 
 export default function Forgot() {
   const router = useRouter();
@@ -71,7 +72,7 @@ export default function Forgot() {
       {error ? <Text style={styles.error}>{error}</Text> : null}
       {message ? <Text style={styles.message}>{message}</Text> : null}
 
-      <TouchableOpacity onPress={onSubmit} activeOpacity={0.9} style={{ marginTop: 8 }} disabled={loading}>
+      <TouchableOpacity onPress={onSubmit} activeOpacity={0.9} style={{ marginTop: responsive.paddingSM }} disabled={loading}>
         <LinearGradient colors={["#3A7BD5", "#007AFF"]} style={styles.button} start={[0, 0]} end={[1, 1]}>
           {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Send reset link</Text>}
         </LinearGradient>
@@ -87,36 +88,40 @@ export default function Forgot() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: 24,
+    padding: responsive.paddingXL,
     justifyContent: "center",
     backgroundColor: "#fff",
   },
   title: {
-    fontSize: 28,
+    fontSize: responsive.font4XL,
     fontWeight: "700",
-    marginBottom: 12,
+    marginBottom: responsive.paddingMD,
     color: "#111",
   },
   info: {
     color: "#6b7a86",
-    marginBottom: 16,
+    marginBottom: responsive.paddingLG,
+    fontSize: responsive.fontMD,
   },
   input: {
     borderWidth: 1,
     borderColor: "#e6e6e6",
-    padding: 12,
-    borderRadius: 8,
-    marginBottom: 12,
-    fontSize: 16,
+    padding: responsive.paddingMD,
+    borderRadius: responsive.radiusMD,
+    marginBottom: responsive.paddingMD,
+    fontSize: responsive.fontLG,
+    minHeight: responsive.inputHeight,
   },
   button: {
-    paddingVertical: 14,
-    borderRadius: 10,
+    paddingVertical: responsive.paddingMD,
+    borderRadius: responsive.radiusLG,
     alignItems: "center",
+    minHeight: responsive.buttonHeight,
+    justifyContent: "center",
   },
-  buttonText: { color: "#fff", fontSize: 16, fontWeight: "600" },
-  link: { marginTop: 16, alignItems: "center" },
-  linkText: { color: "#007AFF" },
-  error: { color: "#c0392b", marginBottom: 8 },
-  message: { color: "#065f46", marginBottom: 8 },
+  buttonText: { color: "#fff", fontSize: responsive.fontLG, fontWeight: "600" },
+  link: { marginTop: responsive.paddingLG, alignItems: "center" },
+  linkText: { color: "#007AFF", fontSize: responsive.fontMD },
+  error: { color: "#c0392b", marginBottom: responsive.paddingSM, fontSize: responsive.fontMD },
+  message: { color: "#065f46", marginBottom: responsive.paddingSM, fontSize: responsive.fontMD },
 });

@@ -1,5 +1,6 @@
 import React from "react";
 import { Text, StyleSheet } from "react-native";
+import { responsive } from "../../utils/responsive";
 
 export function Label({ children, htmlFor, style }) {
   // htmlFor kept for parity with web API; use nativeID on inputs
@@ -12,9 +13,9 @@ export function Label({ children, htmlFor, style }) {
 
 const styles = StyleSheet.create({
   label: {
-    fontSize: 14,
+    fontSize: responsive.fontMD,
     fontWeight: "600",
-    marginBottom: 6,
+    marginBottom: responsive.paddingSM,
     color: "#111",
   },
 });

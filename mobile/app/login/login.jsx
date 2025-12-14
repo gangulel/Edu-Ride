@@ -3,6 +3,7 @@ import { View, Text, TouchableOpacity, ActivityIndicator, TextInput, KeyboardAvo
 import { useRouter } from "expo-router";
 import { Input } from "../components/ui/Input";
 import PasswordInput from "../components/PasswordInput";
+import { responsive, wp, hp } from "../utils/responsive";
 
 export default function Login() {
   const router = useRouter();
@@ -64,7 +65,7 @@ export default function Login() {
     <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={Platform.select({ ios: 0, android: 20 })}>
       <ScrollView
         ref={scrollRef}
-        contentContainerStyle={{ flexGrow: 1, justifyContent: "flex-end", padding: 24, paddingBottom: 48, backgroundColor: "#fff" }}
+        contentContainerStyle={{ flexGrow: 1, justifyContent: "flex-end", padding: responsive.paddingXL, paddingBottom: hp(48), backgroundColor: "#fff" }}
         keyboardShouldPersistTaps="handled"
       >
         <View>
@@ -112,46 +113,50 @@ export default function Login() {
 const styles = {
   container: {
     flex: 1,
-    padding: 24,
-    paddingBottom: 48,
+    padding: responsive.paddingXL,
+    paddingBottom: hp(48),
     justifyContent: "flex-end",
     backgroundColor: "#fff",
   },
   title: {
-    fontSize: 28,
+    fontSize: responsive.font4XL,
     fontWeight: "700",
-    marginBottom: 20,
+    marginBottom: responsive.paddingLG,
     color: "#111",
     textAlign: "center",
   },
   label: {
-    fontSize: 14,
+    fontSize: responsive.fontMD,
     fontWeight: "600",
-    marginBottom: 6,
+    marginBottom: responsive.paddingSM,
     color: "#111",
   },
   button: {
     backgroundColor: "#007AFF",
-    padding: 14,
-    borderRadius: 8,
+    padding: responsive.paddingMD,
+    borderRadius: responsive.radiusMD,
     alignItems: "center",
-    marginTop: 8,
+    marginTop: responsive.paddingSM,
+    minHeight: responsive.buttonHeight,
+    justifyContent: "center",
   },
   buttonText: {
     color: "#fff",
     fontWeight: "600",
-    fontSize: 16,
+    fontSize: responsive.fontLG,
   },
   error: {
     color: "#c0392b",
-    marginBottom: 8,
+    marginBottom: responsive.paddingSM,
     textAlign: "center",
+    fontSize: responsive.fontMD,
   },
   link: {
-    marginTop: 12,
+    marginTop: responsive.paddingMD,
     alignItems: "center",
   },
   linkText: {
     color: "#007AFF",
+    fontSize: responsive.fontMD,
   },
 };
