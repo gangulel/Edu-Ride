@@ -23,6 +23,7 @@ export const ROUTES = {
   DRIVER_RIDES: '/driver/rides',
   DRIVER_EARNINGS: '/driver/earnings',
   DRIVER_PROFILE: '/driver/profile',
+  DRIVER_EDIT_PROFILE: '/driver/edit-profile',
   
   // Trips routes
   TRIPS: '/trips',

@@ -58,7 +58,10 @@ export default function DriverProfile() {
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
           
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => router.push("/driver/edit-profile")}
+          >
             <View style={styles.menuIconContainer}>
               <Ionicons name="person-outline" size={22} color="#007AFF" />
             </View>
@@ -66,7 +69,10 @@ export default function DriverProfile() {
             <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
           </TouchableOpacity>
 
-          <TouchableOpacity style={styles.menuItem}>
+          <TouchableOpacity 
+            style={styles.menuItem}
+            onPress={() => router.push("/driver/vehicle-info")}
+          >
             <View style={styles.menuIconContainer}>
               <Ionicons name="car-sport-outline" size={22} color="#34C759" />
             </View>
