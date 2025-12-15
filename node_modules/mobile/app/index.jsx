@@ -1,22 +1,9 @@
-import { useEffect } from "react";
-import { useRouter } from "expo-router";
-import { View, ActivityIndicator } from "react-native";
+import { View, Text } from 'react-native';
 
-export default function Index() {
-  const router = useRouter();
-
-  useEffect(() => {
-    // Small delay to ensure the layout is mounted
-    const timer = setTimeout(() => {
-      router.replace('/onboarding');
-    }, 100);
-
-    return () => clearTimeout(timer);
-  }, []);
-
+export default function Home() {
   return (
-    <View style={{ flex: 1, justifyContent: "center", alignItems: "center", backgroundColor: "#fff" }}>
-      <ActivityIndicator size="large" color="#007AFF" />
+    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
+      <Text style={{ fontSize: 24 }}>Edu-Ride is running 🚀</Text>
     </View>
   );
 }
