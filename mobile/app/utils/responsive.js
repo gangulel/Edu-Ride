@@ -1,92 +1,60 @@
-import { Dimensions, Platform, PixelRatio } from 'react-native';
+import { Dimensions, PixelRatio } from 'react-native';
 
-// iPhone 12 Pro dimensions
-const DESIGN_WIDTH = 390;
-const DESIGN_HEIGHT = 844;
-
-// Get device dimensions
 const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 
-/**
- * Responsive width - scales width based on screen size
- * @param {number} size - Design size
- * @returns {number} Scaled size
- */
+// Base dimensions (design reference)
+const BASE_WIDTH = 375;
+const BASE_HEIGHT = 812;
+
+// Width percentage
 export const wp = (size) => {
-  return (SCREEN_WIDTH / DESIGN_WIDTH) * size;
+  return (size / BASE_WIDTH) * SCREEN_WIDTH;
 };
 
-/**
- * Responsive height - scales height based on screen size
- * @param {number} size - Design size
- * @returns {number} Scaled size
- */
+// Height percentage
 export const hp = (size) => {
-  return (SCREEN_HEIGHT / DESIGN_HEIGHT) * size;
+  return (size / BASE_HEIGHT) * SCREEN_HEIGHT;
 };
 
-/**
- * Responsive font size
- * @param {number} size - Design font size
- * @returns {number} Scaled font size
- */
+// Font scaling
 export const fs = (size) => {
-  const scale = SCREEN_WIDTH / DESIGN_WIDTH;
+  const scale = SCREEN_WIDTH / BASE_WIDTH;
   const newSize = size * scale;
   return Math.round(PixelRatio.roundToNearestPixel(newSize));
 };
 
-/**
- * Responsive spacing
- * @param {number} size - Design spacing
- * @returns {number} Scaled spacing
- */
-export const spacing = (size) => {
-  return wp(size);
-};
-
-// Pre-calculated common values for iPhone 12 Pro
+// Responsive design tokens
 export const responsive = {
-  // Padding & Margins
-  paddingXS: spacing(4),
-  paddingSM: spacing(8),
-  paddingMD: spacing(12),
-  paddingLG: spacing(16),
-  paddingXL: spacing(24),
-  padding2XL: spacing(32),
+  // Padding
+  paddingXS: hp(4),
+  paddingSM: hp(8),
+  paddingMD: hp(12),
+  paddingLG: hp(16),
+  paddingXL: hp(24),
+  padding2XL: hp(32),
   
-  // Font Sizes
-  fontXS: fs(10),
-  fontSM: fs(12),
-  fontMD: fs(14),
-  fontLG: fs(16),
-  fontXL: fs(18),
-  font2XL: fs(20),
-  font3XL: fs(24),
-  font4XL: fs(28),
-  font5XL: fs(32),
-  font6XL: fs(40),
-  
-  // Common dimensions
-  inputHeight: hp(48),
-  buttonHeight: hp(48),
-  headerHeight: hp(60),
-  iconSM: fs(20),
-  iconMD: fs(24),
-  iconLG: fs(32),
-  iconXL: fs(40),
+  // Margin
+  marginXS: hp(4),
+  marginSM: hp(8),
+  marginMD: hp(12),
+  marginLG: hp(16),
+  marginXL: hp(24),
+  margin2XL: hp(32),
   
   // Border radius
-  radiusXS: spacing(4),
-  radiusSM: spacing(6),
-  radiusMD: spacing(8),
-  radiusLG: spacing(12),
-  radiusXL: spacing(16),
-  radiusFull: spacing(999),
+  radiusXS: 4,
+  radiusSM: 8,
+  radiusMD: 12,
+  radiusLG: 16,
+  radiusXL: 24,
+  radiusFull: 9999,
   
-  // Screen dimensions
-  screenWidth: SCREEN_WIDTH,
-  screenHeight: SCREEN_HEIGHT,
+  // Font sizes
+  fontXS: fs(12),
+  fontSM: fs(14),
+  fontMD: fs(16),
+  fontLG: fs(18),
+  fontXL: fs(20),
+  font2XL: fs(24),
+  font3XL: fs(30),
 };
-
-export default responsive;

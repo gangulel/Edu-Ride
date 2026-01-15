@@ -1,9 +1,13 @@
-import { View, Text } from 'react-native';
+import { useEffect } from 'react';
+import { useRouter } from 'expo-router';
 
 export default function Home() {
-  return (
-    <View style={{ flex: 1, alignItems: 'center', justifyContent: 'center' }}>
-      <Text style={{ fontSize: 24 }}>Edu-Ride is running 🚀</Text>
-    </View>
-  );
+  const router = useRouter();
+
+  useEffect(() => {
+    // Redirect to onboarding screen on app open
+    router.replace('/onboarding');
+  }, []);
+
+  return null;
 }
