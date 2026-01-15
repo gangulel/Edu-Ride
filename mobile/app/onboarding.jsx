@@ -16,11 +16,7 @@ export default function Onboarding() {
         style={styles.gradient}
       >
         <View style={styles.logoContainer}>
-          <Image
-            source={require("../assets/images/icon.png")}
-            style={styles.logo}
-            resizeMode="contain"
-          />
+          <Text style={styles.logoText}>Edu-Ride</Text>
         </View>
 
         <TouchableOpacity
@@ -47,6 +43,12 @@ const styles = StyleSheet.create({
   logoContainer: {
     justifyContent: "center",
     alignItems: "center",
+  },
+  logoText: {
+    fontSize: fs(48),
+    fontWeight: "bold",
+    color: "#FFFFFF",
+    textAlign: "center",
   },
   logo: {
     width: wp(180),
