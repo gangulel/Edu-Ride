@@ -9,17 +9,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Search, Filter, Eye, Ban, CheckCircle, AlertCircle } from "lucide-react"
 
 const parents = [
-  { id: 1, name: "Sarah Johnson", email: "sarah.j@email.com", phone: "+1234567890", children: 2, status: "active", joinDate: "2024-01-15", complaints: 0 },
-  { id: 2, name: "Michael Chen", email: "m.chen@email.com", phone: "+1234567891", children: 1, status: "active", joinDate: "2024-02-20", complaints: 1 },
-  { id: 3, name: "Emma Davis", email: "emma.d@email.com", phone: "+1234567892", children: 3, status: "suspended", joinDate: "2023-11-10", complaints: 3 },
-  { id: 4, name: "James Wilson", email: "j.wilson@email.com", phone: "+1234567893", children: 1, status: "pending", joinDate: "2024-12-01", complaints: 0 },
+  { id: 1, name: "Sanduni Wickramasinghe", email: "sanduni.w@email.com", phone: "+94771234567", children: 2, status: "active", joinDate: "2024-01-15", complaints: 0 },
+  { id: 2, name: "Rajith Perera", email: "rajith.p@email.com", phone: "+94772234567", children: 1, status: "active", joinDate: "2024-02-20", complaints: 1 },
+  { id: 3, name: "Dilini Fernando", email: "dilini.f@email.com", phone: "+94773234567", children: 3, status: "suspended", joinDate: "2023-11-10", complaints: 3 },
+  { id: 4, name: "Kasun Jayasuriya", email: "kasun.j@email.com", phone: "+94774234567", children: 1, status: "pending", joinDate: "2024-12-01", complaints: 0 },
 ]
 
 const drivers = [
-  { id: 1, name: "Robert Martinez", email: "r.martinez@email.com", phone: "+1234567894", vehicle: "Bus-101", route: "Route A", status: "active", rating: 4.8, trips: 234 },
-  { id: 2, name: "Linda Anderson", email: "l.anderson@email.com", phone: "+1234567895", vehicle: "Bus-102", route: "Route B", status: "active", rating: 4.9, trips: 312 },
-  { id: 3, name: "David Brown", email: "d.brown@email.com", phone: "+1234567896", vehicle: "Bus-103", route: "Route C", status: "pending", rating: 0, trips: 0 },
-  { id: 4, name: "Patricia Taylor", email: "p.taylor@email.com", phone: "+1234567897", vehicle: "Bus-104", route: "Route D", status: "suspended", rating: 3.2, trips: 145 },
+  { id: 1, name: "Kumara Silva", email: "kumara.s@email.com", phone: "+94775234567", vehicle: "Bus-101", route: "Route A", status: "active", rating: 4.8, trips: 234 },
+  { id: 2, name: "Nimal Perera", email: "nimal.p@email.com", phone: "+94776234567", vehicle: "Bus-102", route: "Route B", status: "active", rating: 4.9, trips: 312 },
+  { id: 3, name: "Chaminda Fernando", email: "chaminda.f@email.com", phone: "+94777234567", vehicle: "Bus-103", route: "Route C", status: "pending", rating: 0, trips: 0 },
+  { id: 4, name: "Ayesha Jayawardena", email: "ayesha.j@email.com", phone: "+94778234567", vehicle: "Bus-104", route: "Route D", status: "suspended", rating: 3.2, trips: 145 },
 ]
 
 export function UserManagement() {

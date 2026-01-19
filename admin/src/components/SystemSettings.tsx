@@ -53,6 +53,7 @@ export function SystemSettings() {
             <div>
               <label className="text-sm font-medium">Timezone</label>
               <Select className="mt-1">
+                <option value="ist">IST - Sri Lanka (UTC+5:30)</option>
                 <option value="est">EST (UTC-5)</option>
                 <option value="cst">CST (UTC-6)</option>
                 <option value="mst">MST (UTC-7)</option>
@@ -70,6 +71,7 @@ export function SystemSettings() {
             <div>
               <label className="text-sm font-medium">Currency</label>
               <Select className="mt-1">
+                <option value="lkr">LKR (RS)</option>
                 <option value="usd">USD ($)</option>
                 <option value="eur">EUR (€)</option>
                 <option value="gbp">GBP (£)</option>
@@ -142,18 +144,18 @@ export function SystemSettings() {
               <p className="text-xs text-gray-500 mt-1">Percentage charged per transaction</p>
             </div>
             <div>
-              <label className="text-sm font-medium">Driver Registration Fee ($)</label>
-              <Input type="number" className="mt-1" placeholder="50" defaultValue="50" />
+              <label className="text-sm font-medium">Driver Registration Fee (RS)</label>
+              <Input type="number" className="mt-1" placeholder="15000" defaultValue="15000" />
               <p className="text-xs text-gray-500 mt-1">One-time registration fee for drivers</p>
             </div>
             <div>
-              <label className="text-sm font-medium">Monthly Subscription ($)</label>
-              <Input type="number" className="mt-1" placeholder="250" defaultValue="250" />
+              <label className="text-sm font-medium">Monthly Subscription (RS)</label>
+              <Input type="number" className="mt-1" placeholder="75000" defaultValue="75000" />
               <p className="text-xs text-gray-500 mt-1">Standard monthly payment amount</p>
             </div>
             <div>
-              <label className="text-sm font-medium">Weekly Subscription ($)</label>
-              <Input type="number" className="mt-1" placeholder="65" defaultValue="65" />
+              <label className="text-sm font-medium">Weekly Subscription (RS)</label>
+              <Input type="number" className="mt-1" placeholder="20000" defaultValue="20000" />
               <p className="text-xs text-gray-500 mt-1">Standard weekly payment amount</p>
             </div>
           </div>

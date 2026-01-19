@@ -8,20 +8,20 @@ import { DollarSign, TrendingUp, AlertCircle, Download, Filter } from "lucide-re
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 
 const payments = [
-  { id: "PAY-001", parent: "Sarah Johnson", driver: "Robert Martinez", route: "Route A", amount: 250, date: "2024-12-10", status: "paid", type: "monthly" },
-  { id: "PAY-002", parent: "Michael Chen", driver: "Linda Anderson", route: "Route B", amount: 250, date: "2024-12-09", status: "paid", type: "monthly" },
-  { id: "PAY-003", parent: "Emma Davis", driver: "David Brown", route: "Route C", amount: 125, date: "2024-12-08", status: "failed", type: "weekly" },
-  { id: "PAY-004", parent: "James Wilson", driver: "Robert Martinez", route: "Route A", amount: 250, date: "2024-12-07", status: "pending", type: "monthly" },
-  { id: "PAY-005", parent: "Olivia Brown", driver: "Patricia Taylor", route: "Route D", amount: 125, date: "2024-12-06", status: "paid", type: "weekly" },
+  { id: "PAY-001", parent: "Sanduni Wickramasinghe", driver: "Kumara Silva", route: "Route A", amount: 75000, date: "2024-12-10", status: "paid", type: "monthly" },
+  { id: "PAY-002", parent: "Rajith Perera", driver: "Nimal Perera", route: "Route B", amount: 75000, date: "2024-12-09", status: "paid", type: "monthly" },
+  { id: "PAY-003", parent: "Dilini Fernando", driver: "Chaminda Fernando", route: "Route C", amount: 20000, date: "2024-12-08", status: "failed", type: "weekly" },
+  { id: "PAY-004", parent: "Kasun Jayasuriya", driver: "Kumara Silva", route: "Route A", amount: 75000, date: "2024-12-07", status: "pending", type: "monthly" },
+  { id: "PAY-005", parent: "Nimali Seneviratne", driver: "Ayesha Jayawardena", route: "Route D", amount: 20000, date: "2024-12-06", status: "paid", type: "weekly" },
 ]
 
 const monthlyRevenue = [
-  { month: "Jul", revenue: 58000, commission: 2900 },
-  { month: "Aug", revenue: 61000, commission: 3050 },
-  { month: "Sep", revenue: 59000, commission: 2950 },
-  { month: "Oct", revenue: 64000, commission: 3200 },
-  { month: "Nov", revenue: 62000, commission: 3100 },
-  { month: "Dec", revenue: 65000, commission: 3250 },
+  { month: "Jul", revenue: 17400000, commission: 870000 },
+  { month: "Aug", revenue: 18300000, commission: 915000 },
+  { month: "Sep", revenue: 17700000, commission: 885000 },
+  { month: "Oct", revenue: 19200000, commission: 960000 },
+  { month: "Nov", revenue: 18600000, commission: 930000 },
+  { month: "Dec", revenue: 19500000, commission: 975000 },
 ]
 
 export function PaymentManagement() {
@@ -46,7 +46,7 @@ export function PaymentManagement() {
             <DollarSign className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$65,000</div>
+            <div className="text-2xl font-bold">RS 19,500,000</div>
             <p className="text-xs text-gray-500 mt-1">
               <span className="text-green-600">+10.2%</span> from last month
             </p>
@@ -81,7 +81,7 @@ export function PaymentManagement() {
             <DollarSign className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">$3,250</div>
+            <div className="text-2xl font-bold text-blue-600">RS 975,000</div>
             <p className="text-xs text-gray-500 mt-1">5% of total revenue</p>
           </CardContent>
         </Card>
@@ -174,7 +174,7 @@ export function PaymentManagement() {
                   <TableCell>{payment.parent}</TableCell>
                   <TableCell>{payment.driver}</TableCell>
                   <TableCell>{payment.route}</TableCell>
-                  <TableCell className="font-medium">${payment.amount}</TableCell>
+                  <TableCell className="font-medium">RS {payment.amount.toLocaleString()}</TableCell>
                   <TableCell>{payment.date}</TableCell>
                   <TableCell>
                     <Badge variant="outline">{payment.type}</Badge>
@@ -209,7 +209,7 @@ export function PaymentManagement() {
             <CardTitle>Pending Payments</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-yellow-600">$12,450</div>
+            <div className="text-3xl font-bold text-yellow-600">RS 3,735,000</div>
             <p className="text-sm text-gray-500 mt-2">49 pending transactions</p>
             <Button className="mt-4 w-full" variant="outline">Review Pending</Button>
           </CardContent>
@@ -220,7 +220,7 @@ export function PaymentManagement() {
             <CardTitle>Failed Payments</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-red-600">$4,825</div>
+            <div className="text-3xl font-bold text-red-600">RS 1,447,500</div>
             <p className="text-sm text-gray-500 mt-2">193 failed transactions</p>
             <Button className="mt-4 w-full" variant="outline">Handle Failures</Button>
           </CardContent>

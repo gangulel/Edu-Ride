@@ -95,7 +95,7 @@ export default function App() {
                 <Navigation className="h-5 w-5 text-white" />
               </div>
               <div>
-                <h1 className="text-lg font-semibold">Bus Tracker Admin</h1>
+                <h1 className="text-lg font-semibold">Edu-Ride Admin</h1>
               </div>
             </div>
           </div>
@@ -110,7 +110,7 @@ export default function App() {
               </div>
               <div className="hidden md:block">
                 <p className="text-sm font-medium">Admin User</p>
-                <p className="text-xs text-gray-500">admin@bustracker.com</p>
+                <p className="text-xs text-gray-500">admin@eduride.lk</p>
               </div>
             </div>
           </div>

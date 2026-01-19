@@ -7,11 +7,11 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { MapPin, Navigation, Users, AlertTriangle, Eye } from "lucide-react"
 
 const routes = [
-  { id: 1, name: "Route A", driver: "Robert Martinez", vehicle: "Bus-101", towns: ["Downtown", "Riverside", "Oakwood"], students: 28, status: "active", schedule: "7:00 AM - 8:30 AM", overlaps: false },
-  { id: 2, name: "Route B", driver: "Linda Anderson", vehicle: "Bus-102", towns: ["Hillside", "Meadowbrook", "Pinecrest"], students: 34, status: "active", schedule: "7:15 AM - 8:45 AM", overlaps: false },
-  { id: 3, name: "Route C", driver: "David Brown", vehicle: "Bus-103", towns: ["Lakeside", "Sunset", "Greenfield"], students: 22, status: "inactive", schedule: "7:00 AM - 8:30 AM", overlaps: false },
-  { id: 4, name: "Route D", driver: "Patricia Taylor", vehicle: "Bus-104", towns: ["Downtown", "Bayview", "Maplewood"], students: 31, status: "active", schedule: "7:05 AM - 8:35 AM", overlaps: true },
-  { id: 5, name: "Route E", driver: "John Smith", vehicle: "Bus-105", towns: ["Fairview", "Brookside", "Westend"], students: 26, status: "active", schedule: "7:20 AM - 8:50 AM", overlaps: false },
+  { id: 1, name: "Route A", driver: "Kumara Silva", vehicle: "Bus-101", towns: ["Colombo", "Dehiwala", "Maharagama"], students: 28, status: "active", schedule: "7:00 AM - 8:30 AM", overlaps: false },
+  { id: 2, name: "Route B", driver: "Nimal Perera", vehicle: "Bus-102", towns: ["Nugegoda", "Kotte", "Battaramulla"], students: 34, status: "active", schedule: "7:15 AM - 8:45 AM", overlaps: false },
+  { id: 3, name: "Route C", driver: "Chaminda Fernando", vehicle: "Bus-103", towns: ["Moratuwa", "Panadura", "Kalutara"], students: 22, status: "inactive", schedule: "7:00 AM - 8:30 AM", overlaps: false },
+  { id: 4, name: "Route D", driver: "Ayesha Jayawardena", vehicle: "Bus-104", towns: ["Colombo", "Mount Lavinia", "Boralesgamuwa"], students: 31, status: "active", schedule: "7:05 AM - 8:35 AM", overlaps: true },
+  { id: 5, name: "Route E", driver: "Sunil Bandara", vehicle: "Bus-105", towns: ["Kaduwela", "Malabe", "Athurugiriya"], students: 26, status: "active", schedule: "7:20 AM - 8:50 AM", overlaps: false },
 ]
 
 export function RouteManagement() {

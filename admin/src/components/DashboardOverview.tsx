@@ -3,12 +3,12 @@ import { Users, Car, MapPin, DollarSign, AlertTriangle, TrendingUp } from "lucid
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 
 const monthlyData = [
-  { month: "Jan", transactions: 4500, revenue: 45000 },
-  { month: "Feb", transactions: 5200, revenue: 52000 },
-  { month: "Mar", transactions: 4800, revenue: 48000 },
-  { month: "Apr", transactions: 6100, revenue: 61000 },
-  { month: "May", transactions: 5900, revenue: 59000 },
-  { month: "Jun", transactions: 6500, revenue: 65000 },
+  { month: "Jan", transactions: 4500, revenue: 13500000 },
+  { month: "Feb", transactions: 5200, revenue: 15600000 },
+  { month: "Mar", transactions: 4800, revenue: 14400000 },
+  { month: "Apr", transactions: 6100, revenue: 18300000 },
+  { month: "May", transactions: 5900, revenue: 17700000 },
+  { month: "Jun", transactions: 6500, revenue: 19500000 },
 ]
 
 const statusData = [
@@ -79,7 +79,7 @@ export function DashboardOverview() {
             <DollarSign className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$65,000</div>
+            <div className="text-2xl font-bold">RS 19,500,000</div>
             <p className="text-xs text-gray-500 mt-1">
               <span className="text-green-600">+10.2%</span> from last month
             </p>

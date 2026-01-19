@@ -22,20 +22,20 @@ const routeUtilizationData = [
 ]
 
 const paymentTrendData = [
-  { month: "Jan", revenue: 45000, transactions: 4500, avgPerTransaction: 10 },
-  { month: "Feb", revenue: 52000, transactions: 5200, avgPerTransaction: 10 },
-  { month: "Mar", revenue: 48000, transactions: 4800, avgPerTransaction: 10 },
-  { month: "Apr", revenue: 61000, transactions: 6100, avgPerTransaction: 10 },
-  { month: "May", revenue: 59000, transactions: 5900, avgPerTransaction: 10 },
-  { month: "Jun", revenue: 65000, transactions: 6500, avgPerTransaction: 10 },
+  { month: "Jan", revenue: 13500000, transactions: 4500, avgPerTransaction: 3000 },
+  { month: "Feb", revenue: 15600000, transactions: 5200, avgPerTransaction: 3000 },
+  { month: "Mar", revenue: 14400000, transactions: 4800, avgPerTransaction: 3000 },
+  { month: "Apr", revenue: 18300000, transactions: 6100, avgPerTransaction: 3000 },
+  { month: "May", revenue: 17700000, transactions: 5900, avgPerTransaction: 3000 },
+  { month: "Jun", revenue: 19500000, transactions: 6500, avgPerTransaction: 3000 },
 ]
 
 const driverPerformanceData = [
-  { driver: "Linda A.", rating: 4.9, trips: 312, onTime: 98 },
-  { driver: "Robert M.", rating: 4.8, trips: 234, onTime: 96 },
-  { driver: "John S.", rating: 4.7, trips: 267, onTime: 94 },
-  { driver: "Patricia T.", rating: 4.5, trips: 198, onTime: 92 },
-  { driver: "David B.", rating: 3.2, trips: 145, onTime: 78 },
+  { driver: "Nimal P.", rating: 4.9, trips: 312, onTime: 98 },
+  { driver: "Kumara S.", rating: 4.8, trips: 234, onTime: 96 },
+  { driver: "Sunil B.", rating: 4.7, trips: 267, onTime: 94 },
+  { driver: "Ayesha J.", rating: 4.5, trips: 198, onTime: 92 },
+  { driver: "Chaminda F.", rating: 3.2, trips: 145, onTime: 78 },
 ]
 
 export function ReportsAnalytics() {
@@ -80,7 +80,7 @@ export function ReportsAnalytics() {
             <DollarSign className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$330K</div>
+            <div className="text-2xl font-bold">RS 99M</div>
             <p className="text-xs text-gray-500 mt-1">Last 6 months</p>
           </CardContent>
         </Card>

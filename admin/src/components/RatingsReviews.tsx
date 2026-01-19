@@ -6,18 +6,18 @@ import { Star, Flag, TrendingDown, Award } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 
 const driverRatings = [
-  { id: 1, driver: "Robert Martinez", route: "Route A", rating: 4.8, reviews: 234, lowRated: 8, flagged: 2, avgMonth: 4.7 },
-  { id: 2, driver: "Linda Anderson", route: "Route B", rating: 4.9, reviews: 312, lowRated: 3, flagged: 0, avgMonth: 4.9 },
-  { id: 3, driver: "David Brown", route: "Route C", rating: 3.2, reviews: 145, lowRated: 45, flagged: 12, avgMonth: 3.5 },
-  { id: 4, driver: "Patricia Taylor", route: "Route D", rating: 4.5, reviews: 198, lowRated: 12, flagged: 3, avgMonth: 4.4 },
-  { id: 5, driver: "John Smith", route: "Route E", rating: 4.7, reviews: 267, lowRated: 15, flagged: 1, avgMonth: 4.6 },
+  { id: 1, driver: "Kumara Silva", route: "Route A", rating: 4.8, reviews: 234, lowRated: 8, flagged: 2, avgMonth: 4.7 },
+  { id: 2, driver: "Nimal Perera", route: "Route B", rating: 4.9, reviews: 312, lowRated: 3, flagged: 0, avgMonth: 4.9 },
+  { id: 3, driver: "Chaminda Fernando", route: "Route C", rating: 3.2, reviews: 145, lowRated: 45, flagged: 12, avgMonth: 3.5 },
+  { id: 4, driver: "Ayesha Jayawardena", route: "Route D", rating: 4.5, reviews: 198, lowRated: 12, flagged: 3, avgMonth: 4.4 },
+  { id: 5, driver: "Sunil Bandara", route: "Route E", rating: 4.7, reviews: 267, lowRated: 15, flagged: 1, avgMonth: 4.6 },
 ]
 
 const recentReviews = [
-  { id: 1, parent: "Sarah Johnson", driver: "Robert Martinez", rating: 5, comment: "Always on time and very friendly!", date: "2024-12-10", flagged: false },
-  { id: 2, parent: "Michael Chen", driver: "Linda Anderson", rating: 5, comment: "Excellent service, my kids feel safe.", date: "2024-12-09", flagged: false },
-  { id: 3, parent: "Emma Davis", driver: "David Brown", rating: 2, comment: "Consistently late and unprofessional.", date: "2024-12-08", flagged: true },
-  { id: 4, parent: "James Wilson", driver: "Robert Martinez", rating: 4, comment: "Good service overall, minor delays sometimes.", date: "2024-12-07", flagged: false },
+  { id: 1, parent: "Sanduni Wickramasinghe", driver: "Kumara Silva", rating: 5, comment: "Always on time and very friendly!", date: "2024-12-10", flagged: false },
+  { id: 2, parent: "Rajith Perera", driver: "Nimal Perera", rating: 5, comment: "Excellent service, my kids feel safe.", date: "2024-12-09", flagged: false },
+  { id: 3, parent: "Dilini Fernando", driver: "Chaminda Fernando", rating: 2, comment: "Consistently late and unprofessional.", date: "2024-12-08", flagged: true },
+  { id: 4, parent: "Kasun Jayasuriya", driver: "Kumara Silva", rating: 4, comment: "Good service overall, minor delays sometimes.", date: "2024-12-07", flagged: false },
 ]
 
 const routePerformance = [

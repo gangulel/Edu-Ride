@@ -10,11 +10,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertCircle, MessageSquare, Clock, CheckCircle, XCircle } from "lucide-react"
 
 const complaints = [
-  { id: "COMP-001", user: "Sarah Johnson", type: "parent", category: "Late Pickup", priority: "high", status: "open", date: "2024-12-10", assignedTo: "Admin Team" },
-  { id: "COMP-002", user: "Robert Martinez", type: "driver", category: "Route Issue", priority: "medium", status: "in-progress", date: "2024-12-09", assignedTo: "John Admin" },
-  { id: "COMP-003", user: "Emma Davis", type: "parent", category: "Safety Concern", priority: "high", status: "open", date: "2024-12-08", assignedTo: "Unassigned" },
-  { id: "COMP-004", user: "Michael Chen", type: "parent", category: "Payment Issue", priority: "low", status: "resolved", date: "2024-12-07", assignedTo: "Sarah Admin" },
-  { id: "COMP-005", user: "Linda Anderson", type: "driver", category: "Vehicle Problem", priority: "medium", status: "in-progress", date: "2024-12-06", assignedTo: "Admin Team" },
+  { id: "COMP-001", user: "Sanduni Wickramasinghe", type: "parent", category: "Late Pickup", priority: "high", status: "open", date: "2024-12-10", assignedTo: "Admin Team" },
+  { id: "COMP-002", user: "Kumara Silva", type: "driver", category: "Route Issue", priority: "medium", status: "in-progress", date: "2024-12-09", assignedTo: "Priya Admin" },
+  { id: "COMP-003", user: "Dilini Fernando", type: "parent", category: "Safety Concern", priority: "high", status: "open", date: "2024-12-08", assignedTo: "Unassigned" },
+  { id: "COMP-004", user: "Rajith Perera", type: "parent", category: "Payment Issue", priority: "low", status: "resolved", date: "2024-12-07", assignedTo: "Kamani Admin" },
+  { id: "COMP-005", user: "Nimal Perera", type: "driver", category: "Vehicle Problem", priority: "medium", status: "in-progress", date: "2024-12-06", assignedTo: "Admin Team" },
 ]
 
 export function ComplaintsSupport() {
