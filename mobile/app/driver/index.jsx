@@ -32,10 +32,10 @@ export default function DriverHome() {
         <View style={styles.availabilityCard}>
           <View style={styles.availabilityContent}>
             <View style={styles.availabilityIcon}>
-              <Ionicons 
-                name={isAvailable ? "checkmark-circle" : "close-circle"} 
-                size={32} 
-                color={isAvailable ? "#34C759" : "#8E8E93"} 
+              <Ionicons
+                name={isAvailable ? "checkmark-circle" : "close-circle"}
+                size={32}
+                color={isAvailable ? "#34C759" : "#8E8E93"}
               />
             </View>
             <View style={styles.availabilityText}>
@@ -144,24 +144,36 @@ export default function DriverHome() {
         {/* Quick Actions */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="list" size={24} color="#007AFF" />
-            <Text style={styles.actionButtonText}>View All Trips</Text>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => router.push("/driver/route-management")}
+          >
+            <Ionicons name="map" size={24} color="#007AFF" />
+            <Text style={styles.actionButtonText}>Manage Routes</Text>
             <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="wallet" size={24} color="#34C759" />
-            <Text style={styles.actionButtonText}>Earnings Report</Text>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => router.push("/driver/students")}
+          >
+            <Ionicons name="people" size={24} color="#34C759" />
+            <Text style={styles.actionButtonText}>Student Management</Text>
             <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="car-sport" size={24} color="#FF9500" />
-            <Text style={styles.actionButtonText}>Vehicle Information</Text>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => router.push("/driver/booking-requests")}
+          >
+            <Ionicons name="mail" size={24} color="#FF9500" />
+            <Text style={styles.actionButtonText}>Booking Requests</Text>
             <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
           </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="help-circle" size={24} color="#8E8E93" />
-            <Text style={styles.actionButtonText}>Help & Support</Text>
+          <TouchableOpacity
+            style={styles.actionButton}
+            onPress={() => router.push("/driver/active-trip")}
+          >
+            <Ionicons name="navigate" size={24} color="#FF3B30" />
+            <Text style={styles.actionButtonText}>Start Active Trip</Text>
             <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
           </TouchableOpacity>
         </View>

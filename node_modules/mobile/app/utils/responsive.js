@@ -32,7 +32,7 @@ export const responsive = {
   paddingLG: hp(16),
   paddingXL: hp(24),
   padding2XL: hp(32),
-  
+
   // Margin
   marginXS: hp(4),
   marginSM: hp(8),
@@ -40,7 +40,7 @@ export const responsive = {
   marginLG: hp(16),
   marginXL: hp(24),
   margin2XL: hp(32),
-  
+
   // Border radius
   radiusXS: 4,
   radiusSM: 8,
@@ -48,7 +48,7 @@ export const responsive = {
   radiusLG: 16,
   radiusXL: 24,
   radiusFull: 9999,
-  
+
   // Font sizes
   fontXS: fs(12),
   fontSM: fs(14),
@@ -57,4 +57,7 @@ export const responsive = {
   fontXL: fs(20),
   font2XL: fs(24),
   font3XL: fs(30),
+
+  // Button height
+  buttonHeight: hp(48),
 };
