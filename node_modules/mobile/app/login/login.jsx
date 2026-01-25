@@ -163,6 +163,7 @@ export default function Login() {
                 source={require("../../assets/images/bluelogo.png")}
                 style={styles.headerImage}
                 resizeMode="contain"
+                onError={(e) => console.log("Logo failed to load:", e.nativeEvent.error)}
               />
             </View>
 
@@ -331,10 +332,13 @@ const styles = StyleSheet.create({
     marginBottom: hp(30),
     alignItems: "center",
     justifyContent: "center",
+    minHeight: 80,
+    width: "100%",
   },
   headerImage: {
-    width: wp(180),
-    height: hp(60),
+    width: wp(200),
+    height: 80,
+    minHeight: 60,
   },
   title: {
     fontSize: fs(26),
