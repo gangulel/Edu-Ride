@@ -1,11 +1,11 @@
 import { useState } from "react"
-import { 
-  LayoutDashboard, 
-  Users, 
-  Navigation, 
-  DollarSign, 
-  Star, 
-  MessageSquare, 
+import {
+  LayoutDashboard,
+  Users,
+  Navigation,
+  DollarSign,
+  Star,
+  MessageSquare,
   AlertCircle,
   BarChart3,
   Settings,
@@ -110,7 +110,7 @@ export default function App() {
               </div>
               <div className="hidden md:block">
                 <p className="text-sm font-medium">Admin User</p>
-                <p className="text-xs text-gray-500">admin@bustracker.com</p>
+                <p className="text-xs text-gray-500">admin@eduride.com</p>
               </div>
             </div>
           </div>
@@ -119,9 +119,8 @@ export default function App() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-16 left-0 bottom-0 w-64 bg-white border-r border-gray-200 overflow-y-auto transition-transform duration-200 z-20 ${
-          sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-        }`}
+        className={`fixed top-16 left-0 bottom-0 w-64 bg-white border-r border-gray-200 overflow-y-auto transition-transform duration-200 z-20 ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+          }`}
       >
         <nav className="p-4 space-y-1">
           {menuItems.map((item) => {
@@ -135,11 +134,10 @@ export default function App() {
                     setSidebarOpen(false)
                   }
                 }}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${
-                  activeMenu === item.id
-                    ? "bg-blue-50 text-blue-600"
-                    : "text-gray-700 hover:bg-gray-100"
-                }`}
+                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeMenu === item.id
+                  ? "bg-blue-50 text-blue-600"
+                  : "text-gray-700 hover:bg-gray-100"
+                  }`}
               >
                 <Icon className="h-5 w-5" />
                 <span>{item.label}</span>
@@ -151,9 +149,8 @@ export default function App() {
 
       {/* Main Content */}
       <main
-        className={`pt-16 transition-all duration-200 ${
-          sidebarOpen ? "lg:pl-64" : ""
-        }`}
+        className={`pt-16 transition-all duration-200 ${sidebarOpen ? "lg:pl-64" : ""
+          }`}
       >
         <div className="p-6 max-w-[1600px] mx-auto">
           {renderContent()}
