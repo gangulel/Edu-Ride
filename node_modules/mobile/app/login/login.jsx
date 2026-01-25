@@ -1,4 +1,4 @@
-import React, { useState, useRef } from "react";
+import React, { useState, useRef, useEffect } from "react";
 import {
   View,
   Text,
@@ -11,6 +11,7 @@ import {
   StatusBar,
   StyleSheet,
   TextInput,
+  Alert,
 } from "react-native";
 import { useRouter } from "expo-router";
 import {
@@ -20,10 +21,15 @@ import {
   Eye,
   EyeSlash,
   InfoCircle,
-  Google,
   Apple,
 } from "iconsax-react-native";
+import * as Google from "expo-auth-session/providers/google";
+import * as WebBrowser from "expo-web-browser";
+import GoogleLogo from "../components/icons/GoogleLogo";
 import { responsive, wp, hp, fs } from "../utils/responsive";
+
+// Required for web browser redirect
+WebBrowser.maybeCompleteAuthSession();
 
 export default function Login() {
   const router = useRouter();
@@ -31,8 +37,57 @@ export default function Login() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
+  const [googleLoading, setGoogleLoading] = useState(false);
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
+
+  // Google Auth configuration
+  // Note: Replace these with your actual Google OAuth Client IDs from Google Cloud Console
+  const [request, response, promptAsync] = Google.useAuthRequest({
+    // Get these from https://console.cloud.google.com/apis/credentials
+    androidClientId: "YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com",
+    iosClientId: "YOUR_IOS_CLIENT_ID.apps.googleusercontent.com",
+    webClientId: "YOUR_WEB_CLIENT_ID.apps.googleusercontent.com",
+  });
+
+  useEffect(() => {
+    if (response?.type === "success") {
+      const { authentication } = response;
+      handleGoogleAuthSuccess(authentication);
+    } else if (response?.type === "error") {
+      setError("Google sign-in failed. Please try again.");
+      setGoogleLoading(false);
+    }
+  }, [response]);
+
+  const handleGoogleAuthSuccess = async (authentication) => {
+    try {
+      // Get user info from Google
+      const userInfoResponse = await fetch(
+        "https://www.googleapis.com/userinfo/v2/me",
+        {
+          headers: { Authorization: `Bearer ${authentication.accessToken}` },
+        }
+      );
+      const userInfo = await userInfoResponse.json();
+
+      console.log("Google User Info:", userInfo);
+
+      // Here you would typically:
+      // 1. Send the token to your backend for verification
+      // 2. Create/login the user in your database
+      // 3. Store the session token
+
+      setGoogleLoading(false);
+
+      // Navigate to driver home on success
+      router.replace("/driver");
+    } catch (err) {
+      console.error("Error fetching user info:", err);
+      setError("Failed to get user information. Please try again.");
+      setGoogleLoading(false);
+    }
+  };
 
   const re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\\.,;:\s@\"]+\.)+[^<>()[\]\\.,;:\s@\"]{2,})$/i;
 
@@ -60,14 +115,21 @@ export default function Login() {
     }, 1500);
   };
 
-  const handleGoogleLogin = () => {
-    // Handle Google login
-    console.log("Google login pressed");
+  const handleGoogleLogin = async () => {
+    setError("");
+    setGoogleLoading(true);
+    try {
+      await promptAsync();
+    } catch (err) {
+      console.error("Google Sign-In Error:", err);
+      setError("Google sign-in failed. Please try again.");
+      setGoogleLoading(false);
+    }
   };
 
   const handleAppleLogin = () => {
     // Handle Apple login
-    console.log("Apple login pressed");
+    Alert.alert("Coming Soon", "Apple Sign-In will be available soon!");
   };
 
   return (
@@ -95,17 +157,17 @@ export default function Login() {
               <ArrowLeft size={24} color="#000" />
             </TouchableOpacity>
 
-            {/* Logo/Image */}
+            {/* Logo */}
             <View style={styles.logoContainer}>
               <Image
-                source={require("../../assets/images/parent_child.png")}
+                source={require("../../assets/images/bluelogo.png")}
                 style={styles.headerImage}
                 resizeMode="contain"
               />
             </View>
 
             {/* Title */}
-            <Text style={styles.title}>Welcome to Edu-Ride</Text>
+            <Text style={styles.title}>Welcome Back!</Text>
             <Text style={styles.subtitle}>Sign in to continue</Text>
           </View>
 
@@ -113,7 +175,7 @@ export default function Login() {
           <View style={styles.formSection}>
             {/* Email Input */}
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Email</Text>
+              <Text style={[styles.label, { marginBottom: 8 }]}>Email</Text>
               <View style={styles.inputWrapper}>
                 <Sms size={20} color="#666" variant="Outline" />
                 <TextInput
@@ -131,7 +193,15 @@ export default function Login() {
 
             {/* Password Input */}
             <View style={styles.inputContainer}>
-              <Text style={styles.label}>Password</Text>
+              <View style={styles.labelRow}>
+                <Text style={styles.label}>Password</Text>
+                <TouchableOpacity
+                  onPress={() => router.push("/login/forgot")}
+                  activeOpacity={0.7}
+                >
+                  <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+                </TouchableOpacity>
+              </View>
               <View style={styles.inputWrapper}>
                 <Lock size={20} color="#666" variant="Outline" />
                 <TextInput
@@ -156,15 +226,6 @@ export default function Login() {
                 </TouchableOpacity>
               </View>
             </View>
-
-            {/* Forgot Password */}
-            <TouchableOpacity
-              style={styles.forgotPassword}
-              onPress={() => router.push("/login/forgot")}
-              activeOpacity={0.7}
-            >
-              <Text style={styles.forgotPasswordText}>Forgot password?</Text>
-            </TouchableOpacity>
 
             {/* Error Message */}
             {error ? (
@@ -197,12 +258,19 @@ export default function Login() {
 
             {/* Social Login Buttons */}
             <TouchableOpacity
-              style={styles.socialButton}
+              style={[styles.socialButton, googleLoading && styles.socialButtonDisabled]}
               onPress={handleGoogleLogin}
               activeOpacity={0.7}
+              disabled={googleLoading || !request}
             >
-              <Google size={20} color="#000" variant="Bold" />
-              <Text style={styles.socialButtonText}>Continue with Google</Text>
+              {googleLoading ? (
+                <ActivityIndicator color="#3B82F6" size="small" />
+              ) : (
+                <>
+                  <GoogleLogo size={20} />
+                  <Text style={styles.socialButtonText}>Continue with Google</Text>
+                </>
+              )}
             </TouchableOpacity>
 
             <TouchableOpacity
@@ -259,22 +327,25 @@ const styles = StyleSheet.create({
     zIndex: 10,
   },
   logoContainer: {
-    marginTop: hp(20),
-    marginBottom: hp(20),
+    marginTop: hp(30),
+    marginBottom: hp(30),
+    alignItems: "center",
+    justifyContent: "center",
   },
   headerImage: {
-    width: wp(160),
-    height: wp(140),
+    width: wp(180),
+    height: hp(60),
   },
   title: {
     fontSize: fs(26),
-    fontWeight: "700",
+    fontFamily: "Roboto-Bold",
     color: "#000",
     textAlign: "center",
     marginBottom: 8,
   },
   subtitle: {
     fontSize: fs(15),
+    fontFamily: "Roboto-Regular",
     color: "#666",
     textAlign: "center",
   },
@@ -286,11 +357,16 @@ const styles = StyleSheet.create({
   inputContainer: {
     marginBottom: hp(18),
   },
+  labelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
   label: {
     fontSize: fs(14),
-    fontWeight: "600",
+    fontFamily: "Roboto-Medium",
     color: "#333",
-    marginBottom: 8,
   },
   inputWrapper: {
     flexDirection: "row",
@@ -305,20 +381,17 @@ const styles = StyleSheet.create({
   input: {
     flex: 1,
     fontSize: fs(15),
+    fontFamily: "Roboto-Regular",
     color: "#000",
     paddingVertical: 16,
   },
   eyeButton: {
     padding: 8,
   },
-  forgotPassword: {
-    alignSelf: "flex-end",
-    marginBottom: hp(10),
-  },
   forgotPasswordText: {
     fontSize: fs(13),
-    color: "#666",
-    fontWeight: "500",
+    fontFamily: "Roboto-Medium",
+    color: "#3B82F6",
   },
   errorContainer: {
     flexDirection: "row",
@@ -332,11 +405,12 @@ const styles = StyleSheet.create({
   },
   errorText: {
     fontSize: fs(13),
+    fontFamily: "Roboto-Regular",
     color: "#E53935",
     flex: 1,
   },
   continueButton: {
-    backgroundColor: "#000",
+    backgroundColor: "#3B82F6",
     borderRadius: 30,
     paddingVertical: 18,
     alignItems: "center",
@@ -346,7 +420,7 @@ const styles = StyleSheet.create({
   continueButtonText: {
     color: "#fff",
     fontSize: fs(16),
-    fontWeight: "600",
+    fontFamily: "Roboto-Medium",
   },
   divider: {
     flexDirection: "row",
@@ -361,6 +435,7 @@ const styles = StyleSheet.create({
   dividerText: {
     paddingHorizontal: 20,
     fontSize: fs(14),
+    fontFamily: "Roboto-Regular",
     color: "#999",
   },
   socialButton: {
@@ -375,9 +450,13 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     gap: 12,
   },
+  socialButtonDisabled: {
+    opacity: 0.7,
+    backgroundColor: "#F5F5F5",
+  },
   socialButtonText: {
     fontSize: fs(15),
-    fontWeight: "500",
+    fontFamily: "Roboto-Medium",
     color: "#000",
   },
   signupContainer: {
@@ -388,11 +467,12 @@ const styles = StyleSheet.create({
   },
   signupText: {
     fontSize: fs(14),
+    fontFamily: "Roboto-Regular",
     color: "#666",
   },
   signupLink: {
     fontSize: fs(14),
-    fontWeight: "600",
-    color: "#000",
+    fontFamily: "Roboto-Bold",
+    color: "#3B82F6",
   },
 });
