@@ -70,9 +70,9 @@ export function SystemSettings() {
             <div>
               <label className="text-sm font-medium">Currency</label>
               <Select className="mt-1">
+                <option value="lkr">LKR (Rs.)</option>
                 <option value="usd">USD ($)</option>
                 <option value="eur">EUR (€)</option>
-                <option value="gbp">GBP (£)</option>
               </Select>
             </div>
           </div>
@@ -142,17 +142,17 @@ export function SystemSettings() {
               <p className="text-xs text-gray-500 mt-1">Percentage charged per transaction</p>
             </div>
             <div>
-              <label className="text-sm font-medium">Driver Registration Fee ($)</label>
+              <label className="text-sm font-medium">Driver Registration Fee (Rs.)</label>
               <Input type="number" className="mt-1" placeholder="50" defaultValue="50" />
               <p className="text-xs text-gray-500 mt-1">One-time registration fee for drivers</p>
             </div>
             <div>
-              <label className="text-sm font-medium">Monthly Subscription ($)</label>
+              <label className="text-sm font-medium">Monthly Subscription (Rs.)</label>
               <Input type="number" className="mt-1" placeholder="250" defaultValue="250" />
               <p className="text-xs text-gray-500 mt-1">Standard monthly payment amount</p>
             </div>
             <div>
-              <label className="text-sm font-medium">Weekly Subscription ($)</label>
+              <label className="text-sm font-medium">Weekly Subscription (Rs.)</label>
               <Input type="number" className="mt-1" placeholder="65" defaultValue="65" />
               <p className="text-xs text-gray-500 mt-1">Standard weekly payment amount</p>
             </div>

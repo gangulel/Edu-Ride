@@ -10,11 +10,11 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { AlertCircle, MessageSquare, Clock, CheckCircle, XCircle } from "lucide-react"
 
 const complaints = [
-  { id: "COMP-001", user: "Sarah Johnson", type: "parent", category: "Late Pickup", priority: "high", status: "open", date: "2024-12-10", assignedTo: "Admin Team" },
-  { id: "COMP-002", user: "Robert Martinez", type: "driver", category: "Route Issue", priority: "medium", status: "in-progress", date: "2024-12-09", assignedTo: "John Admin" },
-  { id: "COMP-003", user: "Emma Davis", type: "parent", category: "Safety Concern", priority: "high", status: "open", date: "2024-12-08", assignedTo: "Unassigned" },
-  { id: "COMP-004", user: "Michael Chen", type: "parent", category: "Payment Issue", priority: "low", status: "resolved", date: "2024-12-07", assignedTo: "Sarah Admin" },
-  { id: "COMP-005", user: "Linda Anderson", type: "driver", category: "Vehicle Problem", priority: "medium", status: "in-progress", date: "2024-12-06", assignedTo: "Admin Team" },
+  { id: "COMP-001", user: "Nimalka Perera", type: "parent", category: "Late Pickup", priority: "high", status: "open", date: "2024-12-10", assignedTo: "Admin Team" },
+  { id: "COMP-002", user: "Kasun Bandara", type: "driver", category: "Route Issue", priority: "medium", status: "in-progress", date: "2024-12-09", assignedTo: "Sunil Admin" },
+  { id: "COMP-003", user: "Dilini Fernando", type: "parent", category: "Safety Concern", priority: "high", status: "open", date: "2024-12-08", assignedTo: "Unassigned" },
+  { id: "COMP-004", user: "Chaminda Silva", type: "parent", category: "Payment Issue", priority: "low", status: "resolved", date: "2024-12-07", assignedTo: "Amali Admin" },
+  { id: "COMP-005", user: "Sanduni Wijesinghe", type: "driver", category: "Vehicle Problem", priority: "medium", status: "in-progress", date: "2024-12-06", assignedTo: "Admin Team" },
 ]
 
 export function ComplaintsSupport() {
@@ -141,16 +141,16 @@ export function ComplaintsSupport() {
                   <TableCell>{complaint.category}</TableCell>
                   <TableCell>
                     <Badge variant={
-                      complaint.priority === 'high' ? 'destructive' : 
-                      complaint.priority === 'medium' ? 'warning' : 'secondary'
+                      complaint.priority === 'high' ? 'destructive' :
+                        complaint.priority === 'medium' ? 'warning' : 'secondary'
                     }>
                       {complaint.priority}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge variant={
-                      complaint.status === 'resolved' ? 'success' : 
-                      complaint.status === 'in-progress' ? 'warning' : 'default'
+                      complaint.status === 'resolved' ? 'success' :
+                        complaint.status === 'in-progress' ? 'warning' : 'default'
                     }>
                       {complaint.status}
                     </Badge>
@@ -218,11 +218,11 @@ export function ComplaintsSupport() {
           <CardContent>
             <div className="space-y-2">
               <div className="flex justify-between">
-                <span className="text-sm">John Admin</span>
+                <span className="text-sm">Sunil Admin</span>
                 <Badge variant="success">98%</Badge>
               </div>
               <div className="flex justify-between">
-                <span className="text-sm">Sarah Admin</span>
+                <span className="text-sm">Amali Admin</span>
                 <Badge variant="success">95%</Badge>
               </div>
               <div className="flex justify-between">
@@ -261,8 +261,8 @@ export function ComplaintsSupport() {
                 <div>
                   <p className="text-sm text-gray-500">Priority</p>
                   <Badge variant={
-                    selectedComplaint.priority === 'high' ? 'destructive' : 
-                    selectedComplaint.priority === 'medium' ? 'warning' : 'secondary'
+                    selectedComplaint.priority === 'high' ? 'destructive' :
+                      selectedComplaint.priority === 'medium' ? 'warning' : 'secondary'
                   }>
                     {selectedComplaint.priority}
                   </Badge>
@@ -270,8 +270,8 @@ export function ComplaintsSupport() {
                 <div>
                   <p className="text-sm text-gray-500">Status</p>
                   <Badge variant={
-                    selectedComplaint.status === 'resolved' ? 'success' : 
-                    selectedComplaint.status === 'in-progress' ? 'warning' : 'default'
+                    selectedComplaint.status === 'resolved' ? 'success' :
+                      selectedComplaint.status === 'in-progress' ? 'warning' : 'default'
                   }>
                     {selectedComplaint.status}
                   </Badge>
@@ -281,7 +281,7 @@ export function ComplaintsSupport() {
                   <p className="font-medium">{selectedComplaint.date}</p>
                 </div>
               </div>
-              
+
               <div>
                 <p className="text-sm text-gray-500 mb-2">Complaint Description</p>
                 <div className="p-3 bg-gray-50 rounded-lg">

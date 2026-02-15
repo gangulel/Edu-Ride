@@ -9,17 +9,17 @@ import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, Di
 import { Search, Filter, Eye, Ban, CheckCircle, AlertCircle } from "lucide-react"
 
 const parents = [
-  { id: 1, name: "Sarah Johnson", email: "sarah.j@email.com", phone: "+1234567890", children: 2, status: "active", joinDate: "2024-01-15", complaints: 0 },
-  { id: 2, name: "Michael Chen", email: "m.chen@email.com", phone: "+1234567891", children: 1, status: "active", joinDate: "2024-02-20", complaints: 1 },
-  { id: 3, name: "Emma Davis", email: "emma.d@email.com", phone: "+1234567892", children: 3, status: "suspended", joinDate: "2023-11-10", complaints: 3 },
-  { id: 4, name: "James Wilson", email: "j.wilson@email.com", phone: "+1234567893", children: 1, status: "pending", joinDate: "2024-12-01", complaints: 0 },
+  { id: 1, name: "Nimalka Perera", email: "nimalka.p@email.com", phone: "+94771234567", children: 2, status: "active", joinDate: "2024-01-15", complaints: 0 },
+  { id: 2, name: "Chaminda Silva", email: "c.silva@email.com", phone: "+94771234568", children: 1, status: "active", joinDate: "2024-02-20", complaints: 1 },
+  { id: 3, name: "Dilini Fernando", email: "dilini.f@email.com", phone: "+94771234569", children: 3, status: "suspended", joinDate: "2023-11-10", complaints: 3 },
+  { id: 4, name: "Roshan Jayawardena", email: "r.jayawardena@email.com", phone: "+94771234570", children: 1, status: "pending", joinDate: "2024-12-01", complaints: 0 },
 ]
 
 const drivers = [
-  { id: 1, name: "Robert Martinez", email: "r.martinez@email.com", phone: "+1234567894", vehicle: "Bus-101", route: "Route A", status: "active", rating: 4.8, trips: 234 },
-  { id: 2, name: "Linda Anderson", email: "l.anderson@email.com", phone: "+1234567895", vehicle: "Bus-102", route: "Route B", status: "active", rating: 4.9, trips: 312 },
-  { id: 3, name: "David Brown", email: "d.brown@email.com", phone: "+1234567896", vehicle: "Bus-103", route: "Route C", status: "pending", rating: 0, trips: 0 },
-  { id: 4, name: "Patricia Taylor", email: "p.taylor@email.com", phone: "+1234567897", vehicle: "Bus-104", route: "Route D", status: "suspended", rating: 3.2, trips: 145 },
+  { id: 1, name: "Kasun Bandara", email: "kasun.b@email.com", phone: "+94771234571", vehicle: "Bus-101", route: "Route A", status: "active", rating: 4.8, trips: 234 },
+  { id: 2, name: "Sanduni Wijesinghe", email: "sanduni.w@email.com", phone: "+94771234572", vehicle: "Bus-102", route: "Route B", status: "active", rating: 4.9, trips: 312 },
+  { id: 3, name: "Nuwan Rajapaksa", email: "nuwan.r@email.com", phone: "+94771234573", vehicle: "Bus-103", route: "Route C", status: "pending", rating: 0, trips: 0 },
+  { id: 4, name: "Thilini Gunasekara", email: "thilini.g@email.com", phone: "+94771234574", vehicle: "Bus-104", route: "Route D", status: "suspended", rating: 3.2, trips: 145 },
 ]
 
 export function UserManagement() {
@@ -118,8 +118,8 @@ export function UserManagement() {
                       <TableCell>{parent.children}</TableCell>
                       <TableCell>
                         <Badge variant={
-                          parent.status === 'active' ? 'success' : 
-                          parent.status === 'suspended' ? 'destructive' : 'warning'
+                          parent.status === 'active' ? 'success' :
+                            parent.status === 'suspended' ? 'destructive' : 'warning'
                         }>
                           {parent.status}
                         </Badge>
@@ -238,8 +238,8 @@ export function UserManagement() {
                       <TableCell>{driver.trips}</TableCell>
                       <TableCell>
                         <Badge variant={
-                          driver.status === 'active' ? 'success' : 
-                          driver.status === 'suspended' ? 'destructive' : 'warning'
+                          driver.status === 'active' ? 'success' :
+                            driver.status === 'suspended' ? 'destructive' : 'warning'
                         }>
                           {driver.status}
                         </Badge>
@@ -292,8 +292,8 @@ export function UserManagement() {
               <div>
                 <p className="text-sm text-gray-500">Status</p>
                 <Badge variant={
-                  selectedUser.status === 'active' ? 'success' : 
-                  selectedUser.status === 'suspended' ? 'destructive' : 'warning'
+                  selectedUser.status === 'active' ? 'success' :
+                    selectedUser.status === 'suspended' ? 'destructive' : 'warning'
                 }>
                   {selectedUser.status}
                 </Badge>

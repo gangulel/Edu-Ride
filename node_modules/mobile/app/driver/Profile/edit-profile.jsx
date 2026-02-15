@@ -1,11 +1,11 @@
 import React, { useState } from "react";
-import { 
-  View, 
-  Text, 
-  StyleSheet, 
-  ScrollView, 
-  SafeAreaView, 
-  TouchableOpacity, 
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  SafeAreaView,
+  TouchableOpacity,
   StatusBar,
   TextInput,
   Alert,
@@ -16,16 +16,16 @@ import { Ionicons } from "@expo/vector-icons";
 
 export default function EditProfile() {
   const router = useRouter();
-  
+
   // Form state
   const [formData, setFormData] = useState({
-    firstName: "John",
-    lastName: "Driver",
-    email: "john.driver@example.com",
-    phone: "+1 (555) 123-4567",
-    address: "123 Main Street, City",
-    emergencyContact: "+1 (555) 987-6543",
-    emergencyContactName: "Jane Driver",
+    firstName: "Kasun",
+    lastName: "Perera",
+    email: "kasun.perera@eduride.lk",
+    phone: "+94 77 123 4567",
+    address: "123 Galle Road, Colombo 03",
+    emergencyContact: "+94 77 987 6543",
+    emergencyContactName: "Nimalka Perera",
   });
 
   const [errors, setErrors] = useState({});
@@ -76,14 +76,14 @@ export default function EditProfile() {
     }
 
     setIsLoading(true);
-    
+
     try {
       // Simulate API call
       await new Promise(resolve => setTimeout(resolve, 1000));
-      
+
       // In a real app, make API call to update profile
       // await updateDriverProfile(formData);
-      
+
       Alert.alert(
         "Success",
         "Profile updated successfully",
@@ -129,14 +129,14 @@ export default function EditProfile() {
       <ScrollView style={styles.scrollView}>
         {/* Header */}
         <View style={styles.header}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.backButton}
             onPress={() => router.back()}
           >
             <Ionicons name="arrow-back" size={24} color="#000" />
           </TouchableOpacity>
           <Text style={styles.headerTitle}>Edit Profile</Text>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.saveButton}
             onPress={handleSave}
             disabled={isLoading}
@@ -153,7 +153,7 @@ export default function EditProfile() {
             <View style={styles.avatar}>
               <Ionicons name="person" size={60} color="#007AFF" />
             </View>
-            <TouchableOpacity 
+            <TouchableOpacity
               style={styles.editPhotoButton}
               onPress={handleChangePhoto}
             >
@@ -168,7 +168,7 @@ export default function EditProfile() {
         {/* Personal Information */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Personal Information</Text>
-          
+
           <View style={styles.inputGroup}>
             <Text style={styles.label}>First Name</Text>
             <TextInput
@@ -245,7 +245,7 @@ export default function EditProfile() {
         {/* Emergency Contact */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Emergency Contact</Text>
-          
+
           <View style={styles.inputGroup}>
             <Text style={styles.label}>Contact Name</Text>
             <TextInput
@@ -272,7 +272,7 @@ export default function EditProfile() {
 
         {/* Delete Account Section */}
         <View style={styles.section}>
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.dangerButton}
             onPress={() => {
               Alert.alert(
@@ -280,8 +280,8 @@ export default function EditProfile() {
                 "Are you sure you want to delete your account? This action cannot be undone.",
                 [
                   { text: "Cancel", style: "cancel" },
-                  { 
-                    text: "Delete", 
+                  {
+                    text: "Delete",
                     style: "destructive",
                     onPress: () => console.log("Delete account")
                   }

@@ -7,18 +7,18 @@ import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from ".
 import { Shield, AlertTriangle, User, Activity, Download } from "lucide-react"
 
 const loginHistory = [
-  { id: 1, user: "admin@bustracker.com", role: "Super Admin", action: "Login", ip: "192.168.1.10", location: "New York, US", timestamp: "2024-12-14 09:15:23", status: "success" },
-  { id: 2, user: "john.admin@bustracker.com", role: "Admin", action: "Login", ip: "192.168.1.45", location: "Los Angeles, US", timestamp: "2024-12-14 08:42:15", status: "success" },
+  { id: 1, user: "admin@eduride.lk", role: "Super Admin", action: "Login", ip: "192.168.1.10", location: "Colombo, LK", timestamp: "2024-12-14 09:15:23", status: "success" },
+  { id: 2, user: "sunil.admin@eduride.lk", role: "Admin", action: "Login", ip: "192.168.1.45", location: "Kandy, LK", timestamp: "2024-12-14 08:42:15", status: "success" },
   { id: 3, user: "unknown@email.com", role: "Unknown", action: "Failed Login", ip: "45.123.67.89", location: "Unknown", timestamp: "2024-12-14 07:30:11", status: "failed" },
-  { id: 4, user: "sarah.admin@bustracker.com", role: "Admin", action: "Login", ip: "192.168.1.78", location: "Chicago, US", timestamp: "2024-12-13 16:22:45", status: "success" },
+  { id: 4, user: "amali.admin@eduride.lk", role: "Admin", action: "Login", ip: "192.168.1.78", location: "Galle, LK", timestamp: "2024-12-13 16:22:45", status: "success" },
 ]
 
 const adminActions = [
-  { id: 1, admin: "John Admin", action: "Suspended Driver", target: "David Brown", details: "Low rating suspension", timestamp: "2024-12-14 10:30:00", severity: "high" },
-  { id: 2, admin: "Sarah Admin", action: "Updated Payment Settings", target: "Commission Rate", details: "Changed from 4% to 5%", timestamp: "2024-12-14 09:15:00", severity: "medium" },
+  { id: 1, admin: "Sunil Admin", action: "Suspended Driver", target: "Nuwan Rajapaksa", details: "Low rating suspension", timestamp: "2024-12-14 10:30:00", severity: "high" },
+  { id: 2, admin: "Amali Admin", action: "Updated Payment Settings", target: "Commission Rate", details: "Changed from 4% to 5%", timestamp: "2024-12-14 09:15:00", severity: "medium" },
   { id: 3, admin: "Admin Team", action: "Sent Notification", target: "All Parents", details: "Holiday schedule announcement", timestamp: "2024-12-13 14:20:00", severity: "low" },
-  { id: 4, admin: "John Admin", action: "Approved Driver", target: "Patricia Taylor", details: "Verified documents", timestamp: "2024-12-13 11:45:00", severity: "medium" },
-  { id: 5, admin: "Super Admin", action: "Created Admin User", target: "mike.admin@bustracker.com", details: "New admin account created", timestamp: "2024-12-12 15:30:00", severity: "high" },
+  { id: 4, admin: "Sunil Admin", action: "Approved Driver", target: "Thilini Gunasekara", details: "Verified documents", timestamp: "2024-12-13 11:45:00", severity: "medium" },
+  { id: 5, admin: "Super Admin", action: "Created Admin User", target: "pradeep.admin@eduride.lk", details: "New admin account created", timestamp: "2024-12-12 15:30:00", severity: "high" },
 ]
 
 const suspiciousActivity = [
@@ -96,9 +96,8 @@ export function AuditLogs() {
         <CardContent>
           <div className="space-y-3">
             {suspiciousActivity.map((activity) => (
-              <div key={activity.id} className={`p-4 border rounded-lg ${
-                activity.severity === 'high' ? 'border-red-300 bg-red-50' : 'border-yellow-300 bg-yellow-50'
-              }`}>
+              <div key={activity.id} className={`p-4 border rounded-lg ${activity.severity === 'high' ? 'border-red-300 bg-red-50' : 'border-yellow-300 bg-yellow-50'
+                }`}>
                 <div className="flex justify-between items-start mb-2">
                   <div>
                     <div className="flex items-center gap-2">
@@ -111,8 +110,8 @@ export function AuditLogs() {
                     <p className="text-xs text-gray-500 mt-1">{activity.timestamp}</p>
                   </div>
                   <Badge variant={
-                    activity.status === 'blocked' ? 'destructive' : 
-                    activity.status === 'resolved' ? 'success' : 'warning'
+                    activity.status === 'blocked' ? 'destructive' :
+                      activity.status === 'resolved' ? 'success' : 'warning'
                   }>
                     {activity.status}
                   </Badge>
@@ -206,8 +205,8 @@ export function AuditLogs() {
                   <TableCell className="text-sm">{action.timestamp}</TableCell>
                   <TableCell>
                     <Badge variant={
-                      action.severity === 'high' ? 'destructive' : 
-                      action.severity === 'medium' ? 'warning' : 'secondary'
+                      action.severity === 'high' ? 'destructive' :
+                        action.severity === 'medium' ? 'warning' : 'secondary'
                     }>
                       {action.severity}
                     </Badge>

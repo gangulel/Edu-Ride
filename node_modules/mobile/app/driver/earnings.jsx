@@ -6,40 +6,40 @@ export default function DriverEarnings() {
   const [selectedPeriod, setSelectedPeriod] = useState("today");
 
   const todayStats = {
-    total: 125.50,
+    total: 12550.00,
     trips: 5,
     hours: 6.5,
-    avgPerTrip: 25.10,
+    avgPerTrip: 2510.00,
   };
 
   const weekStats = {
-    total: 687.30,
+    total: 68730.00,
     trips: 28,
     hours: 35,
-    avgPerTrip: 24.55,
+    avgPerTrip: 2455.00,
   };
 
   const monthStats = {
-    total: 2845.80,
+    total: 284580.00,
     trips: 112,
     hours: 145,
-    avgPerTrip: 25.41,
+    avgPerTrip: 2541.00,
   };
 
   const currentStats = selectedPeriod === "today" ? todayStats : selectedPeriod === "week" ? weekStats : monthStats;
 
   const recentTransactions = [
-    { id: 1, student: "Alice Johnson", amount: 18.50, time: "2:30 PM", destination: "Main Campus" },
-    { id: 2, student: "Bob Smith", amount: 22.00, time: "1:15 PM", destination: "Sports Complex" },
-    { id: 3, student: "Carol Davis", amount: 15.00, time: "12:00 PM", destination: "Library" },
-    { id: 4, student: "David Wilson", amount: 28.00, time: "10:30 AM", destination: "Downtown" },
-    { id: 5, student: "Emma Brown", amount: 19.00, time: "9:00 AM", destination: "Main Campus" },
+    { id: 1, student: "Amaya Perera", amount: 1850.00, time: "2:30 PM", destination: "Main Campus" },
+    { id: 2, student: "Sahan Silva", amount: 2200.00, time: "1:15 PM", destination: "Sports Complex" },
+    { id: 3, student: "Dilini Fernando", amount: 1500.00, time: "12:00 PM", destination: "Library" },
+    { id: 4, student: "Roshan Jayawardena", amount: 2800.00, time: "10:30 AM", destination: "Downtown" },
+    { id: 5, student: "Malini Dissanayake", amount: 1900.00, time: "9:00 AM", destination: "Main Campus" },
   ];
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Earnings</Text>
@@ -80,7 +80,7 @@ export default function DriverEarnings() {
             <Ionicons name="wallet" size={32} color="#34C759" />
           </View>
           <Text style={styles.totalLabel}>Total Earnings</Text>
-          <Text style={styles.totalAmount}>${currentStats.total.toFixed(2)}</Text>
+          <Text style={styles.totalAmount}>Rs. {currentStats.total.toLocaleString()}</Text>
           <TouchableOpacity style={styles.withdrawButton}>
             <Ionicons name="arrow-down-circle" size={20} color="#fff" />
             <Text style={styles.withdrawButtonText}>Withdraw</Text>
@@ -109,7 +109,7 @@ export default function DriverEarnings() {
             <View style={styles.statIconContainer}>
               <Ionicons name="trending-up" size={24} color="#34C759" />
             </View>
-            <Text style={styles.statValue}>${currentStats.avgPerTrip.toFixed(2)}</Text>
+            <Text style={styles.statValue}>Rs. {currentStats.avgPerTrip.toLocaleString()}</Text>
             <Text style={styles.statLabel}>Avg per Trip</Text>
           </View>
         </View>
@@ -133,7 +133,7 @@ export default function DriverEarnings() {
                 <Text style={styles.transactionDestination}>{transaction.destination}</Text>
                 <Text style={styles.transactionTime}>{transaction.time}</Text>
               </View>
-              <Text style={styles.transactionAmount}>+${transaction.amount.toFixed(2)}</Text>
+              <Text style={styles.transactionAmount}>+Rs. {transaction.amount.toLocaleString()}</Text>
             </View>
           ))}
         </View>

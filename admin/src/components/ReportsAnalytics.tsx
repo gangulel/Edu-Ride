@@ -31,11 +31,11 @@ const paymentTrendData = [
 ]
 
 const driverPerformanceData = [
-  { driver: "Linda A.", rating: 4.9, trips: 312, onTime: 98 },
-  { driver: "Robert M.", rating: 4.8, trips: 234, onTime: 96 },
-  { driver: "John S.", rating: 4.7, trips: 267, onTime: 94 },
-  { driver: "Patricia T.", rating: 4.5, trips: 198, onTime: 92 },
-  { driver: "David B.", rating: 3.2, trips: 145, onTime: 78 },
+  { driver: "Sanduni W.", rating: 4.9, trips: 312, onTime: 98 },
+  { driver: "Kasun B.", rating: 4.8, trips: 234, onTime: 96 },
+  { driver: "Pradeep K.", rating: 4.7, trips: 267, onTime: 94 },
+  { driver: "Thilini G.", rating: 4.5, trips: 198, onTime: 92 },
+  { driver: "Nuwan R.", rating: 3.2, trips: 145, onTime: 78 },
 ]
 
 export function ReportsAnalytics() {
@@ -80,7 +80,7 @@ export function ReportsAnalytics() {
             <DollarSign className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$330K</div>
+            <div className="text-2xl font-bold">Rs. 33M</div>
             <p className="text-xs text-gray-500 mt-1">Last 6 months</p>
           </CardContent>
         </Card>
@@ -172,7 +172,7 @@ export function ReportsAnalytics() {
                 <YAxis />
                 <Tooltip />
                 <Legend />
-                <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} name="Revenue ($)" />
+                <Line type="monotone" dataKey="revenue" stroke="#10b981" strokeWidth={2} name="Revenue (Rs.)" />
               </LineChart>
             </ResponsiveContainer>
           </CardContent>

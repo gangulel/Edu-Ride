@@ -79,7 +79,7 @@ export function DashboardOverview() {
             <DollarSign className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">$65,000</div>
+            <div className="text-2xl font-bold">Rs. 6,500,000</div>
             <p className="text-xs text-gray-500 mt-1">
               <span className="text-green-600">+10.2%</span> from last month
             </p>
@@ -166,10 +166,9 @@ export function DashboardOverview() {
             <div className="space-y-3">
               {alerts.map((alert) => (
                 <div key={alert.id} className="flex items-start space-x-3 p-3 bg-gray-50 rounded-lg">
-                  <AlertTriangle className={`h-5 w-5 mt-0.5 ${
-                    alert.priority === 'high' ? 'text-red-600' : 
-                    alert.priority === 'medium' ? 'text-yellow-600' : 'text-blue-600'
-                  }`} />
+                  <AlertTriangle className={`h-5 w-5 mt-0.5 ${alert.priority === 'high' ? 'text-red-600' :
+                      alert.priority === 'medium' ? 'text-yellow-600' : 'text-blue-600'
+                    }`} />
                   <div className="flex-1">
                     <p className="text-sm">{alert.message}</p>
                     <p className="text-xs text-gray-500 mt-1">{alert.time}</p>

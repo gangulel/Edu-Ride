@@ -20,7 +20,6 @@ export default function ParentLayout() {
             <Stack.Screen name="chat" />
             <Stack.Screen name="notifications" />
             <Stack.Screen name="write-review" />
-            <Stack.Screen name="profile" />
         </Stack>
     );
 }

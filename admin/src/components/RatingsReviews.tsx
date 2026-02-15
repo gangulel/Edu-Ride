@@ -6,18 +6,18 @@ import { Star, Flag, TrendingDown, Award } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 
 const driverRatings = [
-  { id: 1, driver: "Robert Martinez", route: "Route A", rating: 4.8, reviews: 234, lowRated: 8, flagged: 2, avgMonth: 4.7 },
-  { id: 2, driver: "Linda Anderson", route: "Route B", rating: 4.9, reviews: 312, lowRated: 3, flagged: 0, avgMonth: 4.9 },
-  { id: 3, driver: "David Brown", route: "Route C", rating: 3.2, reviews: 145, lowRated: 45, flagged: 12, avgMonth: 3.5 },
-  { id: 4, driver: "Patricia Taylor", route: "Route D", rating: 4.5, reviews: 198, lowRated: 12, flagged: 3, avgMonth: 4.4 },
-  { id: 5, driver: "John Smith", route: "Route E", rating: 4.7, reviews: 267, lowRated: 15, flagged: 1, avgMonth: 4.6 },
+  { id: 1, driver: "Kasun Bandara", route: "Route A", rating: 4.8, reviews: 234, lowRated: 8, flagged: 2, avgMonth: 4.7 },
+  { id: 2, driver: "Sanduni Wijesinghe", route: "Route B", rating: 4.9, reviews: 312, lowRated: 3, flagged: 0, avgMonth: 4.9 },
+  { id: 3, driver: "Nuwan Rajapaksa", route: "Route C", rating: 3.2, reviews: 145, lowRated: 45, flagged: 12, avgMonth: 3.5 },
+  { id: 4, driver: "Thilini Gunasekara", route: "Route D", rating: 4.5, reviews: 198, lowRated: 12, flagged: 3, avgMonth: 4.4 },
+  { id: 5, driver: "Pradeep Kumara", route: "Route E", rating: 4.7, reviews: 267, lowRated: 15, flagged: 1, avgMonth: 4.6 },
 ]
 
 const recentReviews = [
-  { id: 1, parent: "Sarah Johnson", driver: "Robert Martinez", rating: 5, comment: "Always on time and very friendly!", date: "2024-12-10", flagged: false },
-  { id: 2, parent: "Michael Chen", driver: "Linda Anderson", rating: 5, comment: "Excellent service, my kids feel safe.", date: "2024-12-09", flagged: false },
-  { id: 3, parent: "Emma Davis", driver: "David Brown", rating: 2, comment: "Consistently late and unprofessional.", date: "2024-12-08", flagged: true },
-  { id: 4, parent: "James Wilson", driver: "Robert Martinez", rating: 4, comment: "Good service overall, minor delays sometimes.", date: "2024-12-07", flagged: false },
+  { id: 1, parent: "Nimalka Perera", driver: "Kasun Bandara", rating: 5, comment: "Always on time and very friendly!", date: "2024-12-10", flagged: false },
+  { id: 2, parent: "Chaminda Silva", driver: "Sanduni Wijesinghe", rating: 5, comment: "Excellent service, my kids feel safe.", date: "2024-12-09", flagged: false },
+  { id: 3, parent: "Dilini Fernando", driver: "Nuwan Rajapaksa", rating: 2, comment: "Consistently late and unprofessional.", date: "2024-12-08", flagged: true },
+  { id: 4, parent: "Roshan Jayawardena", driver: "Kasun Bandara", rating: 4, comment: "Good service overall, minor delays sometimes.", date: "2024-12-07", flagged: false },
 ]
 
 const routePerformance = [
@@ -234,7 +234,7 @@ export function RatingsReviews() {
             <div className="space-y-3">
               <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
                 <div>
-                  <p className="font-medium">David Brown - Route C</p>
+                  <p className="font-medium">Nuwan Rajapaksa - Route C</p>
                   <p className="text-sm text-gray-500">Rating: 3.2 / 5.0</p>
                 </div>
                 <Button size="sm">Take Action</Button>
@@ -265,21 +265,21 @@ export function RatingsReviews() {
             <div className="space-y-3">
               <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
                 <div>
-                  <p className="font-medium">Linda Anderson - Route B</p>
+                  <p className="font-medium">Sanduni Wijesinghe - Route B</p>
                   <p className="text-sm text-gray-500">Rating: 4.9 / 5.0 (312 reviews)</p>
                 </div>
                 <Award className="h-6 w-6 text-green-600" />
               </div>
               <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
                 <div>
-                  <p className="font-medium">Robert Martinez - Route A</p>
+                  <p className="font-medium">Kasun Bandara - Route A</p>
                   <p className="text-sm text-gray-500">Rating: 4.8 / 5.0 (234 reviews)</p>
                 </div>
                 <Award className="h-6 w-6 text-green-600" />
               </div>
               <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
                 <div>
-                  <p className="font-medium">John Smith - Route E</p>
+                  <p className="font-medium">Pradeep Kumara - Route E</p>
                   <p className="text-sm text-gray-500">Rating: 4.7 / 5.0 (267 reviews)</p>
                 </div>
                 <Award className="h-6 w-6 text-green-600" />

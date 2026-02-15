@@ -16,7 +16,7 @@ import { Ionicons } from "@expo/vector-icons";
 const MOCK_CONVERSATIONS = [
   {
     id: "1",
-    studentName: "Sarah Johnson",
+    studentName: "Nimalka Perera",
     lastMessage: "Thanks for the ride!",
     timestamp: "2m ago",
     unread: 2,
@@ -25,7 +25,7 @@ const MOCK_CONVERSATIONS = [
   },
   {
     id: "2",
-    studentName: "Michael Chen",
+    studentName: "Chaminda Silva",
     lastMessage: "I'm running 5 minutes late",
     timestamp: "15m ago",
     unread: 0,
@@ -34,7 +34,7 @@ const MOCK_CONVERSATIONS = [
   },
   {
     id: "3",
-    studentName: "Emily Davis",
+    studentName: "Dilini Fernando",
     lastMessage: "See you at the pickup point",
     timestamp: "1h ago",
     unread: 1,
@@ -43,7 +43,7 @@ const MOCK_CONVERSATIONS = [
   },
   {
     id: "4",
-    studentName: "James Wilson",
+    studentName: "Roshan Jayawardena",
     lastMessage: "Can you pick me up from the library?",
     timestamp: "3h ago",
     unread: 0,
@@ -52,7 +52,7 @@ const MOCK_CONVERSATIONS = [
   },
   {
     id: "5",
-    studentName: "Olivia Martinez",
+    studentName: "Malini Dissanayake",
     lastMessage: "Great ride, thanks!",
     timestamp: "Yesterday",
     unread: 0,
