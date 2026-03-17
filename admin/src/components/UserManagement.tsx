@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
@@ -6,28 +6,109 @@ import { Badge } from "./ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog"
-import { Search, Filter, Eye, Ban, CheckCircle, AlertCircle } from "lucide-react"
+import { Search, Filter, Eye, Ban, CheckCircle } from "lucide-react"
+import { apiRequest } from "../lib/api"
 
-const parents = [
-  { id: 1, name: "Nimalka Perera", email: "nimalka.p@email.com", phone: "+94771234567", children: 2, status: "active", joinDate: "2024-01-15", complaints: 0 },
-  { id: 2, name: "Chaminda Silva", email: "c.silva@email.com", phone: "+94771234568", children: 1, status: "active", joinDate: "2024-02-20", complaints: 1 },
-  { id: 3, name: "Dilini Fernando", email: "dilini.f@email.com", phone: "+94771234569", children: 3, status: "suspended", joinDate: "2023-11-10", complaints: 3 },
-  { id: 4, name: "Roshan Jayawardena", email: "r.jayawardena@email.com", phone: "+94771234570", children: 1, status: "pending", joinDate: "2024-12-01", complaints: 0 },
-]
+type AppUser = {
+  _id: string
+  fullName: string
+  email: string
+  phone: string
+  role: "parent" | "driver" | "admin"
+  status: "active" | "pending" | "suspended"
+  reviewCount?: number
+  rating?: number
+  totalTrips?: number
+  school?: string | null
+  createdAt: string
+}
 
-const drivers = [
-  { id: 1, name: "Kasun Bandara", email: "kasun.b@email.com", phone: "+94771234571", vehicle: "Bus-101", route: "Route A", status: "active", rating: 4.8, trips: 234 },
-  { id: 2, name: "Sanduni Wijesinghe", email: "sanduni.w@email.com", phone: "+94771234572", vehicle: "Bus-102", route: "Route B", status: "active", rating: 4.9, trips: 312 },
-  { id: 3, name: "Nuwan Rajapaksa", email: "nuwan.r@email.com", phone: "+94771234573", vehicle: "Bus-103", route: "Route C", status: "pending", rating: 0, trips: 0 },
-  { id: 4, name: "Thilini Gunasekara", email: "thilini.g@email.com", phone: "+94771234574", vehicle: "Bus-104", route: "Route D", status: "suspended", rating: 3.2, trips: 145 },
-]
+type UserStatsPayload = {
+  usersByRole: Array<{
+    _id: {
+      role: string
+      status: string
+    }
+    count: number
+  }>
+}
+
+const emptyRoleStats = {
+  total: 0,
+  active: 0,
+  pending: 0,
+  suspended: 0,
+}
 
 export function UserManagement() {
   const [searchTerm, setSearchTerm] = useState("")
-  const [selectedUser, setSelectedUser] = useState<any>(null)
+  const [selectedUser, setSelectedUser] = useState<(AppUser & { type: "parent" | "driver" }) | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [parents, setParents] = useState<AppUser[]>([])
+  const [drivers, setDrivers] = useState<AppUser[]>([])
+  const [stats, setStats] = useState<UserStatsPayload | null>(null)
+  const [error, setError] = useState("")
+  const shouldShowError = Boolean(error) && !/no token provided|unauthorized|forbidden/i.test(error)
 
-  const openUserDetails = (user: any, type: 'parent' | 'driver') => {
+  useEffect(() => {
+    let mounted = true
+
+    Promise.all([
+      apiRequest<{ users: AppUser[] }>("/users?role=parent&limit=100"),
+      apiRequest<{ users: AppUser[] }>("/users?role=driver&limit=100"),
+      apiRequest<UserStatsPayload>("/admin/users/stats"),
+    ])
+      .then(([parentData, driverData, statsData]) => {
+        if (!mounted) return
+        setParents(parentData.users)
+        setDrivers(driverData.users)
+        setStats(statsData)
+      })
+      .catch((err) => {
+        if (mounted) {
+          setError(err.message)
+        }
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  const parentFiltered = useMemo(
+    () => parents.filter((u) => `${u.fullName} ${u.email} ${u.phone}`.toLowerCase().includes(searchTerm.toLowerCase())),
+    [parents, searchTerm]
+  )
+
+  const driverFiltered = useMemo(
+    () => drivers.filter((u) => `${u.fullName} ${u.email} ${u.phone} ${u.school || ""}`.toLowerCase().includes(searchTerm.toLowerCase())),
+    [drivers, searchTerm]
+  )
+
+  const roleStats = useMemo(() => {
+    if (!stats) {
+      return { parent: emptyRoleStats, driver: emptyRoleStats }
+    }
+
+    const bucket = {
+      parent: { ...emptyRoleStats },
+      driver: { ...emptyRoleStats },
+    }
+
+    for (const item of stats.usersByRole) {
+      const role = item._id.role as "parent" | "driver"
+      if (!(role in bucket)) continue
+      const status = item._id.status as "active" | "pending" | "suspended"
+      if (status in bucket[role]) {
+        bucket[role][status] = item.count
+        bucket[role].total += item.count
+      }
+    }
+
+    return bucket
+  }, [stats])
+
+  const openUserDetails = (user: AppUser, type: 'parent' | 'driver') => {
     setSelectedUser({ ...user, type })
     setDialogOpen(true)
   }
@@ -37,6 +118,7 @@ export function UserManagement() {
       <div>
         <h2>User Management</h2>
         <p className="text-gray-500 mt-1">Manage parents and drivers in your bus system</p>
+        {shouldShowError ? <p className="text-sm text-red-600 mt-2">{error}</p> : null}
       </div>
 
       <Tabs defaultValue="parents">
@@ -67,25 +149,25 @@ export function UserManagement() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold">1,254</div>
+                <div className="text-2xl font-bold">{roleStats.parent.total}</div>
                 <p className="text-sm text-gray-500">Total Parents</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-green-600">1,187</div>
+                <div className="text-2xl font-bold text-green-600">{roleStats.parent.active}</div>
                 <p className="text-sm text-gray-500">Active</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-yellow-600">33</div>
+                <div className="text-2xl font-bold text-yellow-600">{roleStats.parent.pending}</div>
                 <p className="text-sm text-gray-500">Pending Verification</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-red-600">34</div>
+                <div className="text-2xl font-bold text-red-600">{roleStats.parent.suspended}</div>
                 <p className="text-sm text-gray-500">Suspended</p>
               </CardContent>
             </Card>
@@ -110,12 +192,12 @@ export function UserManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {parents.map((parent) => (
-                    <TableRow key={parent.id}>
-                      <TableCell>{parent.name}</TableCell>
+                  {parentFiltered.map((parent) => (
+                    <TableRow key={parent._id}>
+                      <TableCell>{parent.fullName}</TableCell>
                       <TableCell>{parent.email}</TableCell>
                       <TableCell>{parent.phone}</TableCell>
-                      <TableCell>{parent.children}</TableCell>
+                      <TableCell>--</TableCell>
                       <TableCell>
                         <Badge variant={
                           parent.status === 'active' ? 'success' :
@@ -125,11 +207,7 @@ export function UserManagement() {
                         </Badge>
                       </TableCell>
                       <TableCell>
-                        {parent.complaints > 0 ? (
-                          <span className="text-red-600">{parent.complaints}</span>
-                        ) : (
-                          <span className="text-gray-400">0</span>
-                        )}
+                        <span className="text-gray-400">--</span>
                       </TableCell>
                       <TableCell>
                         <div className="flex gap-2">
@@ -162,6 +240,8 @@ export function UserManagement() {
               <Search className="absolute left-3 top-1/2 transform -translate-y-1/2 h-4 w-4 text-gray-400" />
               <Input
                 placeholder="Search drivers by name, email, or vehicle..."
+                value={searchTerm}
+                onChange={(e) => setSearchTerm(e.target.value)}
                 className="pl-10"
               />
             </div>
@@ -175,25 +255,25 @@ export function UserManagement() {
           <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
             <Card>
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold">381</div>
+                <div className="text-2xl font-bold">{roleStats.driver.total}</div>
                 <p className="text-sm text-gray-500">Total Drivers</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-green-600">324</div>
+                <div className="text-2xl font-bold text-green-600">{roleStats.driver.active}</div>
                 <p className="text-sm text-gray-500">Active</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-yellow-600">45</div>
+                <div className="text-2xl font-bold text-yellow-600">{roleStats.driver.pending}</div>
                 <p className="text-sm text-gray-500">Pending Verification</p>
               </CardContent>
             </Card>
             <Card>
               <CardContent className="pt-6">
-                <div className="text-2xl font-bold text-red-600">12</div>
+                <div className="text-2xl font-bold text-red-600">{roleStats.driver.suspended}</div>
                 <p className="text-sm text-gray-500">Suspended</p>
               </CardContent>
             </Card>
@@ -210,8 +290,8 @@ export function UserManagement() {
                   <TableRow>
                     <TableHead>Name</TableHead>
                     <TableHead>Email</TableHead>
-                    <TableHead>Vehicle</TableHead>
-                    <TableHead>Route</TableHead>
+                    <TableHead>School</TableHead>
+                    <TableHead>Joined</TableHead>
                     <TableHead>Rating</TableHead>
                     <TableHead>Trips</TableHead>
                     <TableHead>Status</TableHead>
@@ -219,23 +299,23 @@ export function UserManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {drivers.map((driver) => (
-                    <TableRow key={driver.id}>
-                      <TableCell>{driver.name}</TableCell>
+                  {driverFiltered.map((driver) => (
+                    <TableRow key={driver._id}>
+                      <TableCell>{driver.fullName}</TableCell>
                       <TableCell>{driver.email}</TableCell>
-                      <TableCell>{driver.vehicle}</TableCell>
-                      <TableCell>{driver.route}</TableCell>
+                      <TableCell>{driver.school || "--"}</TableCell>
+                      <TableCell>{new Date(driver.createdAt).toLocaleDateString()}</TableCell>
                       <TableCell>
-                        {driver.rating > 0 ? (
+                        {(driver.rating || 0) > 0 ? (
                           <div className="flex items-center">
                             <span className="text-yellow-600">★</span>
-                            <span className="ml-1">{driver.rating}</span>
+                            <span className="ml-1">{driver.rating?.toFixed(1)}</span>
                           </div>
                         ) : (
                           <span className="text-gray-400">N/A</span>
                         )}
                       </TableCell>
-                      <TableCell>{driver.trips}</TableCell>
+                      <TableCell>{driver.totalTrips || 0}</TableCell>
                       <TableCell>
                         <Badge variant={
                           driver.status === 'active' ? 'success' :
@@ -274,7 +354,7 @@ export function UserManagement() {
       <Dialog open={dialogOpen} onOpenChange={setDialogOpen}>
         <DialogContent>
           <DialogHeader>
-            <DialogTitle>{selectedUser?.name}</DialogTitle>
+            <DialogTitle>{selectedUser?.fullName}</DialogTitle>
             <DialogDescription>
               {selectedUser?.type === 'parent' ? 'Parent Details' : 'Driver Details'}
             </DialogDescription>
@@ -302,15 +382,15 @@ export function UserManagement() {
                 <>
                   <div>
                     <p className="text-sm text-gray-500">Vehicle</p>
-                    <p>{selectedUser.vehicle}</p>
+                    <p>--</p>
                   </div>
                   <div>
-                    <p className="text-sm text-gray-500">Assigned Route</p>
-                    <p>{selectedUser.route}</p>
+                    <p className="text-sm text-gray-500">School</p>
+                    <p>{selectedUser.school || "--"}</p>
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Rating</p>
-                    <p>{selectedUser.rating > 0 ? `★ ${selectedUser.rating}` : 'N/A'}</p>
+                    <p>{(selectedUser.rating || 0) > 0 ? `★ ${selectedUser.rating}` : 'N/A'}</p>
                   </div>
                 </>
               )}

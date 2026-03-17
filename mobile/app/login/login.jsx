@@ -27,6 +27,7 @@ import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
 import GoogleLogo from "../components/icons/GoogleLogo";
 import { responsive, wp, hp, fs } from "../utils/responsive";
+import { apiFetch } from "../../services/api";
 
 // Required for web browser redirect
 WebBrowser.maybeCompleteAuthSession();
@@ -103,16 +104,30 @@ export default function Login() {
     return true;
   };
 
-  const onSubmit = () => {
+  const onSubmit = async () => {
     setError("");
     if (!validate()) return;
     setLoading(true);
 
-    // Simulate login - navigate to driver home for demo
-    setTimeout(() => {
+    try {
+      const payload = await apiFetch("/auth/login", {
+        method: "POST",
+        body: JSON.stringify({ email, password }),
+      });
+
+      const role = payload?.user?.role;
+      if (role === "parent") {
+        router.replace("/parent");
+      } else if (role === "driver") {
+        router.replace("/driver");
+      } else {
+        setError("Your account role is not supported in mobile app.");
+      }
+    } catch (err) {
+      setError(err.message || "Login failed. Please try again.");
+    } finally {
       setLoading(false);
-      router.replace("/driver");
-    }, 1500);
+    }
   };
 
   const handleGoogleLogin = async () => {

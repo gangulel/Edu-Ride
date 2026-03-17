@@ -1,36 +1,87 @@
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Badge } from "./ui/badge"
 import { Select } from "./ui/select"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
-import { DollarSign, TrendingUp, AlertCircle, Download, Filter } from "lucide-react"
+import { DollarSign, TrendingUp, AlertCircle, Download } from "lucide-react"
 import { BarChart, Bar, LineChart, Line, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { apiRequest } from "../lib/api"
 
-const payments = [
-  { id: "PAY-001", parent: "Nimalka Perera", driver: "Kasun Bandara", route: "Route A", amount: 25000, date: "2024-12-10", status: "paid", type: "monthly" },
-  { id: "PAY-002", parent: "Chaminda Silva", driver: "Sanduni Wijesinghe", route: "Route B", amount: 25000, date: "2024-12-09", status: "paid", type: "monthly" },
-  { id: "PAY-003", parent: "Dilini Fernando", driver: "Nuwan Rajapaksa", route: "Route C", amount: 12500, date: "2024-12-08", status: "failed", type: "weekly" },
-  { id: "PAY-004", parent: "Roshan Jayawardena", driver: "Kasun Bandara", route: "Route A", amount: 25000, date: "2024-12-07", status: "pending", type: "monthly" },
-  { id: "PAY-005", parent: "Malini Dissanayake", driver: "Thilini Gunasekara", route: "Route D", amount: 12500, date: "2024-12-06", status: "paid", type: "weekly" },
-]
-
-const monthlyRevenue = [
-  { month: "Jul", revenue: 58000, commission: 2900 },
-  { month: "Aug", revenue: 61000, commission: 3050 },
-  { month: "Sep", revenue: 59000, commission: 2950 },
-  { month: "Oct", revenue: 64000, commission: 3200 },
-  { month: "Nov", revenue: 62000, commission: 3100 },
-  { month: "Dec", revenue: 65000, commission: 3250 },
-]
+type BookingItem = {
+  _id: string
+  parent?: { fullName?: string }
+  driver?: { fullName?: string }
+  route?: { name?: string }
+  monthlyFee: number
+  createdAt: string
+  status: "pending" | "accepted" | "rejected" | "cancelled" | "expired"
+}
 
 export function PaymentManagement() {
+  const [payments, setPayments] = useState<BookingItem[]>([])
+  const [error, setError] = useState("")
+  const shouldShowError = Boolean(error) && !/no token provided|unauthorized|forbidden/i.test(error)
+
+  useEffect(() => {
+    let mounted = true
+
+    apiRequest<{ bookings: BookingItem[] }>("/bookings?limit=100")
+      .then((payload) => {
+        if (mounted) {
+          setPayments(payload.bookings)
+        }
+      })
+      .catch((err) => {
+        if (mounted) {
+          setError(err.message)
+        }
+      })
+
+    return () => {
+      mounted = false
+    }
+  }, [])
+
+  const totals = useMemo(() => {
+    const totalRevenue = payments.reduce((sum, p) => sum + (p.status === "accepted" ? p.monthlyFee : 0), 0)
+    const successful = payments.filter((p) => p.status === "accepted").length
+    const failed = payments.filter((p) => ["rejected", "expired"].includes(p.status)).length
+    const pending = payments.filter((p) => p.status === "pending").reduce((sum, p) => sum + p.monthlyFee, 0)
+
+    return {
+      totalRevenue,
+      successful,
+      failed,
+      successRate: payments.length ? Math.round((successful / payments.length) * 1000) / 10 : 0,
+      pending,
+      commission: Math.round(totalRevenue * 0.05),
+    }
+  }, [payments])
+
+  const monthlyRevenue = useMemo(() => {
+    const map = new Map<string, { month: string; revenue: number; commission: number }>()
+    for (const item of payments) {
+      const month = new Date(item.createdAt).toLocaleString("en-US", { month: "short" })
+      const current = map.get(month) || { month, revenue: 0, commission: 0 }
+      if (item.status === "accepted") {
+        current.revenue += item.monthlyFee
+        current.commission += Math.round(item.monthlyFee * 0.05)
+      }
+      map.set(month, current)
+    }
+
+    return Array.from(map.values())
+  }, [payments])
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-start">
         <div>
           <h2>Payment & Transaction Management</h2>
           <p className="text-gray-500 mt-1">Monitor payments, transactions, and revenue</p>
+          {shouldShowError ? <p className="text-sm text-red-600 mt-2">{error}</p> : null}
         </div>
         <Button>
           <Download className="h-4 w-4 mr-2" />
@@ -46,9 +97,9 @@ export function PaymentManagement() {
             <DollarSign className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Rs. 6,500,000</div>
+            <div className="text-2xl font-bold">Rs. {totals.totalRevenue.toLocaleString()}</div>
             <p className="text-xs text-gray-500 mt-1">
-              <span className="text-green-600">+10.2%</span> from last month
+              Accepted booking revenue
             </p>
           </CardContent>
         </Card>
@@ -59,8 +110,8 @@ export function PaymentManagement() {
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">5,842</div>
-            <p className="text-xs text-gray-500 mt-1">96.8% success rate</p>
+            <div className="text-2xl font-bold text-green-600">{totals.successful}</div>
+            <p className="text-xs text-gray-500 mt-1">{totals.successRate}% success rate</p>
           </CardContent>
         </Card>
 
@@ -70,8 +121,8 @@ export function PaymentManagement() {
             <AlertCircle className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">193</div>
-            <p className="text-xs text-gray-500 mt-1">3.2% failure rate</p>
+            <div className="text-2xl font-bold text-red-600">{totals.failed}</div>
+            <p className="text-xs text-gray-500 mt-1">Rejected/expired bookings</p>
           </CardContent>
         </Card>
 
@@ -81,7 +132,7 @@ export function PaymentManagement() {
             <DollarSign className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-blue-600">Rs. 325,000</div>
+            <div className="text-2xl font-bold text-blue-600">Rs. {totals.commission.toLocaleString()}</div>
             <p className="text-xs text-gray-500 mt-1">5% of total revenue</p>
           </CardContent>
         </Card>
@@ -169,20 +220,20 @@ export function PaymentManagement() {
             </TableHeader>
             <TableBody>
               {payments.map((payment) => (
-                <TableRow key={payment.id}>
-                  <TableCell className="font-mono text-sm">{payment.id}</TableCell>
-                  <TableCell>{payment.parent}</TableCell>
-                  <TableCell>{payment.driver}</TableCell>
-                  <TableCell>{payment.route}</TableCell>
-                  <TableCell className="font-medium">Rs. {payment.amount.toLocaleString()}</TableCell>
-                  <TableCell>{payment.date}</TableCell>
+                <TableRow key={payment._id}>
+                  <TableCell className="font-mono text-sm">{payment._id.slice(-8).toUpperCase()}</TableCell>
+                  <TableCell>{payment.parent?.fullName || "--"}</TableCell>
+                  <TableCell>{payment.driver?.fullName || "--"}</TableCell>
+                  <TableCell>{payment.route?.name || "--"}</TableCell>
+                  <TableCell className="font-medium">Rs. {payment.monthlyFee.toLocaleString()}</TableCell>
+                  <TableCell>{new Date(payment.createdAt).toLocaleDateString()}</TableCell>
                   <TableCell>
-                    <Badge variant="outline">{payment.type}</Badge>
+                    <Badge variant="outline">monthly</Badge>
                   </TableCell>
                   <TableCell>
                     <Badge variant={
-                      payment.status === 'paid' ? 'success' :
-                        payment.status === 'failed' ? 'destructive' : 'warning'
+                      payment.status === 'accepted' ? 'success' :
+                        ["rejected", "expired"].includes(payment.status) ? 'destructive' : 'warning'
                     }>
                       {payment.status}
                     </Badge>
@@ -190,7 +241,7 @@ export function PaymentManagement() {
                   <TableCell>
                     <div className="flex gap-2">
                       <Button size="sm" variant="ghost">View</Button>
-                      {payment.status === 'failed' && (
+                      {["rejected", "expired"].includes(payment.status) && (
                         <Button size="sm" variant="outline">Retry</Button>
                       )}
                     </div>
@@ -209,8 +260,8 @@ export function PaymentManagement() {
             <CardTitle>Pending Payments</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-yellow-600">Rs. 1,245,000</div>
-            <p className="text-sm text-gray-500 mt-2">49 pending transactions</p>
+            <div className="text-3xl font-bold text-yellow-600">Rs. {totals.pending.toLocaleString()}</div>
+            <p className="text-sm text-gray-500 mt-2">{payments.filter((p) => p.status === "pending").length} pending transactions</p>
             <Button className="mt-4 w-full" variant="outline">Review Pending</Button>
           </CardContent>
         </Card>
@@ -220,8 +271,8 @@ export function PaymentManagement() {
             <CardTitle>Failed Payments</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-red-600">Rs. 482,500</div>
-            <p className="text-sm text-gray-500 mt-2">193 failed transactions</p>
+            <div className="text-3xl font-bold text-red-600">Rs. {payments.filter((p) => ["rejected", "expired"].includes(p.status)).reduce((sum, p) => sum + p.monthlyFee, 0).toLocaleString()}</div>
+            <p className="text-sm text-gray-500 mt-2">{totals.failed} failed transactions</p>
             <Button className="mt-4 w-full" variant="outline">Handle Failures</Button>
           </CardContent>
         </Card>
@@ -231,7 +282,7 @@ export function PaymentManagement() {
             <CardTitle>Refunds & Disputes</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold text-blue-600">8</div>
+            <div className="text-3xl font-bold text-blue-600">0</div>
             <p className="text-sm text-gray-500 mt-2">Pending resolution</p>
             <Button className="mt-4 w-full" variant="outline">Manage Disputes</Button>
           </CardContent>

@@ -3,6 +3,7 @@ import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet 
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
 import { responsive, wp, hp } from "../utils/responsive";
+import { apiFetch } from "../../services/api";
 
 export default function Forgot() {
   const router = useRouter();
@@ -32,22 +33,13 @@ export default function Forgot() {
     setLoading(true);
 
     try {
-      // Note: backend is mounted at /api/auth. Using common emulator host for Android (10.0.2.2)
-      const url = "http://10.0.2.2:3000/api/auth/forgot";
-      const res = await fetch(url, {
+      await apiFetch("/auth/forgot", {
         method: "POST",
-        headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ email }),
       });
-
-      const data = await res.text();
-      if (res.ok) {
-        setMessage("If an account with that email exists, a reset link was sent.");
-      } else {
-        setError(data || "Something went wrong. Please try again.");
-      }
+      setMessage("If an account with that email exists, a reset link was sent.");
     } catch (err) {
-      setError("Unable to contact server. Please try again later.");
+      setError(err.message || "Unable to contact server. Please try again later.");
     } finally {
       setLoading(false);
     }

@@ -28,6 +28,7 @@ import {
   TickCircle,
 } from "iconsax-react-native";
 import { responsive, wp, hp, fs } from "../utils/responsive";
+import { apiFetch } from "../../services/api";
 
 export default function Register() {
   const router = useRouter();
@@ -70,18 +71,33 @@ export default function Register() {
     return true;
   };
 
-  const onSubmit = () => {
+  const onSubmit = async () => {
     setError("");
     if (!validate()) return;
     setLoading(true);
-    setTimeout(() => {
+
+    try {
+      await apiFetch("/auth/register", {
+        method: "POST",
+        body: JSON.stringify({
+          fullName: name,
+          email,
+          phone: mobile,
+          password,
+          role: userType,
+        }),
+      });
+
       setLoading(false);
       if (userType === "parent") {
         router.replace("/parent");
       } else if (userType === "driver") {
         router.replace("/driver");
       }
-    }, 1000);
+    } catch (err) {
+      setLoading(false);
+      setError(err.message || "Registration failed. Please try again.");
+    }
   };
 
   return (
