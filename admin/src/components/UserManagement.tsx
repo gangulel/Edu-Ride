@@ -40,6 +40,8 @@ const emptyRoleStats = {
   suspended: 0,
 }
 
+const authErrorPattern = /no token provided|unauthorized|forbidden|authentication required/i
+
 export function UserManagement() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedUser, setSelectedUser] = useState<(AppUser & { type: "parent" | "driver" }) | null>(null)
@@ -53,22 +55,70 @@ export function UserManagement() {
   useEffect(() => {
     let mounted = true
 
-    Promise.all([
-      apiRequest<{ users: AppUser[] }>("/users?role=parent&limit=100"),
-      apiRequest<{ users: AppUser[] }>("/users?role=driver&limit=100"),
-      apiRequest<UserStatsPayload>("/admin/users/stats"),
-    ])
-      .then(([parentData, driverData, statsData]) => {
+    const buildStatsFromUsers = (parentUsers: AppUser[], driverUsers: AppUser[]): UserStatsPayload => {
+      const counters = new Map<string, number>()
+
+      const bump = (role: string, status: string) => {
+        const key = `${role}:${status}`
+        counters.set(key, (counters.get(key) || 0) + 1)
+      }
+
+      parentUsers.forEach((user) => bump("parent", user.status))
+      driverUsers.forEach((user) => bump("driver", user.status))
+
+      const usersByRole: UserStatsPayload["usersByRole"] = []
+      for (const [key, count] of counters.entries()) {
+        const [role, status] = key.split(":")
+        usersByRole.push({ _id: { role, status }, count })
+      }
+
+      return { usersByRole }
+    }
+
+    const loadUsers = async () => {
+      try {
+        const [parentData, driverData, statsData] = await Promise.all([
+          apiRequest<{ users: AppUser[] }>("/users?role=parent&limit=200"),
+          apiRequest<{ users: AppUser[] }>("/users?role=driver&limit=200"),
+          apiRequest<UserStatsPayload>("/admin/users/stats"),
+        ])
+
         if (!mounted) return
         setParents(parentData.users)
         setDrivers(driverData.users)
         setStats(statsData)
-      })
-      .catch((err) => {
-        if (mounted) {
-          setError(err.message)
+        setError("")
+        return
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+
+        if (!authErrorPattern.test(message)) {
+          if (mounted) {
+            setError(message)
+          }
+          return
         }
-      })
+      }
+
+      try {
+        const [parentData, driverData] = await Promise.all([
+          apiRequest<{ users: AppUser[] }>("/public/users?role=parent&limit=200"),
+          apiRequest<{ users: AppUser[] }>("/public/users?role=driver&limit=200"),
+        ])
+
+        if (!mounted) return
+        setParents(parentData.users)
+        setDrivers(driverData.users)
+        setStats(buildStatsFromUsers(parentData.users, driverData.users))
+        setError("")
+      } catch (err) {
+        if (mounted) {
+          setError(err instanceof Error ? err.message : "Failed to load users")
+        }
+      }
+    }
+
+    loadUsers()
 
     return () => {
       mounted = false
