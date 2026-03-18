@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import {
   LayoutDashboard,
   Users,
@@ -14,7 +14,9 @@ import {
   Menu,
   X,
   Bell,
-  User
+  User,
+  Sun,
+  Moon
 } from "lucide-react"
 import { DashboardOverview } from "./components/DashboardOverview"
 import { UserManagement } from "./components/UserManagement"
@@ -46,6 +48,25 @@ const menuItems = [
 export default function App() {
   const [activeMenu, setActiveMenu] = useState("dashboard")
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [theme, setTheme] = useState<"light" | "dark">(() => {
+    if (typeof window === "undefined") {
+      return "light"
+    }
+
+    const storedTheme = window.localStorage.getItem("adminTheme")
+    if (storedTheme === "light" || storedTheme === "dark") {
+      return storedTheme
+    }
+
+    return window.matchMedia("(prefers-color-scheme: dark)").matches ? "dark" : "light"
+  })
+
+  useEffect(() => {
+    document.documentElement.classList.toggle("dark", theme === "dark")
+    window.localStorage.setItem("adminTheme", theme)
+  }, [theme])
+
+  const isDark = theme === "dark"
 
   const renderContent = () => {
     switch (activeMenu) {
@@ -77,9 +98,9 @@ export default function App() {
   }
 
   return (
-    <div className="min-h-screen bg-gray-50">
+    <div className="admin-theme min-h-screen transition-colors">
       {/* Header */}
-      <header className="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-10">
+      <header className="admin-header fixed top-0 left-0 right-0 z-10 border-b transition-colors">
         <div className="flex items-center justify-between px-4 py-3">
           <div className="flex items-center gap-4">
             <Button
@@ -100,17 +121,26 @@ export default function App() {
             </div>
           </div>
           <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="relative">
+            <Button
+              variant="ghost"
+              size="icon"
+              onClick={() => setTheme(isDark ? "light" : "dark")}
+              className="admin-icon-btn"
+              aria-label="Toggle dark mode"
+            >
+              {isDark ? <Sun className="h-5 w-5" /> : <Moon className="h-5 w-5" />}
+            </Button>
+            <Button variant="ghost" size="icon" className="admin-icon-btn relative">
               <Bell className="h-5 w-5" />
               <span className="absolute top-1 right-1 h-2 w-2 bg-red-600 rounded-full"></span>
             </Button>
             <div className="flex items-center gap-2">
-              <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
-                <User className="h-5 w-5 text-gray-600" />
+              <div className="admin-avatar h-8 w-8 rounded-full flex items-center justify-center">
+                <User className="h-5 w-5 admin-muted" />
               </div>
               <div className="hidden md:block">
                 <p className="text-sm font-medium">Admin User</p>
-                <p className="text-xs text-gray-500">admin@eduride.com</p>
+                <p className="text-xs admin-muted">admin@eduride.com</p>
               </div>
             </div>
           </div>
@@ -119,7 +149,7 @@ export default function App() {
 
       {/* Sidebar */}
       <aside
-        className={`fixed top-16 left-0 bottom-0 w-64 bg-white border-r border-gray-200 overflow-y-auto transition-transform duration-200 z-20 ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
+        className={`admin-sidebar fixed top-16 left-0 bottom-0 w-64 border-r overflow-y-auto transition-transform duration-200 z-20 ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
           }`}
       >
         <nav className="p-4 space-y-1">
@@ -134,9 +164,7 @@ export default function App() {
                     setSidebarOpen(false)
                   }
                 }}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeMenu === item.id
-                  ? "bg-blue-50 text-blue-600"
-                  : "text-gray-700 hover:bg-gray-100"
+                className={`admin-nav-item w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeMenu === item.id ? "admin-nav-item-active" : ""
                   }`}
               >
                 <Icon className="h-5 w-5" />

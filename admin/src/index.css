@@ -1613,3 +1613,143 @@ html {
   syntax: "*";
   inherits: false
 }
+
+/* Admin panel theme variables and class overrides for full light/dark support */
+:root {
+  --admin-bg: #f8fafc;
+  --admin-surface: #ffffff;
+  --admin-surface-2: #f1f5f9;
+  --admin-border: #e2e8f0;
+  --admin-text: #0f172a;
+  --admin-muted: #64748b;
+  --admin-hover: #e2e8f0;
+  --admin-accent: #2563eb;
+  --admin-accent-soft: rgba(37, 99, 235, 0.14);
+  --admin-avatar: #e2e8f0;
+}
+
+.dark {
+  --admin-bg: #020617;
+  --admin-surface: #0f172a;
+  --admin-surface-2: #1e293b;
+  --admin-border: #334155;
+  --admin-text: #e2e8f0;
+  --admin-muted: #94a3b8;
+  --admin-hover: #1e293b;
+  --admin-accent: #60a5fa;
+  --admin-accent-soft: rgba(96, 165, 250, 0.2);
+  --admin-avatar: #1e293b;
+}
+
+.admin-theme {
+  background: var(--admin-bg);
+  color: var(--admin-text);
+}
+
+.admin-theme .admin-header {
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+}
+
+.admin-theme .admin-sidebar {
+  background: var(--admin-surface);
+  border-color: var(--admin-border);
+}
+
+.admin-theme .admin-icon-btn {
+  color: var(--admin-text);
+}
+
+.admin-theme .admin-icon-btn:hover {
+  background: var(--admin-hover);
+}
+
+.admin-theme .admin-avatar {
+  background: var(--admin-avatar);
+}
+
+.admin-theme .admin-muted {
+  color: var(--admin-muted);
+}
+
+.admin-theme .admin-nav-item {
+  color: var(--admin-muted);
+}
+
+.admin-theme .admin-nav-item:hover {
+  background: var(--admin-hover);
+  color: var(--admin-text);
+}
+
+.admin-theme .admin-nav-item-active {
+  background: var(--admin-accent-soft);
+  color: var(--admin-accent);
+}
+
+/* Override common utility colors used across admin components */
+.admin-theme .bg-white {
+  background-color: var(--admin-surface) !important;
+}
+
+.admin-theme .bg-gray-50,
+.admin-theme .bg-gray-100 {
+  background-color: var(--admin-surface-2) !important;
+}
+
+.admin-theme .border-gray-100,
+.admin-theme .border-gray-200,
+.admin-theme .border-gray-300 {
+  border-color: var(--admin-border) !important;
+}
+
+.admin-theme .text-gray-400,
+.admin-theme .text-gray-500,
+.admin-theme .text-gray-600,
+.admin-theme .text-gray-700 {
+  color: var(--admin-muted) !important;
+}
+
+.admin-theme .text-gray-900 {
+  color: var(--admin-text) !important;
+}
+
+.admin-theme .hover\:bg-gray-50:hover,
+.admin-theme .hover\:bg-gray-100:hover,
+.admin-theme .hover\:bg-gray-200:hover {
+  background-color: var(--admin-hover) !important;
+}
+
+.admin-theme .bg-blue-50,
+.admin-theme .bg-blue-100 {
+  background-color: var(--admin-accent-soft) !important;
+}
+
+.admin-theme .text-blue-600,
+.admin-theme .text-blue-700 {
+  color: var(--admin-accent) !important;
+}
+
+.admin-theme .bg-blue-600 {
+  background-color: var(--admin-accent) !important;
+}
+
+.admin-theme .hover\:bg-blue-700:hover {
+  background-color: color-mix(in srgb, var(--admin-accent) 88%, black) !important;
+}
+
+.admin-theme .ring-offset-white,
+.admin-theme .focus-visible\:ring-offset-2 {
+  --tw-ring-offset-color: var(--admin-surface) !important;
+}
+
+.admin-theme .recharts-cartesian-grid line,
+.admin-theme .recharts-cartesian-axis-line,
+.admin-theme .recharts-cartesian-axis-tick-line {
+  stroke: var(--admin-border) !important;
+}
+
+.admin-theme .recharts-text,
+.admin-theme .recharts-legend-item-text {
+  fill: var(--admin-muted) !important;
+  color: var(--admin-muted) !important;
+}

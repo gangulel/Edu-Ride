@@ -6,7 +6,7 @@ import { Badge } from "./ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog"
-import { Search, Filter, Eye, Ban, CheckCircle } from "lucide-react"
+import { Search, Filter, Eye, Ban, Pencil, Trash2 } from "lucide-react"
 import { apiRequest } from "../lib/api"
 
 type AppUser = {
@@ -46,6 +46,9 @@ export function UserManagement() {
   const [searchTerm, setSearchTerm] = useState("")
   const [selectedUser, setSelectedUser] = useState<(AppUser & { type: "parent" | "driver" }) | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [isEditMode, setIsEditMode] = useState(false)
+  const [isMutating, setIsMutating] = useState(false)
+  const [editForm, setEditForm] = useState({ fullName: "", phone: "", school: "" })
   const [parents, setParents] = useState<AppUser[]>([])
   const [drivers, setDrivers] = useState<AppUser[]>([])
   const [stats, setStats] = useState<UserStatsPayload | null>(null)
@@ -160,7 +163,104 @@ export function UserManagement() {
 
   const openUserDetails = (user: AppUser, type: 'parent' | 'driver') => {
     setSelectedUser({ ...user, type })
+    setIsEditMode(false)
+    setEditForm({
+      fullName: user.fullName,
+      phone: user.phone,
+      school: user.school || "",
+    })
     setDialogOpen(true)
+  }
+
+  const syncUpdatedUser = (updatedUser: AppUser) => {
+    if (updatedUser.role === "parent") {
+      setParents((prev) => prev.map((user) => (user._id === updatedUser._id ? updatedUser : user)))
+    }
+
+    if (updatedUser.role === "driver") {
+      setDrivers((prev) => prev.map((user) => (user._id === updatedUser._id ? updatedUser : user)))
+    }
+
+    setSelectedUser((prev) => {
+      if (!prev || prev._id !== updatedUser._id) {
+        return prev
+      }
+
+      return {
+        ...updatedUser,
+        type: updatedUser.role === "driver" ? "driver" : "parent",
+      }
+    })
+  }
+
+  const handleHoldUser = async (user: AppUser) => {
+    if (user.status === "suspended") {
+      return
+    }
+
+    setIsMutating(true)
+    try {
+      const response = await apiRequest<{ user: AppUser }>(`/users/${user._id}/status`, "PUT", { status: "suspended" })
+      syncUpdatedUser(response.user)
+      setError("")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to hold user")
+    } finally {
+      setIsMutating(false)
+    }
+  }
+
+  const handleDeleteUser = async (user: AppUser) => {
+    const confirmed = window.confirm(`Delete user ${user.fullName}? This action cannot be undone.`)
+    if (!confirmed) {
+      return
+    }
+
+    setIsMutating(true)
+    try {
+      await apiRequest<{ message: string }>(`/users/${user._id}`, "DELETE")
+      if (user.role === "parent") {
+        setParents((prev) => prev.filter((item) => item._id !== user._id))
+      }
+      if (user.role === "driver") {
+        setDrivers((prev) => prev.filter((item) => item._id !== user._id))
+      }
+      if (selectedUser?._id === user._id) {
+        setDialogOpen(false)
+      }
+      setError("")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to delete user")
+    } finally {
+      setIsMutating(false)
+    }
+  }
+
+  const handleSaveEdit = async () => {
+    if (!selectedUser) {
+      return
+    }
+
+    const payload: Record<string, unknown> = {
+      fullName: editForm.fullName.trim(),
+      phone: editForm.phone.trim(),
+    }
+
+    if (selectedUser.type === "driver") {
+      payload.school = editForm.school.trim()
+    }
+
+    setIsMutating(true)
+    try {
+      const response = await apiRequest<{ user: AppUser }>(`/users/${selectedUser._id}`, "PUT", payload)
+      syncUpdatedUser(response.user)
+      setIsEditMode(false)
+      setError("")
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to update user")
+    } finally {
+      setIsMutating(false)
+    }
   }
 
   return (
@@ -264,15 +364,27 @@ export function UserManagement() {
                           <Button size="sm" variant="ghost" onClick={() => openUserDetails(parent, 'parent')}>
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {parent.status === 'active' ? (
-                            <Button size="sm" variant="ghost">
-                              <Ban className="h-4 w-4 text-red-600" />
-                            </Button>
-                          ) : (
-                            <Button size="sm" variant="ghost">
-                              <CheckCircle className="h-4 w-4 text-green-600" />
-                            </Button>
-                          )}
+                          <Button size="sm" variant="ghost" onClick={() => openUserDetails(parent, 'parent')} title="Edit user">
+                            <Pencil className="h-4 w-4 text-blue-600" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleHoldUser(parent)}
+                            title="Hold user"
+                            disabled={isMutating || parent.status === "suspended"}
+                          >
+                            <Ban className="h-4 w-4 text-yellow-600" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeleteUser(parent)}
+                            title="Delete user"
+                            disabled={isMutating}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-600" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -379,16 +491,27 @@ export function UserManagement() {
                           <Button size="sm" variant="ghost" onClick={() => openUserDetails(driver, 'driver')}>
                             <Eye className="h-4 w-4" />
                           </Button>
-                          {driver.status === 'pending' && (
-                            <Button size="sm" variant="ghost">
-                              <CheckCircle className="h-4 w-4 text-green-600" />
-                            </Button>
-                          )}
-                          {driver.status === 'active' && (
-                            <Button size="sm" variant="ghost">
-                              <Ban className="h-4 w-4 text-red-600" />
-                            </Button>
-                          )}
+                          <Button size="sm" variant="ghost" onClick={() => openUserDetails(driver, 'driver')} title="Edit user">
+                            <Pencil className="h-4 w-4 text-blue-600" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleHoldUser(driver)}
+                            title="Hold user"
+                            disabled={isMutating || driver.status === "suspended"}
+                          >
+                            <Ban className="h-4 w-4 text-yellow-600" />
+                          </Button>
+                          <Button
+                            size="sm"
+                            variant="ghost"
+                            onClick={() => handleDeleteUser(driver)}
+                            title="Delete user"
+                            disabled={isMutating}
+                          >
+                            <Trash2 className="h-4 w-4 text-red-600" />
+                          </Button>
                         </div>
                       </TableCell>
                     </TableRow>
@@ -417,7 +540,25 @@ export function UserManagement() {
               </div>
               <div>
                 <p className="text-sm text-gray-500">Phone</p>
-                <p>{selectedUser.phone}</p>
+                {isEditMode ? (
+                  <Input
+                    value={editForm.phone}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, phone: e.target.value }))}
+                  />
+                ) : (
+                  <p>{selectedUser.phone}</p>
+                )}
+              </div>
+              <div>
+                <p className="text-sm text-gray-500">Full Name</p>
+                {isEditMode ? (
+                  <Input
+                    value={editForm.fullName}
+                    onChange={(e) => setEditForm((prev) => ({ ...prev, fullName: e.target.value }))}
+                  />
+                ) : (
+                  <p>{selectedUser.fullName}</p>
+                )}
               </div>
               <div>
                 <p className="text-sm text-gray-500">Status</p>
@@ -436,7 +577,14 @@ export function UserManagement() {
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">School</p>
-                    <p>{selectedUser.school || "--"}</p>
+                    {isEditMode ? (
+                      <Input
+                        value={editForm.school}
+                        onChange={(e) => setEditForm((prev) => ({ ...prev, school: e.target.value }))}
+                      />
+                    ) : (
+                      <p>{selectedUser.school || "--"}</p>
+                    )}
                   </div>
                   <div>
                     <p className="text-sm text-gray-500">Rating</p>
@@ -448,7 +596,25 @@ export function UserManagement() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Close</Button>
-            <Button>Edit User</Button>
+            {selectedUser ? (
+              <>
+                {isEditMode ? (
+                  <Button onClick={handleSaveEdit} disabled={isMutating}>Save</Button>
+                ) : (
+                  <Button onClick={() => setIsEditMode(true)}>Edit</Button>
+                )}
+                <Button
+                  variant="secondary"
+                  onClick={() => handleHoldUser(selectedUser)}
+                  disabled={isMutating || selectedUser.status === "suspended"}
+                >
+                  Hold
+                </Button>
+                <Button variant="destructive" onClick={() => handleDeleteUser(selectedUser)} disabled={isMutating}>
+                  Delete
+                </Button>
+              </>
+            ) : null}
           </DialogFooter>
         </DialogContent>
       </Dialog>
