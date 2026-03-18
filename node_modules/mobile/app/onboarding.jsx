@@ -1,22 +1,19 @@
-import React, { useState, useRef } from "react";
+import React, { useMemo, useRef, useState } from "react";
 import {
+  useWindowDimensions,
   View,
   Image,
   StyleSheet,
   SafeAreaView,
   TouchableOpacity,
   Text,
-  Dimensions,
   FlatList,
   Animated,
-  StatusBar
+  StatusBar,
 } from "react-native";
 import { LinearGradient } from "expo-linear-gradient";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { wp, hp, fs, responsive } from "./utils/responsive";
-
-const { width, height } = Dimensions.get("window");
 
 const slides = [
   {
@@ -44,9 +41,11 @@ const slides = [
 
 export default function Onboarding() {
   const router = useRouter();
+  const { width, height } = useWindowDimensions();
   const [currentIndex, setCurrentIndex] = useState(0);
   const scrollX = useRef(new Animated.Value(0)).current;
   const slidesRef = useRef(null);
+  const styles = useMemo(() => createStyles(width, height), [width, height]);
 
   const viewableItemsChanged = useRef(({ viewableItems }) => {
     if (viewableItems[0]) {
@@ -60,15 +59,15 @@ export default function Onboarding() {
     if (currentIndex < slides.length - 1) {
       slidesRef.current.scrollToIndex({ index: currentIndex + 1 });
     } else {
-      router.push('/login/login');
+      router.push("/login/login");
     }
   };
 
-  const renderSlide = ({ item, index }) => {
+  const renderSlide = ({ item }) => {
     return (
-      <View style={styles.slide}>
+      <View style={[styles.slide, { width }]}> 
         <View style={styles.imageContainer}>
-          <View style={[styles.imageBg, { backgroundColor: `${item.color}15` }]}>
+          <View style={[styles.imageBg, { backgroundColor: `${item.color}18` }]}>
             <Image source={item.image} style={styles.image} resizeMode="contain" />
           </View>
         </View>
@@ -125,7 +124,7 @@ export default function Onboarding() {
       {/* Skip button */}
       <TouchableOpacity
         style={styles.skipButton}
-        onPress={() => router.push('/login/login')}
+        onPress={() => router.push("/login/login")}
       >
         <Text style={styles.skipText}>Skip</Text>
       </TouchableOpacity>
@@ -140,6 +139,11 @@ export default function Onboarding() {
         pagingEnabled
         bounces={false}
         keyExtractor={(item) => item.id.toString()}
+        getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
+        initialNumToRender={1}
+        maxToRenderPerBatch={1}
+        windowSize={2}
+        extraData={width}
         onScroll={Animated.event(
           [{ nativeEvent: { contentOffset: { x: scrollX } } }],
           { useNativeDriver: false }
@@ -159,7 +163,7 @@ export default function Onboarding() {
           activeOpacity={0.9}
         >
           <LinearGradient
-            colors={[slides[currentIndex].color, slides[currentIndex].color + "CC"]}
+            colors={[slides[currentIndex].color, `${slides[currentIndex].color}CC`]}
             start={{ x: 0, y: 0 }}
             end={{ x: 1, y: 0 }}
             style={styles.nextButtonGradient}
@@ -177,7 +181,7 @@ export default function Onboarding() {
 
         <TouchableOpacity
           style={styles.loginLink}
-          onPress={() => router.push('/login/login')}
+          onPress={() => router.push("/login/login")}
         >
           <Text style={styles.loginLinkText}>
             Already have an account? <Text style={styles.loginLinkBold}>Sign In</Text>
@@ -188,136 +192,153 @@ export default function Onboarding() {
   );
 }
 
-const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#fff",
-  },
-  bgDecoration: {
-    position: "absolute",
-    width: "100%",
-    height: "100%",
-  },
-  bgCircle: {
-    position: "absolute",
-    borderRadius: 1000,
-  },
-  bgCircle1: {
-    width: wp(300),
-    height: wp(300),
-    backgroundColor: "rgba(102, 126, 234, 0.08)",
-    top: -wp(100),
-    right: -wp(100),
-  },
-  bgCircle2: {
-    width: wp(250),
-    height: wp(250),
-    backgroundColor: "rgba(245, 87, 108, 0.06)",
-    bottom: hp(100),
-    left: -wp(100),
-  },
-  skipButton: {
-    position: "absolute",
-    top: hp(50),
-    right: responsive.paddingLG,
-    zIndex: 10,
-    paddingHorizontal: responsive.paddingMD,
-    paddingVertical: responsive.paddingSM,
-  },
-  skipText: {
-    fontSize: responsive.fontMD,
-    color: "#8E8E93",
-    fontWeight: "500",
-  },
-  slide: {
-    width,
-    flex: 1,
-    paddingTop: hp(80),
-  },
-  imageContainer: {
-    flex: 0.6,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: responsive.paddingLG,
-  },
-  imageBg: {
-    width: wp(320),
-    height: wp(320),
-    borderRadius: wp(160),
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  image: {
-    width: wp(280),
-    height: wp(280),
-  },
-  textContainer: {
-    flex: 0.4,
-    paddingHorizontal: responsive.paddingXL,
-    alignItems: "center",
-  },
-  title: {
-    fontSize: fs(28),
-    fontWeight: "bold",
-    color: "#1a1a2e",
-    textAlign: "center",
-    marginBottom: responsive.paddingMD,
-  },
-  subtitle: {
-    fontSize: responsive.fontLG,
-    color: "#666",
-    textAlign: "center",
-    lineHeight: 24,
-    paddingHorizontal: responsive.paddingMD,
-  },
-  bottomContainer: {
-    paddingHorizontal: responsive.paddingXL,
-    paddingBottom: hp(40),
-  },
-  paginatorContainer: {
-    flexDirection: "row",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: responsive.paddingXL,
-  },
-  dot: {
-    height: 8,
-    borderRadius: 4,
-    marginHorizontal: 4,
-  },
-  nextButton: {
-    marginBottom: responsive.paddingLG,
-    borderRadius: responsive.radiusFull,
-    overflow: "hidden",
-    shadowColor: "#667eea",
-    shadowOffset: { width: 0, height: 8 },
-    shadowOpacity: 0.3,
-    shadowRadius: 16,
-    elevation: 8,
-  },
-  nextButtonGradient: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: responsive.paddingLG,
-    paddingHorizontal: wp(60),
-    gap: 8,
-  },
-  nextButtonText: {
-    color: "#fff",
-    fontSize: responsive.fontLG,
-    fontWeight: "600",
-  },
-  loginLink: {
-    alignItems: "center",
-    paddingVertical: responsive.paddingSM,
-  },
-  loginLinkText: {
-    fontSize: responsive.fontMD,
-    color: "#8E8E93",
-  },
-  loginLinkBold: {
-    color: "#667eea",
-    fontWeight: "600",
-  },
-});
+const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+
+const createStyles = (width, height) => {
+  const isSmallPhone = width < 360 || height < 700;
+  const horizontalPadding = clamp(width * 0.07, 20, 34);
+  const topOffset = clamp(height * 0.055, 36, 64);
+  const imageBgSize = clamp(Math.min(width * 0.78, height * 0.4), 210, 340);
+  const imageSize = clamp(imageBgSize * 0.84, 170, 290);
+  const titleSize = clamp(width * 0.075, 24, 34);
+  const subtitleSize = clamp(width * 0.045, 15, 18);
+  const buttonVerticalPadding = isSmallPhone ? 14 : 17;
+  const bottomPadding = clamp(height * 0.04, 20, 42);
+
+  return StyleSheet.create({
+    container: {
+      flex: 1,
+      backgroundColor: "#FFFFFF",
+    },
+    bgDecoration: {
+      position: "absolute",
+      width: "100%",
+      height: "100%",
+    },
+    bgCircle: {
+      position: "absolute",
+      borderRadius: 999,
+    },
+    bgCircle1: {
+      width: imageBgSize,
+      height: imageBgSize,
+      backgroundColor: "rgba(37, 99, 235, 0.09)",
+      top: -imageBgSize * 0.3,
+      right: -imageBgSize * 0.22,
+    },
+    bgCircle2: {
+      width: imageBgSize * 0.75,
+      height: imageBgSize * 0.75,
+      backgroundColor: "rgba(59, 130, 246, 0.06)",
+      bottom: height * 0.2,
+      left: -imageBgSize * 0.28,
+    },
+    skipButton: {
+      position: "absolute",
+      top: topOffset,
+      right: horizontalPadding,
+      zIndex: 10,
+      paddingHorizontal: 10,
+      paddingVertical: 6,
+    },
+    skipText: {
+      fontSize: clamp(width * 0.042, 14, 16),
+      color: "#6B7280",
+      fontWeight: "600",
+    },
+    slide: {
+      flex: 1,
+      paddingTop: topOffset + (isSmallPhone ? 6 : 16),
+      justifyContent: "space-between",
+    },
+    imageContainer: {
+      flex: 0.58,
+      justifyContent: "center",
+      alignItems: "center",
+      paddingHorizontal: horizontalPadding,
+    },
+    imageBg: {
+      width: imageBgSize,
+      height: imageBgSize,
+      borderRadius: imageBgSize / 2,
+      justifyContent: "center",
+      alignItems: "center",
+    },
+    image: {
+      width: imageSize,
+      height: imageSize,
+    },
+    textContainer: {
+      flex: 0.42,
+      alignItems: "center",
+      paddingHorizontal: horizontalPadding,
+      paddingTop: isSmallPhone ? 6 : 10,
+    },
+    title: {
+      fontSize: titleSize,
+      fontWeight: "800",
+      color: "#0F172A",
+      textAlign: "center",
+      marginBottom: isSmallPhone ? 8 : 12,
+      lineHeight: titleSize * 1.18,
+    },
+    subtitle: {
+      fontSize: subtitleSize,
+      color: "#475569",
+      textAlign: "center",
+      lineHeight: subtitleSize * 1.45,
+      maxWidth: 500,
+    },
+    bottomContainer: {
+      paddingHorizontal: horizontalPadding,
+      paddingBottom: bottomPadding,
+    },
+    paginatorContainer: {
+      flexDirection: "row",
+      justifyContent: "center",
+      alignItems: "center",
+      marginBottom: isSmallPhone ? 16 : 22,
+    },
+    dot: {
+      height: 8,
+      borderRadius: 999,
+      marginHorizontal: 4,
+    },
+    nextButton: {
+      marginBottom: isSmallPhone ? 10 : 14,
+      borderRadius: 999,
+      overflow: "hidden",
+      shadowColor: "#2563EB",
+      shadowOffset: { width: 0, height: 8 },
+      shadowOpacity: 0.26,
+      shadowRadius: 14,
+      elevation: 7,
+    },
+    nextButtonGradient: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "center",
+      paddingVertical: buttonVerticalPadding,
+      paddingHorizontal: clamp(width * 0.16, 40, 72),
+      gap: 8,
+    },
+    nextButtonText: {
+      color: "#FFFFFF",
+      fontSize: clamp(width * 0.048, 16, 19),
+      fontWeight: "700",
+    },
+    loginLink: {
+      alignItems: "center",
+      paddingVertical: isSmallPhone ? 4 : 8,
+    },
+    loginLinkText: {
+      fontSize: clamp(width * 0.041, 14, 16),
+      color: "#64748B",
+      textAlign: "center",
+    },
+    loginLinkBold: {
+      color: "#2563EB",
+      fontWeight: "700",
+    },
+  });
+};
