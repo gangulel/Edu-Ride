@@ -30,6 +30,10 @@ import { SystemSettings } from "./components/SystemSettings"
 import { AuditLogs } from "./components/AuditLogs"
 import { ContentManagement } from "./components/ContentManagement"
 import { Button } from "./components/ui/button"
+import { adminLogin, hasAdminToken, storeAdminSession } from "./lib/api"
+
+const DEFAULT_ADMIN_EMAIL = "admin@eduride.com"
+const DEFAULT_ADMIN_PASSWORD = "Admin@123"
 
 const menuItems = [
   { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
@@ -65,6 +69,30 @@ export default function App() {
     document.documentElement.classList.toggle("dark", theme === "dark")
     window.localStorage.setItem("adminTheme", theme)
   }, [theme])
+
+  useEffect(() => {
+    if (hasAdminToken()) {
+      return
+    }
+
+    let cancelled = false
+
+    adminLogin(DEFAULT_ADMIN_EMAIL, DEFAULT_ADMIN_PASSWORD)
+      .then((response) => {
+        if (!cancelled) {
+          storeAdminSession(response.token, response.user)
+        }
+      })
+      .catch((error) => {
+        if (!cancelled) {
+          console.error("Admin auto-login failed:", error)
+        }
+      })
+
+    return () => {
+      cancelled = true
+    }
+  }, [])
 
   const isDark = theme === "dark"
 
