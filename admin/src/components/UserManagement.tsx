@@ -6,7 +6,7 @@ import { Badge } from "./ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog"
-import { Search, Filter, Eye, Ban, Pencil, Trash2 } from "lucide-react"
+import { Search, Filter, Eye, Ban, Pencil, Trash2, AlertTriangle } from "lucide-react"
 import { apiRequest } from "../lib/api"
 
 type AppUser = {
@@ -48,6 +48,7 @@ export function UserManagement() {
   const [dialogOpen, setDialogOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
   const [isMutating, setIsMutating] = useState(false)
+  const [deleteCandidate, setDeleteCandidate] = useState<AppUser | null>(null)
   const [editForm, setEditForm] = useState({ fullName: "", phone: "", school: "" })
   const [parents, setParents] = useState<AppUser[]>([])
   const [drivers, setDrivers] = useState<AppUser[]>([])
@@ -210,12 +211,11 @@ export function UserManagement() {
     }
   }
 
-  const handleDeleteUser = async (user: AppUser) => {
-    const confirmed = window.confirm(`Delete user ${user.fullName}? This action cannot be undone.`)
-    if (!confirmed) {
-      return
-    }
+  const requestDeleteUser = (user: AppUser) => {
+    setDeleteCandidate(user)
+  }
 
+  const handleDeleteUser = async (user: AppUser) => {
     setIsMutating(true)
     try {
       await apiRequest<{ message: string }>(`/users/${user._id}`, "DELETE")
@@ -228,6 +228,7 @@ export function UserManagement() {
       if (selectedUser?._id === user._id) {
         setDialogOpen(false)
       }
+      setDeleteCandidate(null)
       setError("")
     } catch (err) {
       setError(err instanceof Error ? err.message : "Failed to delete user")
@@ -379,7 +380,7 @@ export function UserManagement() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => handleDeleteUser(parent)}
+                            onClick={() => requestDeleteUser(parent)}
                             title="Delete user"
                             disabled={isMutating}
                           >
@@ -506,7 +507,7 @@ export function UserManagement() {
                           <Button
                             size="sm"
                             variant="ghost"
-                            onClick={() => handleDeleteUser(driver)}
+                            onClick={() => requestDeleteUser(driver)}
                             title="Delete user"
                             disabled={isMutating}
                           >
@@ -610,11 +611,60 @@ export function UserManagement() {
                 >
                   Hold
                 </Button>
-                <Button variant="destructive" onClick={() => handleDeleteUser(selectedUser)} disabled={isMutating}>
+                <Button variant="destructive" onClick={() => requestDeleteUser(selectedUser)} disabled={isMutating}>
                   Delete
                 </Button>
               </>
             ) : null}
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(deleteCandidate)}
+        onOpenChange={(open) => {
+          if (!open && !isMutating) {
+            setDeleteCandidate(null)
+          }
+        }}
+      >
+        <DialogContent className="sm:max-w-md overflow-hidden">
+          <div className="absolute inset-0 pointer-events-none bg-gradient-to-br from-red-500/10 via-transparent to-transparent" />
+          <DialogHeader>
+            <div className="mb-3 inline-flex h-10 w-10 items-center justify-center rounded-full bg-red-100 text-red-600 dark:bg-red-900/40 dark:text-red-300">
+              <AlertTriangle className="h-5 w-5" />
+            </div>
+            <DialogTitle>Delete User Account?</DialogTitle>
+            <DialogDescription>
+              {deleteCandidate
+                ? `You're about to permanently remove ${deleteCandidate.fullName}. This action cannot be undone.`
+                : "This action cannot be undone."}
+            </DialogDescription>
+          </DialogHeader>
+
+          {deleteCandidate ? (
+            <div className="rounded-lg border bg-muted/30 p-3 text-sm space-y-1">
+              <p><span className="text-muted-foreground">Name:</span> {deleteCandidate.fullName}</p>
+              <p><span className="text-muted-foreground">Role:</span> {deleteCandidate.role}</p>
+              <p><span className="text-muted-foreground">Email:</span> {deleteCandidate.email}</p>
+            </div>
+          ) : null}
+
+          <DialogFooter className="mt-2">
+            <Button
+              variant="outline"
+              onClick={() => setDeleteCandidate(null)}
+              disabled={isMutating}
+            >
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              onClick={() => deleteCandidate && handleDeleteUser(deleteCandidate)}
+              disabled={isMutating || !deleteCandidate}
+            >
+              {isMutating ? "Deleting..." : "Yes, Delete User"}
+            </Button>
           </DialogFooter>
         </DialogContent>
       </Dialog>
