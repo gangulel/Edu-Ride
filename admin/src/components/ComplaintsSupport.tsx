@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
@@ -8,18 +8,27 @@ import { Badge } from "./ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog"
 import { AlertCircle, MessageSquare, Clock, CheckCircle, XCircle } from "lucide-react"
-
-const complaints = [
-  { id: "COMP-001", user: "Nimalka Perera", type: "parent", category: "Late Pickup", priority: "high", status: "open", date: "2024-12-10", assignedTo: "Admin Team" },
-  { id: "COMP-002", user: "Kasun Bandara", type: "driver", category: "Route Issue", priority: "medium", status: "in-progress", date: "2024-12-09", assignedTo: "Sunil Admin" },
-  { id: "COMP-003", user: "Dilini Fernando", type: "parent", category: "Safety Concern", priority: "high", status: "open", date: "2024-12-08", assignedTo: "Unassigned" },
-  { id: "COMP-004", user: "Chaminda Silva", type: "parent", category: "Payment Issue", priority: "low", status: "resolved", date: "2024-12-07", assignedTo: "Amali Admin" },
-  { id: "COMP-005", user: "Sanduni Wijesinghe", type: "driver", category: "Vehicle Problem", priority: "medium", status: "in-progress", date: "2024-12-06", assignedTo: "Admin Team" },
-]
+import { fetchAdminContent } from "../lib/adminContent"
 
 export function ComplaintsSupport() {
+  const [complaints, setComplaints] = useState<any[]>([])
   const [selectedComplaint, setSelectedComplaint] = useState<any>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+
+  useEffect(() => {
+    fetchAdminContent()
+      .then((payload) => {
+        setComplaints(payload.complaints || [])
+      })
+      .catch(() => {
+        setComplaints([])
+      })
+  }, [])
+
+  const totalComplaints = complaints.length
+  const openTickets = useMemo(() => complaints.filter((item) => ["open", "in-progress"].includes(item.status)).length, [complaints])
+  const resolvedTickets = useMemo(() => complaints.filter((item) => item.status === "resolved").length, [complaints])
+  const highPriority = useMemo(() => complaints.filter((item) => item.priority === "high").length, [complaints])
 
   const openComplaintDetails = (complaint: any) => {
     setSelectedComplaint(complaint)
@@ -41,7 +50,7 @@ export function ComplaintsSupport() {
             <MessageSquare className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">248</div>
+            <div className="text-2xl font-bold">{totalComplaints}</div>
             <p className="text-xs text-gray-500 mt-1">This month</p>
           </CardContent>
         </Card>
@@ -52,7 +61,7 @@ export function ComplaintsSupport() {
             <Clock className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">42</div>
+            <div className="text-2xl font-bold text-yellow-600">{openTickets}</div>
             <p className="text-xs text-gray-500 mt-1">Awaiting response</p>
           </CardContent>
         </Card>
@@ -63,8 +72,8 @@ export function ComplaintsSupport() {
             <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">198</div>
-            <p className="text-xs text-gray-500 mt-1">79.8% resolution rate</p>
+            <div className="text-2xl font-bold text-green-600">{resolvedTickets}</div>
+            <p className="text-xs text-gray-500 mt-1">{totalComplaints ? Math.round((resolvedTickets / totalComplaints) * 1000) / 10 : 0}% resolution rate</p>
           </CardContent>
         </Card>
 
@@ -74,7 +83,7 @@ export function ComplaintsSupport() {
             <AlertCircle className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">8</div>
+            <div className="text-2xl font-bold text-red-600">{highPriority}</div>
             <p className="text-xs text-gray-500 mt-1">Requires immediate attention</p>
           </CardContent>
         </Card>

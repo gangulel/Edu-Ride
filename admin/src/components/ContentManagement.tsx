@@ -1,25 +1,29 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
 import { Textarea } from "./ui/textarea"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
 import { FileText, HelpCircle, Shield, Save } from "lucide-react"
+import { fetchAdminContent } from "../lib/adminContent"
 
 export function ContentManagement() {
-  const [termsContent, setTermsContent] = useState(
-    `Terms and Conditions\n\nLast Updated: December 14, 2024\n\n1. Acceptance of Terms\nBy accessing and using this bus tracking service, you accept and agree to be bound by the terms and provision of this agreement.\n\n2. Use License\nPermission is granted to temporarily use this service for personal, non-commercial purposes only.\n\n3. User Responsibilities\n- Maintain accurate account information\n- Protect your login credentials\n- Notify us of any unauthorized access\n\n4. Payment Terms\n- Monthly/weekly subscriptions are due in advance\n- Refunds are processed according to our refund policy\n- Late payments may result in service suspension`
-  )
+  const [termsContent, setTermsContent] = useState("")
+  const [privacyContent, setPrivacyContent] = useState("")
+  const [faqs, setFaqs] = useState<any[]>([])
 
-  const [privacyContent, setPrivacyContent] = useState(
-    `Privacy Policy\n\nLast Updated: December 14, 2024\n\n1. Information We Collect\nWe collect information that you provide directly to us, including:\n- Name and contact information\n- Payment information\n- Location data (for tracking purposes)\n- Device information\n\n2. How We Use Your Information\n- To provide and maintain our service\n- To process payments\n- To send notifications and updates\n- To improve our service\n\n3. Information Sharing\nWe do not sell your personal information. We may share your information with:\n- Assigned drivers (limited information)\n- Payment processors\n- Legal authorities when required by law\n\n4. Data Security\nWe implement appropriate security measures to protect your personal information.`
-  )
-
-  const faqs = [
-    { id: 1, question: "How do I register as a parent?", answer: "Download our app from the App Store or Google Play, then follow the registration process.", category: "Getting Started" },
-    { id: 2, question: "How do I track my child's bus?", answer: "Open the app and view the real-time location of your assigned bus on the map.", category: "Tracking" },
-    { id: 3, question: "What payment methods are accepted?", answer: "We accept credit cards, debit cards, and digital wallets through our secure payment gateway.", category: "Payments" },
-    { id: 4, question: "How do I report a problem?", answer: "Use the 'Report Issue' feature in the app or contact our support team directly.", category: "Support" },
-  ]
+  useEffect(() => {
+    fetchAdminContent()
+      .then((payload) => {
+        setTermsContent(payload.content?.termsContent || "")
+        setPrivacyContent(payload.content?.privacyContent || "")
+        setFaqs(payload.content?.faqs || [])
+      })
+      .catch(() => {
+        setTermsContent("")
+        setPrivacyContent("")
+        setFaqs([])
+      })
+  }, [])
 
   return (
     <div className="space-y-6">

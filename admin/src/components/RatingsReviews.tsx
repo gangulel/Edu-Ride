@@ -1,34 +1,40 @@
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
 import { Badge } from "./ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
 import { Star, Flag, TrendingDown, Award } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
-
-const driverRatings = [
-  { id: 1, driver: "Kasun Bandara", route: "Route A", rating: 4.8, reviews: 234, lowRated: 8, flagged: 2, avgMonth: 4.7 },
-  { id: 2, driver: "Sanduni Wijesinghe", route: "Route B", rating: 4.9, reviews: 312, lowRated: 3, flagged: 0, avgMonth: 4.9 },
-  { id: 3, driver: "Nuwan Rajapaksa", route: "Route C", rating: 3.2, reviews: 145, lowRated: 45, flagged: 12, avgMonth: 3.5 },
-  { id: 4, driver: "Thilini Gunasekara", route: "Route D", rating: 4.5, reviews: 198, lowRated: 12, flagged: 3, avgMonth: 4.4 },
-  { id: 5, driver: "Pradeep Kumara", route: "Route E", rating: 4.7, reviews: 267, lowRated: 15, flagged: 1, avgMonth: 4.6 },
-]
-
-const recentReviews = [
-  { id: 1, parent: "Nimalka Perera", driver: "Kasun Bandara", rating: 5, comment: "Always on time and very friendly!", date: "2024-12-10", flagged: false },
-  { id: 2, parent: "Chaminda Silva", driver: "Sanduni Wijesinghe", rating: 5, comment: "Excellent service, my kids feel safe.", date: "2024-12-09", flagged: false },
-  { id: 3, parent: "Dilini Fernando", driver: "Nuwan Rajapaksa", rating: 2, comment: "Consistently late and unprofessional.", date: "2024-12-08", flagged: true },
-  { id: 4, parent: "Roshan Jayawardena", driver: "Kasun Bandara", rating: 4, comment: "Good service overall, minor delays sometimes.", date: "2024-12-07", flagged: false },
-]
-
-const routePerformance = [
-  { route: "Route A", avgRating: 4.8, reviews: 234 },
-  { route: "Route B", avgRating: 4.9, reviews: 312 },
-  { route: "Route C", avgRating: 3.2, reviews: 145 },
-  { route: "Route D", avgRating: 4.5, reviews: 198 },
-  { route: "Route E", avgRating: 4.7, reviews: 267 },
-]
+import { fetchAdminContent } from "../lib/adminContent"
 
 export function RatingsReviews() {
+  const [driverRatings, setDriverRatings] = useState<any[]>([])
+  const [recentReviews, setRecentReviews] = useState<any[]>([])
+  const [routePerformance, setRoutePerformance] = useState<any[]>([])
+
+  useEffect(() => {
+    fetchAdminContent()
+      .then((payload) => {
+        setDriverRatings(payload.ratings?.driverRatings || [])
+        setRecentReviews(payload.ratings?.recentReviews || [])
+        setRoutePerformance(payload.ratings?.routePerformance || [])
+      })
+      .catch(() => {
+        setDriverRatings([])
+        setRecentReviews([])
+        setRoutePerformance([])
+      })
+  }, [])
+
+  const avgRating = useMemo(() => {
+    if (!driverRatings.length) return 0
+    return Math.round((driverRatings.reduce((sum, d) => sum + Number(d.rating || 0), 0) / driverRatings.length) * 10) / 10
+  }, [driverRatings])
+
+  const totalReviews = useMemo(() => driverRatings.reduce((sum, d) => sum + Number(d.reviews || 0), 0), [driverRatings])
+  const lowRatedDrivers = useMemo(() => driverRatings.filter((d) => Number(d.rating || 0) < 3.5).length, [driverRatings])
+  const flaggedReviews = useMemo(() => recentReviews.filter((r) => Boolean(r.flagged)).length, [recentReviews])
+
   return (
     <div className="space-y-6">
       <div>
@@ -44,7 +50,7 @@ export function RatingsReviews() {
             <Star className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">4.6</div>
+            <div className="text-2xl font-bold">{avgRating || "-"}</div>
             <p className="text-xs text-gray-500 mt-1">Across all drivers</p>
           </CardContent>
         </Card>
@@ -55,9 +61,9 @@ export function RatingsReviews() {
             <Award className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,156</div>
+            <div className="text-2xl font-bold">{totalReviews.toLocaleString()}</div>
             <p className="text-xs text-gray-500 mt-1">
-              <span className="text-green-600">+156</span> this month
+              Based on DB data
             </p>
           </CardContent>
         </Card>
@@ -68,7 +74,7 @@ export function RatingsReviews() {
             <TrendingDown className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">23</div>
+            <div className="text-2xl font-bold text-red-600">{lowRatedDrivers}</div>
             <p className="text-xs text-gray-500 mt-1">Below 3.5 rating</p>
           </CardContent>
         </Card>
@@ -79,7 +85,7 @@ export function RatingsReviews() {
             <Flag className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">18</div>
+            <div className="text-2xl font-bold text-yellow-600">{flaggedReviews}</div>
             <p className="text-xs text-gray-500 mt-1">Pending review</p>
           </CardContent>
         </Card>

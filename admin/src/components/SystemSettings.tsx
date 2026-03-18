@@ -1,24 +1,31 @@
-import { useState } from "react"
+import { useEffect, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Select } from "./ui/select"
 import { Badge } from "./ui/badge"
 import { Settings, Globe, CreditCard, Percent, Smartphone, ToggleLeft, ToggleRight } from "lucide-react"
-
-const features = [
-  { id: 1, name: "Real-time Tracking", description: "Enable GPS tracking for buses", enabled: true },
-  { id: 2, name: "Payment Reminders", description: "Automated payment reminder notifications", enabled: true },
-  { id: 3, name: "Emergency Alerts", description: "Emergency broadcast system", enabled: true },
-  { id: 4, name: "Driver Chat", description: "In-app messaging between parents and drivers", enabled: false },
-  { id: 5, name: "Route Optimization", description: "AI-powered route suggestions", enabled: true },
-  { id: 6, name: "Maintenance Alerts", description: "Vehicle maintenance reminders", enabled: false },
-]
+import { fetchAdminContent } from "../lib/adminContent"
 
 export function SystemSettings() {
-  const [toggledFeatures, setToggledFeatures] = useState(
-    features.reduce((acc, f) => ({ ...acc, [f.id]: f.enabled }), {})
-  )
+  const [features, setFeatures] = useState<any[]>([])
+  const [toggledFeatures, setToggledFeatures] = useState<Record<number, boolean>>({})
+
+  useEffect(() => {
+    fetchAdminContent()
+      .then((payload) => {
+        const dbFeatures = payload.settings?.features || []
+        setFeatures(dbFeatures)
+        setToggledFeatures(dbFeatures.reduce((acc: Record<number, boolean>, feature: any) => {
+          acc[feature.id] = Boolean(feature.enabled)
+          return acc
+        }, {}))
+      })
+      .catch(() => {
+        setFeatures([])
+        setToggledFeatures({})
+      })
+  }, [])
 
   const toggleFeature = (id: number) => {
     setToggledFeatures(prev => ({ ...prev, [id]: !prev[id as keyof typeof prev] }))

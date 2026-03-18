@@ -16,6 +16,7 @@ export const getAdminContent = async (_req, res) => {
       complaints: [],
       audit: { loginHistory: [], adminActions: [], suspiciousActivity: [] },
       communication: { notifications: [], templates: [] },
+      settings: { features: [] },
       content: { termsContent: "", privacyContent: "", faqs: [] },
     });
   }
@@ -31,6 +32,7 @@ export const getAdminContent = async (_req, res) => {
     complaints: content.complaints || [],
     audit: content.audit || { loginHistory: [], adminActions: [], suspiciousActivity: [] },
     communication: content.communication || { notifications: [], templates: [] },
+    settings: content.settings || { features: [] },
     content: content.content || { termsContent: "", privacyContent: "", faqs: [] },
   });
 };

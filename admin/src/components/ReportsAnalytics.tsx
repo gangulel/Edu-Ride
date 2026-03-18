@@ -1,44 +1,47 @@
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
 import { Select } from "./ui/select"
 import { Download, TrendingUp, Users, DollarSign, Star } from "lucide-react"
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
-
-const userGrowthData = [
-  { month: "Jan", parents: 980, drivers: 298 },
-  { month: "Feb", parents: 1045, drivers: 315 },
-  { month: "Mar", parents: 1098, drivers: 329 },
-  { month: "Apr", parents: 1156, drivers: 345 },
-  { month: "May", parents: 1189, drivers: 363 },
-  { month: "Jun", parents: 1254, drivers: 381 },
-]
-
-const routeUtilizationData = [
-  { route: "Route A", utilization: 93, capacity: 30, students: 28 },
-  { route: "Route B", utilization: 97, capacity: 35, students: 34 },
-  { route: "Route C", utilization: 73, capacity: 30, students: 22 },
-  { route: "Route D", utilization: 89, capacity: 35, students: 31 },
-  { route: "Route E", utilization: 87, capacity: 30, students: 26 },
-]
-
-const paymentTrendData = [
-  { month: "Jan", revenue: 45000, transactions: 4500, avgPerTransaction: 10 },
-  { month: "Feb", revenue: 52000, transactions: 5200, avgPerTransaction: 10 },
-  { month: "Mar", revenue: 48000, transactions: 4800, avgPerTransaction: 10 },
-  { month: "Apr", revenue: 61000, transactions: 6100, avgPerTransaction: 10 },
-  { month: "May", revenue: 59000, transactions: 5900, avgPerTransaction: 10 },
-  { month: "Jun", revenue: 65000, transactions: 6500, avgPerTransaction: 10 },
-]
-
-const driverPerformanceData = [
-  { driver: "Sanduni W.", rating: 4.9, trips: 312, onTime: 98 },
-  { driver: "Kasun B.", rating: 4.8, trips: 234, onTime: 96 },
-  { driver: "Pradeep K.", rating: 4.7, trips: 267, onTime: 94 },
-  { driver: "Thilini G.", rating: 4.5, trips: 198, onTime: 92 },
-  { driver: "Nuwan R.", rating: 3.2, trips: 145, onTime: 78 },
-]
+import { fetchAdminContent } from "../lib/adminContent"
 
 export function ReportsAnalytics() {
+  const [userGrowthData, setUserGrowthData] = useState<any[]>([])
+  const [routeUtilizationData, setRouteUtilizationData] = useState<any[]>([])
+  const [paymentTrendData, setPaymentTrendData] = useState<any[]>([])
+  const [driverPerformanceData, setDriverPerformanceData] = useState<any[]>([])
+
+  useEffect(() => {
+    fetchAdminContent()
+      .then((payload) => {
+        setUserGrowthData(payload.reports?.userGrowthData || [])
+        setRouteUtilizationData(payload.reports?.routeUtilizationData || [])
+        setPaymentTrendData(payload.reports?.paymentTrendData || [])
+        setDriverPerformanceData(payload.reports?.driverPerformanceData || [])
+      })
+      .catch(() => {
+        setUserGrowthData([])
+        setRouteUtilizationData([])
+        setPaymentTrendData([])
+        setDriverPerformanceData([])
+      })
+  }, [])
+
+  const totalUsers = useMemo(
+    () => userGrowthData.length ? Number(userGrowthData[userGrowthData.length - 1].parents || 0) + Number(userGrowthData[userGrowthData.length - 1].drivers || 0) : 0,
+    [userGrowthData]
+  )
+  const totalRevenue = useMemo(() => paymentTrendData.reduce((sum, item) => sum + Number(item.revenue || 0), 0), [paymentTrendData])
+  const avgRating = useMemo(() => {
+    if (!driverPerformanceData.length) return 0
+    return Math.round((driverPerformanceData.reduce((sum, item) => sum + Number(item.rating || 0), 0) / driverPerformanceData.length) * 10) / 10
+  }, [driverPerformanceData])
+  const avgUtilization = useMemo(() => {
+    if (!routeUtilizationData.length) return 0
+    return Math.round(routeUtilizationData.reduce((sum, item) => sum + Number(item.utilization || 0), 0) / routeUtilizationData.length)
+  }, [routeUtilizationData])
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-start">
@@ -67,9 +70,9 @@ export function ReportsAnalytics() {
             <Users className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,635</div>
+            <div className="text-2xl font-bold">{totalUsers.toLocaleString()}</div>
             <p className="text-xs text-gray-500 mt-1">
-              <span className="text-green-600">+10.5%</span> growth rate
+              Latest seeded snapshot
             </p>
           </CardContent>
         </Card>
@@ -80,7 +83,7 @@ export function ReportsAnalytics() {
             <DollarSign className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">Rs. 33M</div>
+            <div className="text-2xl font-bold">Rs. {totalRevenue.toLocaleString()}</div>
             <p className="text-xs text-gray-500 mt-1">Last 6 months</p>
           </CardContent>
         </Card>
@@ -91,7 +94,7 @@ export function ReportsAnalytics() {
             <Star className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">4.6</div>
+            <div className="text-2xl font-bold">{avgRating || "-"}</div>
             <p className="text-xs text-gray-500 mt-1">System-wide average</p>
           </CardContent>
         </Card>
@@ -102,7 +105,7 @@ export function ReportsAnalytics() {
             <TrendingUp className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">88%</div>
+            <div className="text-2xl font-bold text-green-600">{avgUtilization}%</div>
             <p className="text-xs text-gray-500 mt-1">Route utilization</p>
           </CardContent>
         </Card>

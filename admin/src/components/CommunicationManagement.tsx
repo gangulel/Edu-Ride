@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
@@ -8,24 +8,28 @@ import { Badge } from "./ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog"
 import { Bell, Send, MessageSquare, AlertTriangle, Plus } from "lucide-react"
-
-const notifications = [
-  { id: 1, title: "System Maintenance", recipient: "All Users", type: "announcement", date: "2024-12-10", status: "sent" },
-  { id: 2, title: "Route A Delay", recipient: "Route A Parents", type: "alert", date: "2024-12-09", status: "sent" },
-  { id: 3, title: "Holiday Schedule Update", recipient: "All Parents", type: "announcement", date: "2024-12-08", status: "sent" },
-  { id: 4, title: "Driver Performance Review", recipient: "All Drivers", type: "announcement", date: "2024-12-07", status: "scheduled" },
-]
-
-const templates = [
-  { id: 1, name: "Weather Alert", category: "Emergency", lastUsed: "2024-11-15" },
-  { id: 2, name: "Route Delay", category: "Alert", lastUsed: "2024-12-09" },
-  { id: 3, name: "Payment Reminder", category: "Payment", lastUsed: "2024-12-01" },
-  { id: 4, name: "Holiday Notice", category: "Announcement", lastUsed: "2024-11-20" },
-]
+import { fetchAdminContent } from "../lib/adminContent"
 
 export function CommunicationManagement() {
+  const [notifications, setNotifications] = useState<any[]>([])
+  const [templates, setTemplates] = useState<any[]>([])
   const [dialogOpen, setDialogOpen] = useState(false)
   const [selectedTemplate, setSelectedTemplate] = useState<any>(null)
+
+  useEffect(() => {
+    fetchAdminContent()
+      .then((payload) => {
+        setNotifications(payload.communication?.notifications || [])
+        setTemplates(payload.communication?.templates || [])
+      })
+      .catch(() => {
+        setNotifications([])
+        setTemplates([])
+      })
+  }, [])
+
+  const sentCount = useMemo(() => notifications.filter((item) => item.status === "sent").length, [notifications])
+  const emergencyCount = useMemo(() => notifications.filter((item) => item.type === "emergency" || item.type === "alert").length, [notifications])
 
   return (
     <div className="space-y-6">
@@ -48,7 +52,7 @@ export function CommunicationManagement() {
             <MessageSquare className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,248</div>
+            <div className="text-2xl font-bold">{sentCount}</div>
             <p className="text-xs text-gray-500 mt-1">This month</p>
           </CardContent>
         </Card>
@@ -60,7 +64,7 @@ export function CommunicationManagement() {
           </CardHeader>
           <CardContent>
             <div className="text-2xl font-bold text-green-600">98.5%</div>
-            <p className="text-xs text-gray-500 mt-1">Successfully delivered</p>
+            <p className="text-xs text-gray-500 mt-1">Estimated delivery success</p>
           </CardContent>
         </Card>
 
@@ -70,7 +74,7 @@ export function CommunicationManagement() {
             <AlertTriangle className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">12</div>
+            <div className="text-2xl font-bold">{emergencyCount}</div>
             <p className="text-xs text-gray-500 mt-1">Sent this month</p>
           </CardContent>
         </Card>
@@ -81,7 +85,7 @@ export function CommunicationManagement() {
             <Bell className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">24</div>
+            <div className="text-2xl font-bold">{templates.length}</div>
             <p className="text-xs text-gray-500 mt-1">Ready to use</p>
           </CardContent>
         </Card>

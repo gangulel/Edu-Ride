@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
@@ -5,29 +6,30 @@ import { Select } from "./ui/select"
 import { Badge } from "./ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
 import { Shield, AlertTriangle, User, Activity, Download } from "lucide-react"
-
-const loginHistory = [
-  { id: 1, user: "admin@eduride.lk", role: "Super Admin", action: "Login", ip: "192.168.1.10", location: "Colombo, LK", timestamp: "2024-12-14 09:15:23", status: "success" },
-  { id: 2, user: "sunil.admin@eduride.lk", role: "Admin", action: "Login", ip: "192.168.1.45", location: "Kandy, LK", timestamp: "2024-12-14 08:42:15", status: "success" },
-  { id: 3, user: "unknown@email.com", role: "Unknown", action: "Failed Login", ip: "45.123.67.89", location: "Unknown", timestamp: "2024-12-14 07:30:11", status: "failed" },
-  { id: 4, user: "amali.admin@eduride.lk", role: "Admin", action: "Login", ip: "192.168.1.78", location: "Galle, LK", timestamp: "2024-12-13 16:22:45", status: "success" },
-]
-
-const adminActions = [
-  { id: 1, admin: "Sunil Admin", action: "Suspended Driver", target: "Nuwan Rajapaksa", details: "Low rating suspension", timestamp: "2024-12-14 10:30:00", severity: "high" },
-  { id: 2, admin: "Amali Admin", action: "Updated Payment Settings", target: "Commission Rate", details: "Changed from 4% to 5%", timestamp: "2024-12-14 09:15:00", severity: "medium" },
-  { id: 3, admin: "Admin Team", action: "Sent Notification", target: "All Parents", details: "Holiday schedule announcement", timestamp: "2024-12-13 14:20:00", severity: "low" },
-  { id: 4, admin: "Sunil Admin", action: "Approved Driver", target: "Thilini Gunasekara", details: "Verified documents", timestamp: "2024-12-13 11:45:00", severity: "medium" },
-  { id: 5, admin: "Super Admin", action: "Created Admin User", target: "pradeep.admin@eduride.lk", details: "New admin account created", timestamp: "2024-12-12 15:30:00", severity: "high" },
-]
-
-const suspiciousActivity = [
-  { id: 1, type: "Multiple Failed Logins", description: "5 failed login attempts from IP 45.123.67.89", severity: "high", timestamp: "2024-12-14 07:30:11", status: "investigating" },
-  { id: 2, type: "Unusual Payment Pattern", description: "Large number of refund requests from same parent", severity: "medium", timestamp: "2024-12-13 18:45:00", status: "resolved" },
-  { id: 3, type: "Rapid Account Creation", description: "10 parent accounts created from same IP", severity: "high", timestamp: "2024-12-12 22:15:00", status: "blocked" },
-]
+import { fetchAdminContent } from "../lib/adminContent"
 
 export function AuditLogs() {
+  const [loginHistory, setLoginHistory] = useState<any[]>([])
+  const [adminActions, setAdminActions] = useState<any[]>([])
+  const [suspiciousActivity, setSuspiciousActivity] = useState<any[]>([])
+
+  useEffect(() => {
+    fetchAdminContent()
+      .then((payload) => {
+        setLoginHistory(payload.audit?.loginHistory || [])
+        setAdminActions(payload.audit?.adminActions || [])
+        setSuspiciousActivity(payload.audit?.suspiciousActivity || [])
+      })
+      .catch(() => {
+        setLoginHistory([])
+        setAdminActions([])
+        setSuspiciousActivity([])
+      })
+  }, [])
+
+  const failedAttempts = useMemo(() => loginHistory.filter((item) => item.status === "failed").length, [loginHistory])
+  const activeAlerts = useMemo(() => suspiciousActivity.filter((item) => item.status === "investigating").length, [suspiciousActivity])
+
   return (
     <div className="space-y-6">
       <div className="flex justify-between items-start">
@@ -49,7 +51,7 @@ export function AuditLogs() {
             <User className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,842</div>
+            <div className="text-2xl font-bold">{loginHistory.length}</div>
             <p className="text-xs text-gray-500 mt-1">Last 30 days</p>
           </CardContent>
         </Card>
@@ -60,7 +62,7 @@ export function AuditLogs() {
             <AlertTriangle className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">23</div>
+            <div className="text-2xl font-bold text-yellow-600">{failedAttempts}</div>
             <p className="text-xs text-gray-500 mt-1">Requires attention</p>
           </CardContent>
         </Card>
@@ -71,7 +73,7 @@ export function AuditLogs() {
             <Activity className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">387</div>
+            <div className="text-2xl font-bold">{adminActions.length}</div>
             <p className="text-xs text-gray-500 mt-1">This month</p>
           </CardContent>
         </Card>
@@ -82,7 +84,7 @@ export function AuditLogs() {
             <Shield className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">5</div>
+            <div className="text-2xl font-bold text-red-600">{activeAlerts}</div>
             <p className="text-xs text-gray-500 mt-1">Active investigations</p>
           </CardContent>
         </Card>
