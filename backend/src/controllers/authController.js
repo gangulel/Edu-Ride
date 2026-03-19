@@ -14,6 +14,23 @@ const FIREBASE_LOGIN_ERROR_MESSAGES = {
 
 const DEFAULT_ADMIN_EMAIL = "admin@eduride.com";
 
+function normalizeEmail(email) {
+  return String(email || "").trim().toLowerCase();
+}
+
+async function createMongoUserFromFirebase(firebaseUser, profile) {
+  const normalizedEmail = normalizeEmail(profile.email || firebaseUser.email);
+
+  return User.create({
+    firebaseUid: firebaseUser.uid,
+    email: normalizedEmail,
+    fullName: profile.fullName,
+    phone: profile.phone,
+    role: profile.role,
+    status: profile.role === "parent" ? "active" : "pending",
+  });
+}
+
 function extractFirebaseErrorCode(payload) {
   if (!payload || typeof payload !== "object" || !("error" in payload)) {
     return null;
@@ -66,6 +83,7 @@ function getInternalAdminCredentialConfig() {
 // POST /api/auth/register
 export const register = async (req, res) => {
   const { fullName, email, phone, password, role } = req.body;
+  const normalizedEmail = normalizeEmail(email);
 
   if (!fullName || !email || !phone || !password || !role) {
     return res.status(400).json({ error: "All fields are required: fullName, email, phone, password, role" });
@@ -75,25 +93,72 @@ export const register = async (req, res) => {
     return res.status(400).json({ error: "Role must be 'parent' or 'driver'" });
   }
 
-  // Create user in Firebase Auth
-  const firebaseUser = await admin.auth().createUser({
-    email,
-    password,
-    displayName: fullName,
-  });
+  let firebaseUser;
+  let recoveredMissingMongoProfile = false;
 
-  // Create user in MongoDB
-  const user = await User.create({
-    firebaseUid: firebaseUser.uid,
-    email,
-    fullName,
-    phone,
-    role,
-    status: role === "parent" ? "active" : "pending", // Drivers need admin approval
-  });
+  try {
+    // Create user in Firebase Auth.
+    firebaseUser = await admin.auth().createUser({
+      email: normalizedEmail,
+      password,
+      displayName: fullName,
+    });
+  } catch (error) {
+    if (error?.code !== "auth/email-already-exists") {
+      throw error;
+    }
+
+    // Account already exists in Firebase. Repair missing Mongo profile if needed.
+    firebaseUser = await admin.auth().getUserByEmail(normalizedEmail);
+    const existingMongoUser = await User.findOne({
+      $or: [{ firebaseUid: firebaseUser.uid }, { email: normalizedEmail }],
+    });
+
+    if (existingMongoUser) {
+      if (existingMongoUser.firebaseUid !== firebaseUser.uid) {
+        existingMongoUser.firebaseUid = firebaseUser.uid;
+      }
+      if (!existingMongoUser.fullName) {
+        existingMongoUser.fullName = fullName;
+      }
+      if (!existingMongoUser.phone) {
+        existingMongoUser.phone = phone;
+      }
+      await existingMongoUser.save();
+
+      return res.status(200).json({
+        message: "Account already exists. Continuing with existing profile.",
+        alreadyRegistered: true,
+        user: {
+          id: existingMongoUser._id,
+          firebaseUid: existingMongoUser.firebaseUid,
+          email: existingMongoUser.email,
+          fullName: existingMongoUser.fullName,
+          phone: existingMongoUser.phone,
+          role: existingMongoUser.role,
+          status: existingMongoUser.status,
+        },
+      });
+    }
+
+    recoveredMissingMongoProfile = true;
+  }
+
+  let user = await User.findOne({ firebaseUid: firebaseUser.uid });
+
+  if (!user) {
+    user = await createMongoUserFromFirebase(firebaseUser, {
+      fullName,
+      email: normalizedEmail,
+      phone,
+      role,
+    });
+  }
 
   res.status(201).json({
-    message: "Registration successful",
+    message: recoveredMissingMongoProfile
+      ? "Registration recovered successfully"
+      : "Registration successful",
     user: {
       id: user._id,
       firebaseUid: user.firebaseUid,
@@ -109,13 +174,14 @@ export const register = async (req, res) => {
 // POST /api/auth/login
 export const login = async (req, res) => {
   const { email } = req.body;
+  const normalizedEmail = normalizeEmail(email);
 
-  if (!email) {
+  if (!normalizedEmail) {
     return res.status(400).json({ error: "Email is required" });
   }
 
   // Verify user exists in Firebase
-  const firebaseUser = await admin.auth().getUserByEmail(email);
+  const firebaseUser = await admin.auth().getUserByEmail(normalizedEmail);
 
   // Find user in MongoDB
   const user = await User.findOne({ firebaseUid: firebaseUser.uid });

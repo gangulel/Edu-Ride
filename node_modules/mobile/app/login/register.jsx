@@ -77,7 +77,7 @@ export default function Register() {
     setLoading(true);
 
     try {
-      await apiFetch("/auth/register", {
+      const payload = await apiFetch("/auth/register", {
         method: "POST",
         body: JSON.stringify({
           fullName: name,
@@ -89,9 +89,11 @@ export default function Register() {
       });
 
       setLoading(false);
-      if (userType === "parent") {
+      const resolvedRole = payload?.user?.role || userType;
+
+      if (resolvedRole === "parent") {
         router.replace("/parent");
-      } else if (userType === "driver") {
+      } else if (resolvedRole === "driver") {
         router.replace("/driver");
       }
     } catch (err) {

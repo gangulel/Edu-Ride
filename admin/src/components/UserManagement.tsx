@@ -82,8 +82,8 @@ export function UserManagement() {
     const loadUsers = async () => {
       try {
         const [parentData, driverData, statsData] = await Promise.all([
-          apiRequest<{ users: AppUser[] }>("/users?role=parent&limit=200"),
-          apiRequest<{ users: AppUser[] }>("/users?role=driver&limit=200"),
+          apiRequest<{ users: AppUser[] }>("/users?role=parent&limit=100"),
+          apiRequest<{ users: AppUser[] }>("/users?role=driver&limit=100"),
           apiRequest<UserStatsPayload>("/admin/users/stats"),
         ])
 
@@ -106,8 +106,8 @@ export function UserManagement() {
 
       try {
         const [parentData, driverData] = await Promise.all([
-          apiRequest<{ users: AppUser[] }>("/public/users?role=parent&limit=200"),
-          apiRequest<{ users: AppUser[] }>("/public/users?role=driver&limit=200"),
+          apiRequest<{ users: AppUser[] }>("/public/users?role=parent&limit=100"),
+          apiRequest<{ users: AppUser[] }>("/public/users?role=driver&limit=100"),
         ])
 
         if (!mounted) return
