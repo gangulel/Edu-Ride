@@ -1753,3 +1753,102 @@ html {
   fill: var(--admin-muted) !important;
   color: var(--admin-muted) !important;
 }
+
+.admin-theme .admin-sidebar-modern {
+  background: #111214;
+  border-color: #1f2126;
+  color: #f4f5f7;
+}
+
+.admin-theme .admin-sidebar-modern .admin-muted,
+.admin-theme .admin-sidebar-modern .admin-section-title {
+  color: #a8adb8;
+}
+
+.admin-theme .admin-sidebar-modern .admin-section-title {
+  font-size: 0.78rem;
+  font-weight: 600;
+}
+
+.admin-theme .admin-sidebar-modern .admin-nav-item-modern {
+  color: #f1f2f4;
+}
+
+.admin-theme .admin-sidebar-modern .admin-nav-item-modern:hover {
+  background: #1b1d22;
+  color: #ffffff;
+}
+
+.admin-theme .admin-sidebar-modern .admin-nav-item-active {
+  background: #1f2430;
+  color: #ffffff;
+}
+
+.admin-theme .admin-sidebar-modern .admin-quick-create {
+  display: inline-flex;
+  align-items: center;
+  gap: 0.55rem;
+  border-radius: 0.65rem;
+  background: #f3f4f6;
+  color: #111827;
+  border: 1px solid #d4d8df;
+  padding: 0.52rem 0.75rem;
+  font-size: 1.05rem;
+  font-weight: 500;
+}
+
+.admin-theme .admin-sidebar-modern .admin-quick-create:hover {
+  background: #e8ebf0;
+}
+
+.admin-theme .admin-sidebar-modern .admin-nav-icon-btn {
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  width: 2.35rem;
+  height: 2.35rem;
+  border-radius: 0.65rem;
+  border: 1px solid #2a2d35;
+  color: #d6dae2;
+}
+
+.admin-theme .admin-sidebar-modern .admin-nav-icon-btn:hover {
+  background: #1b1d22;
+  color: #ffffff;
+}
+
+.admin-theme .admin-sidebar-modern .admin-profile-card {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  border-top: 1px solid #262932;
+  padding-top: 0.8rem;
+}
+
+.admin-theme .admin-sidebar-modern .admin-profile-avatar {
+  width: 2rem;
+  height: 2rem;
+  border-radius: 9999px;
+  display: inline-flex;
+  align-items: center;
+  justify-content: center;
+  background: #262932;
+  color: #d8dbe3;
+}
+
+@media (max-width: 1023px) {
+  .admin-theme .admin-sidebar-modern {
+    box-shadow: 0 0 0 1px rgba(31, 33, 38, 0.9), 0 18px 45px rgba(0, 0, 0, 0.45);
+  }
+
+  .admin-theme .admin-sidebar-modern .admin-quick-create {
+    font-size: 0.95rem;
+    padding: 0.5rem 0.65rem;
+  }
+
+  .admin-theme .admin-sidebar-modern .admin-nav-item-modern {
+    font-size: 0.94rem;
+    padding-top: 0.45rem;
+    padding-bottom: 0.45rem;
+  }
+}
