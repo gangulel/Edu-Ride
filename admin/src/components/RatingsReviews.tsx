@@ -34,6 +34,14 @@ export function RatingsReviews() {
   const totalReviews = useMemo(() => driverRatings.reduce((sum, d) => sum + Number(d.reviews || 0), 0), [driverRatings])
   const lowRatedDrivers = useMemo(() => driverRatings.filter((d) => Number(d.rating || 0) < 3.5).length, [driverRatings])
   const flaggedReviews = useMemo(() => recentReviews.filter((r) => Boolean(r.flagged)).length, [recentReviews])
+  const lowPerformerDrivers = useMemo(
+    () => [...driverRatings].sort((a, b) => Number(a.rating || 0) - Number(b.rating || 0)).slice(0, 3),
+    [driverRatings]
+  )
+  const topPerformerDrivers = useMemo(
+    () => [...driverRatings].sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0)).slice(0, 3),
+    [driverRatings]
+  )
 
   return (
     <div className="space-y-6">
@@ -238,27 +246,17 @@ export function RatingsReviews() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
-                <div>
-                  <p className="font-medium">Nuwan Rajapaksa - Route C</p>
-                  <p className="text-sm text-gray-500">Rating: 3.2 / 5.0</p>
+              {lowPerformerDrivers.length ? lowPerformerDrivers.map((driver) => (
+                <div key={driver.id} className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                  <div>
+                    <p className="font-medium">{driver.driver} - {driver.route}</p>
+                    <p className="text-sm text-gray-500">Rating: {driver.rating} / 5.0</p>
+                  </div>
+                  <Button size="sm">Take Action</Button>
                 </div>
-                <Button size="sm">Take Action</Button>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
-                <div>
-                  <p className="font-medium">Multiple late pickup reports</p>
-                  <p className="text-sm text-gray-500">Zone A routes affected</p>
-                </div>
-                <Button size="sm" variant="outline">Investigate</Button>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
-                <div>
-                  <p className="font-medium">Communication issues reported</p>
-                  <p className="text-sm text-gray-500">5 drivers mentioned</p>
-                </div>
-                <Button size="sm" variant="outline">Review</Button>
-              </div>
+              )) : (
+                <p className="text-sm text-gray-500">No low-performing drivers in backend data.</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -269,27 +267,17 @@ export function RatingsReviews() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                <div>
-                  <p className="font-medium">Sanduni Wijesinghe - Route B</p>
-                  <p className="text-sm text-gray-500">Rating: 4.9 / 5.0 (312 reviews)</p>
+              {topPerformerDrivers.length ? topPerformerDrivers.map((driver) => (
+                <div key={driver.id} className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                  <div>
+                    <p className="font-medium">{driver.driver} - {driver.route}</p>
+                    <p className="text-sm text-gray-500">Rating: {driver.rating} / 5.0 ({driver.reviews || 0} reviews)</p>
+                  </div>
+                  <Award className="h-6 w-6 text-green-600" />
                 </div>
-                <Award className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                <div>
-                  <p className="font-medium">Kasun Bandara - Route A</p>
-                  <p className="text-sm text-gray-500">Rating: 4.8 / 5.0 (234 reviews)</p>
-                </div>
-                <Award className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                <div>
-                  <p className="font-medium">Pradeep Kumara - Route E</p>
-                  <p className="text-sm text-gray-500">Rating: 4.7 / 5.0 (267 reviews)</p>
-                </div>
-                <Award className="h-6 w-6 text-green-600" />
-              </div>
+              )) : (
+                <p className="text-sm text-gray-500">No top performer data available.</p>
+              )}
             </div>
           </CardContent>
         </Card>

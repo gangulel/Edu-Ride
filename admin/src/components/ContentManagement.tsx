@@ -60,8 +60,8 @@ export function ContentManagement() {
                 <div>
                   <label className="text-sm font-medium">Version Information</label>
                   <div className="flex gap-4 mt-2 text-sm text-gray-500">
-                    <span>Current Version: 2.1</span>
-                    <span>Last Updated: December 14, 2024</span>
+                    <span>Current Version: From backend record</span>
+                    <span>Last Updated: Synced from backend</span>
                   </div>
                 </div>
                 <div>
@@ -103,8 +103,8 @@ export function ContentManagement() {
                 <div>
                   <label className="text-sm font-medium">Version Information</label>
                   <div className="flex gap-4 mt-2 text-sm text-gray-500">
-                    <span>Current Version: 3.0</span>
-                    <span>Last Updated: December 14, 2024</span>
+                    <span>Current Version: From backend record</span>
+                    <span>Last Updated: Synced from backend</span>
                   </div>
                 </div>
                 <div>

@@ -29,6 +29,36 @@ export function ComplaintsSupport() {
   const openTickets = useMemo(() => complaints.filter((item) => ["open", "in-progress"].includes(item.status)).length, [complaints])
   const resolvedTickets = useMemo(() => complaints.filter((item) => item.status === "resolved").length, [complaints])
   const highPriority = useMemo(() => complaints.filter((item) => item.priority === "high").length, [complaints])
+  const commonIssues = useMemo(() => {
+    const bucket = new Map<string, number>()
+    for (const complaint of complaints) {
+      const category = String(complaint.category || "Uncategorized")
+      bucket.set(category, (bucket.get(category) || 0) + 1)
+    }
+    return Array.from(bucket.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+  }, [complaints])
+  const teamPerformance = useMemo(() => {
+    const bucket = new Map<string, { total: number; resolved: number }>()
+    for (const complaint of complaints) {
+      const assignee = String(complaint.assignedTo || "Unassigned")
+      if (assignee === "Unassigned") continue
+      const current = bucket.get(assignee) || { total: 0, resolved: 0 }
+      current.total += 1
+      if (complaint.status === "resolved") {
+        current.resolved += 1
+      }
+      bucket.set(assignee, current)
+    }
+    return Array.from(bucket.entries())
+      .map(([name, stats]) => ({
+        name,
+        rate: stats.total ? Math.round((stats.resolved / stats.total) * 100) : 0,
+      }))
+      .sort((a, b) => b.rate - a.rate)
+      .slice(0, 3)
+  }, [complaints])
 
   const openComplaintDetails = (complaint: any) => {
     setSelectedComplaint(complaint)
@@ -188,13 +218,11 @@ export function ComplaintsSupport() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Average Resolution Time</CardTitle>
+            <CardTitle>Resolution Rate</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">2.4 days</div>
-            <p className="text-sm text-gray-500 mt-2">
-              <span className="text-green-600">-0.6 days</span> from last month
-            </p>
+            <div className="text-3xl font-bold">{totalComplaints ? Math.round((resolvedTickets / totalComplaints) * 1000) / 10 : 0}%</div>
+            <p className="text-sm text-gray-500 mt-2">Resolved complaints from backend records</p>
           </CardContent>
         </Card>
 
@@ -204,18 +232,14 @@ export function ComplaintsSupport() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm">Late Pickup</span>
-                <span className="text-sm font-medium">34%</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Safety Concerns</span>
-                <span className="text-sm font-medium">22%</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Payment Issues</span>
-                <span className="text-sm font-medium">18%</span>
-              </div>
+              {commonIssues.length ? commonIssues.map(([category, count]) => (
+                <div key={category} className="flex justify-between">
+                  <span className="text-sm">{category}</span>
+                  <span className="text-sm font-medium">{totalComplaints ? Math.round((count / totalComplaints) * 100) : 0}%</span>
+                </div>
+              )) : (
+                <p className="text-sm text-gray-500">No complaint category data available.</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -226,18 +250,14 @@ export function ComplaintsSupport() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm">Sunil Admin</span>
-                <Badge variant="success">98%</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Amali Admin</span>
-                <Badge variant="success">95%</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Admin Team</span>
-                <Badge variant="success">92%</Badge>
-              </div>
+              {teamPerformance.length ? teamPerformance.map((member) => (
+                <div key={member.name} className="flex justify-between">
+                  <span className="text-sm">{member.name}</span>
+                  <Badge variant={member.rate >= 80 ? "success" : member.rate >= 50 ? "warning" : "secondary"}>{member.rate}%</Badge>
+                </div>
+              )) : (
+                <p className="text-sm text-gray-500">No assigned complaint data available.</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -294,9 +314,7 @@ export function ComplaintsSupport() {
               <div>
                 <p className="text-sm text-gray-500 mb-2">Complaint Description</p>
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm">
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Driver was consistently late for pickup, causing inconvenience. This has happened multiple times over the past week.
-                  </p>
+                  <p className="text-sm">{selectedComplaint.description || "No description was provided for this complaint."}</p>
                 </div>
               </div>
 

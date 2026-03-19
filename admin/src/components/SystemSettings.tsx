@@ -123,7 +123,7 @@ export function SystemSettings() {
           <div className="flex items-center justify-between p-3 bg-green-50 rounded-lg">
             <div className="flex items-center">
               <div className="h-2 w-2 bg-green-600 rounded-full mr-2"></div>
-              <span className="text-sm font-medium">Payment Gateway Status: Connected</span>
+              <span className="text-sm font-medium">Payment Gateway Status: Managed by backend configuration</span>
             </div>
             <Button size="sm" variant="outline">Test Connection</Button>
           </div>
@@ -185,8 +185,8 @@ export function SystemSettings() {
                 <h4 className="font-medium">Parent App (iOS)</h4>
                 <Badge variant="success">Active</Badge>
               </div>
-              <p className="text-sm text-gray-500">Current Version: 2.3.1</p>
-              <p className="text-sm text-gray-500">Minimum Supported: 2.0.0</p>
+              <p className="text-sm text-gray-500">Current Version: Synced from release pipeline</p>
+              <p className="text-sm text-gray-500">Minimum Supported: Managed by backend policy</p>
               <Button size="sm" className="mt-3" variant="outline">Update Version</Button>
             </div>
             <div className="p-4 border rounded-lg">
@@ -194,8 +194,8 @@ export function SystemSettings() {
                 <h4 className="font-medium">Parent App (Android)</h4>
                 <Badge variant="success">Active</Badge>
               </div>
-              <p className="text-sm text-gray-500">Current Version: 2.3.0</p>
-              <p className="text-sm text-gray-500">Minimum Supported: 2.0.0</p>
+              <p className="text-sm text-gray-500">Current Version: Synced from release pipeline</p>
+              <p className="text-sm text-gray-500">Minimum Supported: Managed by backend policy</p>
               <Button size="sm" className="mt-3" variant="outline">Update Version</Button>
             </div>
             <div className="p-4 border rounded-lg">
@@ -203,8 +203,8 @@ export function SystemSettings() {
                 <h4 className="font-medium">Driver App (iOS)</h4>
                 <Badge variant="success">Active</Badge>
               </div>
-              <p className="text-sm text-gray-500">Current Version: 1.8.5</p>
-              <p className="text-sm text-gray-500">Minimum Supported: 1.5.0</p>
+              <p className="text-sm text-gray-500">Current Version: Synced from release pipeline</p>
+              <p className="text-sm text-gray-500">Minimum Supported: Managed by backend policy</p>
               <Button size="sm" className="mt-3" variant="outline">Update Version</Button>
             </div>
             <div className="p-4 border rounded-lg">
@@ -212,8 +212,8 @@ export function SystemSettings() {
                 <h4 className="font-medium">Driver App (Android)</h4>
                 <Badge variant="success">Active</Badge>
               </div>
-              <p className="text-sm text-gray-500">Current Version: 1.8.4</p>
-              <p className="text-sm text-gray-500">Minimum Supported: 1.5.0</p>
+              <p className="text-sm text-gray-500">Current Version: Synced from release pipeline</p>
+              <p className="text-sm text-gray-500">Minimum Supported: Managed by backend policy</p>
               <Button size="sm" className="mt-3" variant="outline">Update Version</Button>
             </div>
           </div>

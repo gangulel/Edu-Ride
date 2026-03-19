@@ -41,6 +41,18 @@ export function ReportsAnalytics() {
     if (!routeUtilizationData.length) return 0
     return Math.round(routeUtilizationData.reduce((sum, item) => sum + Number(item.utilization || 0), 0) / routeUtilizationData.length)
   }, [routeUtilizationData])
+  const totalTrips = useMemo(
+    () => driverPerformanceData.reduce((sum, item) => sum + Number(item.trips || 0), 0),
+    [driverPerformanceData]
+  )
+  const avgOnTime = useMemo(() => {
+    if (!driverPerformanceData.length) return 0
+    return Math.round((driverPerformanceData.reduce((sum, item) => sum + Number(item.onTime || 0), 0) / driverPerformanceData.length) * 10) / 10
+  }, [driverPerformanceData])
+  const parentSatisfaction = useMemo(() => {
+    if (!avgRating) return 0
+    return Math.round((avgRating / 5) * 1000) / 10
+  }, [avgRating])
 
   return (
     <div className="space-y-6">
@@ -71,7 +83,7 @@ export function ReportsAnalytics() {
           <CardContent>
             <div className="text-2xl font-bold">{totalUsers.toLocaleString()}</div>
             <p className="text-xs text-gray-500 mt-1">
-              Latest seeded snapshot
+              Latest backend snapshot
             </p>
           </CardContent>
         </Card>
@@ -303,26 +315,26 @@ export function ReportsAnalytics() {
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold">31,500</div>
+            <div className="text-2xl font-bold">{totalTrips.toLocaleString()}</div>
             <p className="text-sm text-gray-500 mt-1">Total Trips Completed</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold text-green-600">94.2%</div>
+            <div className="text-2xl font-bold text-green-600">{avgOnTime}%</div>
             <p className="text-sm text-gray-500 mt-1">On-Time Performance</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold">87.5%</div>
-            <p className="text-sm text-gray-500 mt-1">Parent Satisfaction</p>
+            <div className="text-2xl font-bold">{parentSatisfaction}%</div>
+            <p className="text-sm text-gray-500 mt-1">Parent Satisfaction (from rating data)</p>
           </CardContent>
         </Card>
         <Card>
           <CardContent className="pt-6">
-            <div className="text-2xl font-bold">156</div>
-            <p className="text-sm text-gray-500 mt-1">Active Routes</p>
+            <div className="text-2xl font-bold">{routeUtilizationData.length}</div>
+            <p className="text-sm text-gray-500 mt-1">Routes in analytics dataset</p>
           </CardContent>
         </Card>
       </div>

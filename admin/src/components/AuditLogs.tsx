@@ -29,6 +29,23 @@ export function AuditLogs() {
 
   const failedAttempts = useMemo(() => loginHistory.filter((item) => item.status === "failed").length, [loginHistory])
   const activeAlerts = useMemo(() => suspiciousActivity.filter((item) => item.status === "investigating").length, [suspiciousActivity])
+  const recentSecurityEvents = useMemo(() => {
+    const suspiciousEvents = suspiciousActivity.map((item) => ({
+      id: `s-${item.id || item.timestamp || Math.random()}`,
+      message: item.description || item.type || "Suspicious activity detected",
+      timestamp: item.timestamp || "Recently",
+      level: item.severity === "high" ? "high" : item.severity === "medium" ? "medium" : "low",
+    }))
+
+    const adminEvents = adminActions.map((item) => ({
+      id: `a-${item.id || item.timestamp || Math.random()}`,
+      message: `${item.admin || "Admin"}: ${item.action || "Action performed"}`,
+      timestamp: item.timestamp || "Recently",
+      level: item.severity === "high" ? "high" : item.severity === "medium" ? "medium" : "low",
+    }))
+
+    return [...suspiciousEvents, ...adminEvents].slice(0, 4)
+  }, [adminActions, suspiciousActivity])
 
   return (
     <div className="space-y-6">
@@ -266,34 +283,17 @@ export function AuditLogs() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="h-2 w-2 bg-red-600 rounded-full mt-2"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Multiple failed logins detected</p>
-                  <p className="text-xs text-gray-500">2 hours ago</p>
+              {recentSecurityEvents.length ? recentSecurityEvents.map((event) => (
+                <div key={event.id} className="flex items-start gap-3">
+                  <div className={`h-2 w-2 rounded-full mt-2 ${event.level === "high" ? "bg-red-600" : event.level === "medium" ? "bg-yellow-600" : "bg-green-600"}`}></div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{event.message}</p>
+                    <p className="text-xs text-gray-500">{event.timestamp}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="h-2 w-2 bg-green-600 rounded-full mt-2"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Security patch applied</p>
-                  <p className="text-xs text-gray-500">5 hours ago</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="h-2 w-2 bg-yellow-600 rounded-full mt-2"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Unusual traffic pattern detected</p>
-                  <p className="text-xs text-gray-500">1 day ago</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="h-2 w-2 bg-green-600 rounded-full mt-2"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Database backup completed</p>
-                  <p className="text-xs text-gray-500">1 day ago</p>
-                </div>
-              </div>
+              )) : (
+                <p className="text-sm text-gray-500">No recent security events from backend.</p>
+              )}
             </div>
           </CardContent>
         </Card>

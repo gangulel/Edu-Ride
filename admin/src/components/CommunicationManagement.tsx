@@ -30,6 +30,8 @@ export function CommunicationManagement() {
 
   const sentCount = useMemo(() => notifications.filter((item) => item.status === "sent").length, [notifications])
   const emergencyCount = useMemo(() => notifications.filter((item) => item.type === "emergency" || item.type === "alert").length, [notifications])
+  const totalNotifications = notifications.length
+  const deliveryRate = totalNotifications ? Math.round((sentCount / totalNotifications) * 1000) / 10 : 0
 
   return (
     <div className="space-y-6">
@@ -62,8 +64,8 @@ export function CommunicationManagement() {
             <Send className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">98.5%</div>
-            <p className="text-xs text-gray-500 mt-1">Estimated delivery success</p>
+            <div className="text-2xl font-bold text-green-600">{deliveryRate}%</div>
+            <p className="text-xs text-gray-500 mt-1">Sent vs total notifications</p>
           </CardContent>
         </Card>
 
