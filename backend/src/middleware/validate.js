@@ -10,7 +10,14 @@ export const validate = (schemas = {}) => {
       }
 
       if (query) {
-        req.query = query.parse(req.query);
+        const parsedQuery = query.parse(req.query);
+
+        // Express 5 exposes req.query via a getter, so mutate the object
+        // instead of reassigning the property.
+        for (const key of Object.keys(req.query)) {
+          delete req.query[key];
+        }
+        Object.assign(req.query, parsedQuery);
       }
 
       if (params) {

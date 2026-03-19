@@ -11,6 +11,7 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { responsive, fs } from "../utils/responsive";
 
 // Mock data for conversations
 const MOCK_CONVERSATIONS = [
@@ -166,20 +167,20 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: "#fff",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: responsive.paddingLG,
+    paddingVertical: responsive.paddingMD,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E5EA",
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: fs(28),
     fontWeight: "bold",
     color: "#000",
   },
   searchContainer: {
     backgroundColor: "#fff",
-    paddingHorizontal: 20,
-    paddingVertical: 12,
+    paddingHorizontal: responsive.paddingLG,
+    paddingVertical: responsive.paddingMD,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E5EA",
   },
@@ -187,24 +188,25 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     alignItems: "center",
     backgroundColor: "#F2F2F7",
-    borderRadius: 10,
-    paddingHorizontal: 12,
-    paddingVertical: 10,
+    borderRadius: responsive.radiusMD,
+    paddingHorizontal: responsive.paddingMD,
+    paddingVertical: responsive.paddingSM,
     gap: 8,
   },
   searchInput: {
     flex: 1,
-    fontSize: 16,
+    fontSize: responsive.fontMD,
     color: "#000",
   },
   listContainer: {
-    paddingTop: 8,
+    paddingTop: responsive.paddingSM,
+    paddingBottom: responsive.tabBarHeight + responsive.paddingLG,
   },
   conversationItem: {
     flexDirection: "row",
     backgroundColor: "#fff",
-    paddingVertical: 16,
-    paddingHorizontal: 20,
+    paddingVertical: responsive.paddingMD,
+    paddingHorizontal: responsive.paddingLG,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E5EA",
   },
@@ -213,15 +215,15 @@ const styles = StyleSheet.create({
     marginRight: 12,
   },
   avatar: {
-    width: 56,
-    height: 56,
-    borderRadius: 28,
+    width: fs(52),
+    height: fs(52),
+    borderRadius: fs(26),
     backgroundColor: "#E3F2FD",
     justifyContent: "center",
     alignItems: "center",
   },
   avatarEmoji: {
-    fontSize: 32,
+    fontSize: fs(28),
   },
   onlineIndicator: {
     position: "absolute",
@@ -245,12 +247,12 @@ const styles = StyleSheet.create({
     marginBottom: 4,
   },
   studentName: {
-    fontSize: 16,
+    fontSize: responsive.fontMD,
     fontWeight: "600",
     color: "#000",
   },
   timestamp: {
-    fontSize: 13,
+    fontSize: responsive.fontXS,
     color: "#8E8E93",
   },
   messageRow: {
@@ -260,7 +262,7 @@ const styles = StyleSheet.create({
   },
   lastMessage: {
     flex: 1,
-    fontSize: 14,
+    fontSize: responsive.fontSM,
     color: "#8E8E93",
     marginRight: 8,
   },
@@ -279,25 +281,25 @@ const styles = StyleSheet.create({
   },
   unreadCount: {
     color: "#fff",
-    fontSize: 12,
+    fontSize: responsive.fontXS,
     fontWeight: "bold",
   },
   emptyContainer: {
     flex: 1,
     justifyContent: "center",
     alignItems: "center",
-    paddingHorizontal: 40,
+    paddingHorizontal: responsive.padding2XL,
   },
   emptyText: {
-    fontSize: 20,
+    fontSize: responsive.fontXL,
     fontWeight: "600",
     color: "#8E8E93",
-    marginTop: 16,
+    marginTop: responsive.paddingLG,
   },
   emptySubtext: {
-    fontSize: 14,
+    fontSize: responsive.fontSM,
     color: "#C7C7CC",
-    marginTop: 8,
+    marginTop: responsive.paddingSM,
     textAlign: "center",
   },
 });

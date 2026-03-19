@@ -268,8 +268,6 @@ export default function DriverHome() {
           </View>
 
         </Animated.View>
-
-        <View style={{ height: hp(30) }} />
       </ScrollView>
     </SafeAreaView>
   );
@@ -284,7 +282,7 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   scrollContent: {
-    paddingBottom: responsive.paddingXL,
+    paddingBottom: responsive.tabBarHeight + responsive.paddingXL,
   },
   header: {
     flexDirection: "row",
@@ -434,6 +432,7 @@ const styles = StyleSheet.create({
   tripTimeRow: {
     flexDirection: "row",
     alignItems: "center",
+    flexWrap: "wrap",
     marginBottom: responsive.paddingMD,
     gap: responsive.paddingSM,
   },
@@ -452,6 +451,7 @@ const styles = StyleSheet.create({
   },
   tripDetails: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: responsive.paddingLG,
     marginBottom: responsive.paddingLG,
   },
@@ -487,7 +487,9 @@ const styles = StyleSheet.create({
     marginHorizontal: -responsive.paddingSM / 2,
   },
   actionCard: {
-    width: "50%",
+    width: wp(172),
+    maxWidth: "50%",
+    minWidth: wp(146),
     paddingHorizontal: responsive.paddingSM / 2,
     marginBottom: responsive.paddingSM,
   },

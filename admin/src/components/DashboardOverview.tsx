@@ -4,6 +4,8 @@ import { Users, Car, MapPin, DollarSign, AlertTriangle } from "lucide-react"
 import { BarChart, Bar, LineChart, Line, PieChart, Pie, Cell, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
 import { apiRequest } from "../lib/api"
 
+const authErrorPattern = /no token provided|unauthorized|forbidden|authentication required|invalid or expired token/i
+
 type DashboardPayload = {
   stats: {
     users: {
@@ -34,6 +36,12 @@ type DashboardPayload = {
   pendingVerifications: Array<{ _id: string }>
 }
 
+type PublicUsersResponse = {
+  pagination?: {
+    total: number
+  }
+}
+
 export function DashboardOverview() {
   const [data, setData] = useState<DashboardPayload | null>(null)
   const [error, setError] = useState("")
@@ -42,17 +50,85 @@ export function DashboardOverview() {
   useEffect(() => {
     let mounted = true
 
-    apiRequest<DashboardPayload>("/admin/dashboard")
-      .then((payload) => {
+    const loadDashboard = async () => {
+      try {
+        const payload = await apiRequest<DashboardPayload>("/admin/dashboard")
         if (mounted) {
           setData(payload)
+          setError("")
         }
-      })
-      .catch((err) => {
+        return
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        if (!authErrorPattern.test(message)) {
+          if (mounted) {
+            setError(message)
+          }
+          return
+        }
+      }
+
+      try {
+        const [
+          totalParents,
+          activeParents,
+          pendingParents,
+          totalDrivers,
+          activeDrivers,
+          pendingDrivers,
+          suspendedDrivers,
+        ] = await Promise.all([
+          apiRequest<PublicUsersResponse>("/public/users?role=parent&limit=1"),
+          apiRequest<PublicUsersResponse>("/public/users?role=parent&status=active&limit=1"),
+          apiRequest<PublicUsersResponse>("/public/users?role=parent&status=pending&limit=1"),
+          apiRequest<PublicUsersResponse>("/public/users?role=driver&limit=1"),
+          apiRequest<PublicUsersResponse>("/public/users?role=driver&status=active&limit=1"),
+          apiRequest<PublicUsersResponse>("/public/users?role=driver&status=pending&limit=1"),
+          apiRequest<PublicUsersResponse>("/public/users?role=driver&status=suspended&limit=1"),
+        ])
+
+        const fallbackPayload: DashboardPayload = {
+          stats: {
+            users: {
+              totalParents: totalParents.pagination?.total || 0,
+              activeParents: activeParents.pagination?.total || 0,
+              pendingParents: pendingParents.pagination?.total || 0,
+              totalDrivers: totalDrivers.pagination?.total || 0,
+              activeDrivers: activeDrivers.pagination?.total || 0,
+              pendingDrivers: pendingDrivers.pagination?.total || 0,
+              suspendedDrivers: suspendedDrivers.pagination?.total || 0,
+            },
+            routes: {
+              total: 0,
+              active: 0,
+            },
+            bookings: {
+              total: 0,
+              pending: 0,
+              accepted: 0,
+            },
+            trips: {
+              total: 0,
+              completed: 0,
+              active: 0,
+            },
+            recentRegistrations: 0,
+          },
+          pendingVerifications: [],
+        }
+
         if (mounted) {
-          setError(err.message)
+          setData(fallbackPayload)
+          setError("")
         }
-      })
+      } catch (err) {
+        if (mounted) {
+          setError(err instanceof Error ? err.message : "Failed to load dashboard")
+        }
+      }
+    }
+
+    loadDashboard()
 
     return () => {
       mounted = false

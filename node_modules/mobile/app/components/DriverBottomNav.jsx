@@ -2,11 +2,13 @@ import React from "react";
 import { View, TouchableOpacity, Text, StyleSheet } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
 import { useRouter, usePathname } from "expo-router";
-import { responsive, hp, wp } from "../utils/responsive";
+import { useSafeAreaInsets } from "react-native-safe-area-context";
+import { responsive, fs } from "../utils/responsive";
 
 const DriverBottomNav = () => {
   const router = useRouter();
   const pathname = usePathname();
+  const insets = useSafeAreaInsets();
 
   const navItems = [
     {
@@ -44,7 +46,15 @@ const DriverBottomNav = () => {
   };
 
   return (
-    <View style={styles.container}>
+    <View
+      style={[
+        styles.container,
+        {
+          paddingBottom: responsive.paddingSM + insets.bottom,
+          minHeight: Math.max(responsive.tabBarMinHeight, responsive.tabBarHeight + insets.bottom),
+        },
+      ]}
+    >
       {navItems.map((item) => {
         const active = isActive(item.route);
         return (
@@ -56,7 +66,7 @@ const DriverBottomNav = () => {
           >
             <Ionicons
               name={item.icon}
-              size={24}
+              size={fs(22)}
               color={active ? "#007AFF" : "#8E8E93"}
             />
             <Text style={[styles.label, active && styles.activeLabel]}>
@@ -75,9 +85,8 @@ const styles = StyleSheet.create({
     backgroundColor: "#fff",
     borderTopWidth: 1,
     borderTopColor: "#E5E5EA",
-    paddingBottom: responsive.paddingSM,
     paddingTop: responsive.paddingSM,
-    height: responsive.headerHeight,
+    paddingHorizontal: responsive.paddingXS,
     justifyContent: "space-around",
     alignItems: "center",
   },
@@ -87,7 +96,7 @@ const styles = StyleSheet.create({
     justifyContent: "center",
   },
   label: {
-    fontSize: responsive.fontSM,
+    fontSize: responsive.fontXS,
     fontWeight: "500",
     marginTop: responsive.paddingXS,
     color: "#8E8E93",

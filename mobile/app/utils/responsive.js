@@ -6,6 +6,10 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const BASE_WIDTH = 375;
 const BASE_HEIGHT = 812;
 
+const clamp = (value, min, max) => {
+  return Math.max(min, Math.min(value, max));
+};
+
 // Width percentage
 export const wp = (size) => {
   return (size / BASE_WIDTH) * SCREEN_WIDTH;
@@ -18,7 +22,7 @@ export const hp = (size) => {
 
 // Font scaling
 export const fs = (size) => {
-  const scale = SCREEN_WIDTH / BASE_WIDTH;
+  const scale = clamp(SCREEN_WIDTH / BASE_WIDTH, 0.9, 1.18);
   const newSize = size * scale;
   return Math.round(PixelRatio.roundToNearestPixel(newSize));
 };
@@ -60,4 +64,9 @@ export const responsive = {
 
   // Button height
   buttonHeight: hp(48),
+
+  // Navigation heights
+  tabBarMinHeight: 64,
+  tabBarHeight: hp(72),
+  headerHeight: hp(60),
 };

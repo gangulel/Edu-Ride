@@ -58,7 +58,11 @@ export default function RouteManagement() {
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
         {/* Route Summary Card */}
         <View style={styles.section}>
           <View style={styles.summaryCard}>
@@ -199,7 +203,6 @@ export default function RouteManagement() {
           </View>
         </View>
 
-        <View style={{height: 100}} />
       </ScrollView>
 
       {/* Add Stop Modal */}
@@ -282,6 +285,9 @@ const styles = StyleSheet.create({
   scrollView: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: responsive.tabBarHeight + responsive.paddingLG,
+  },
   section: {
     marginTop: responsive.paddingLG,
     paddingHorizontal: responsive.paddingLG,
@@ -351,6 +357,8 @@ const styles = StyleSheet.create({
   daysContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
+    flexWrap: "wrap",
+    rowGap: responsive.paddingSM,
   },
   dayButton: {
     width: wp(40),
@@ -451,10 +459,12 @@ const styles = StyleSheet.create({
   },
   statsGrid: {
     flexDirection: "row",
+    flexWrap: "wrap",
     gap: responsive.paddingMD,
   },
   statCard: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: wp(96),
     backgroundColor: "#fff",
     borderRadius: responsive.radiusLG,
     padding: responsive.paddingLG,

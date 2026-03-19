@@ -1,6 +1,7 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, StatusBar } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { responsive, fs } from "../utils/responsive";
 
 export default function DriverEarnings() {
   const [selectedPeriod, setSelectedPeriod] = useState("today");
@@ -45,7 +46,7 @@ export default function DriverEarnings() {
         <Text style={styles.headerTitle}>Earnings</Text>
       </View>
 
-      <ScrollView style={styles.scrollView}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Period Selector */}
         <View style={styles.periodSelector}>
           <TouchableOpacity
@@ -169,28 +170,31 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: "#fff",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: responsive.paddingLG,
+    paddingVertical: responsive.paddingMD,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E5EA",
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: fs(28),
     fontWeight: "bold",
     color: "#000",
   },
   scrollView: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: responsive.tabBarHeight + responsive.paddingLG,
+  },
   periodSelector: {
     flexDirection: "row",
-    padding: 20,
+    padding: responsive.paddingLG,
     gap: 8,
   },
   periodButton: {
     flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: responsive.paddingSM,
+    paddingHorizontal: responsive.paddingMD,
     borderRadius: 8,
     backgroundColor: "#fff",
     alignItems: "center",
@@ -202,7 +206,7 @@ const styles = StyleSheet.create({
     borderColor: "#007AFF",
   },
   periodText: {
-    fontSize: 14,
+    fontSize: responsive.fontSM,
     color: "#000",
     fontWeight: "500",
   },
@@ -212,9 +216,9 @@ const styles = StyleSheet.create({
   },
   totalCard: {
     backgroundColor: "#fff",
-    marginHorizontal: 20,
-    marginBottom: 20,
-    padding: 24,
+    marginHorizontal: responsive.paddingLG,
+    marginBottom: responsive.paddingLG,
+    padding: responsive.paddingXL,
     borderRadius: 16,
     alignItems: "center",
     shadowColor: "#000",
@@ -224,47 +228,50 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   totalIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: fs(60),
+    height: fs(60),
+    borderRadius: fs(30),
     backgroundColor: "#E8F5E9",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
   },
   totalLabel: {
-    fontSize: 16,
+    fontSize: responsive.fontMD,
     color: "#8E8E93",
-    marginBottom: 8,
+    marginBottom: responsive.paddingSM,
   },
   totalAmount: {
-    fontSize: 42,
+    fontSize: fs(34),
     fontWeight: "bold",
     color: "#000",
-    marginBottom: 20,
+    marginBottom: responsive.paddingLG,
+    textAlign: "center",
   },
   withdrawButton: {
     flexDirection: "row",
     backgroundColor: "#34C759",
-    paddingVertical: 12,
-    paddingHorizontal: 32,
+    paddingVertical: responsive.paddingSM,
+    paddingHorizontal: responsive.paddingXL,
     borderRadius: 8,
     alignItems: "center",
     gap: 8,
   },
   withdrawButtonText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: responsive.fontMD,
     fontWeight: "600",
   },
   statsGrid: {
     flexDirection: "row",
-    paddingHorizontal: 20,
+    paddingHorizontal: responsive.paddingLG,
+    flexWrap: "wrap",
     gap: 12,
-    marginBottom: 20,
+    marginBottom: responsive.paddingLG,
   },
   statCard: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: fs(110),
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
@@ -279,19 +286,19 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statValue: {
-    fontSize: 20,
+    fontSize: responsive.fontXL,
     fontWeight: "bold",
     color: "#000",
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: responsive.fontXS,
     color: "#8E8E93",
     textAlign: "center",
   },
   section: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    paddingHorizontal: responsive.paddingLG,
+    marginBottom: responsive.paddingXL,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -300,13 +307,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: responsive.fontXL,
     fontWeight: "600",
     color: "#000",
-    marginBottom: 12,
+    marginBottom: responsive.paddingMD,
   },
   seeAllText: {
-    fontSize: 14,
+    fontSize: responsive.fontSM,
     color: "#007AFF",
     fontWeight: "500",
   },
@@ -314,7 +321,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: "#fff",
     borderRadius: 12,
-    padding: 16,
+    padding: responsive.paddingMD,
     marginBottom: 8,
     alignItems: "center",
     shadowColor: "#000",
@@ -324,9 +331,9 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   transactionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: fs(40),
+    height: fs(40),
+    borderRadius: fs(20),
     backgroundColor: "#E8F5E9",
     justifyContent: "center",
     alignItems: "center",
@@ -336,30 +343,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   transactionStudent: {
-    fontSize: 16,
+    fontSize: responsive.fontMD,
     fontWeight: "600",
     color: "#000",
     marginBottom: 2,
   },
   transactionDestination: {
-    fontSize: 14,
+    fontSize: responsive.fontSM,
     color: "#8E8E93",
     marginBottom: 2,
   },
   transactionTime: {
-    fontSize: 12,
+    fontSize: responsive.fontXS,
     color: "#8E8E93",
   },
   transactionAmount: {
-    fontSize: 18,
+    fontSize: responsive.fontLG,
     fontWeight: "bold",
     color: "#34C759",
+    maxWidth: "42%",
+    textAlign: "right",
   },
   paymentCard: {
     flexDirection: "row",
     backgroundColor: "#fff",
     borderRadius: 12,
-    padding: 16,
+    padding: responsive.paddingMD,
     alignItems: "center",
     marginBottom: 12,
     shadowColor: "#000",
@@ -369,9 +378,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   paymentIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: fs(46),
+    height: fs(46),
+    borderRadius: fs(23),
     backgroundColor: "#E3F2FD",
     justifyContent: "center",
     alignItems: "center",
@@ -381,13 +390,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   paymentTitle: {
-    fontSize: 16,
+    fontSize: responsive.fontMD,
     fontWeight: "600",
     color: "#000",
     marginBottom: 4,
   },
   paymentDescription: {
-    fontSize: 14,
+    fontSize: responsive.fontSM,
     color: "#8E8E93",
   },
   addPaymentButton: {
@@ -396,14 +405,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#fff",
     borderRadius: 12,
-    padding: 16,
+    padding: responsive.paddingMD,
     borderWidth: 1,
     borderColor: "#E5E5EA",
     borderStyle: "dashed",
     gap: 8,
   },
   addPaymentText: {
-    fontSize: 16,
+    fontSize: responsive.fontMD,
     color: "#007AFF",
     fontWeight: "500",
   },
