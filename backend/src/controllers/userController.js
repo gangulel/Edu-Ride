@@ -1,27 +1,29 @@
 import User from "../models/User.js";
+import { escapeRegex, parsePagination } from "../utils/validation.js";
 
 // GET /api/users — List users (admin)
 export const listUsers = async (req, res) => {
   const { role, status, search, page = 1, limit = 20 } = req.query;
+  const pagination = parsePagination(page, limit);
 
   const filter = {};
   if (role) filter.role = role;
   if (status) filter.status = status;
   if (search) {
+    const safeSearch = escapeRegex(search);
     filter.$or = [
-      { fullName: { $regex: search, $options: "i" } },
-      { email: { $regex: search, $options: "i" } },
-      { phone: { $regex: search, $options: "i" } },
+      { fullName: { $regex: safeSearch, $options: "i" } },
+      { email: { $regex: safeSearch, $options: "i" } },
+      { phone: { $regex: safeSearch, $options: "i" } },
     ];
   }
 
-  const skip = (parseInt(page) - 1) * parseInt(limit);
   const [users, total] = await Promise.all([
     User.find(filter)
       .select("-firebaseUid")
       .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit)),
+      .skip(pagination.skip)
+      .limit(pagination.limit),
     User.countDocuments(filter),
   ]);
 
@@ -29,9 +31,9 @@ export const listUsers = async (req, res) => {
     users,
     pagination: {
       total,
-      page: parseInt(page),
-      limit: parseInt(limit),
-      pages: Math.ceil(total / parseInt(limit)),
+      page: pagination.page,
+      limit: pagination.limit,
+      pages: Math.ceil(total / pagination.limit),
     },
   });
 };

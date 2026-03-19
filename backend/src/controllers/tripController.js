@@ -2,6 +2,9 @@ import Trip from "../models/Trip.js";
 import Booking from "../models/Booking.js";
 import Route from "../models/Route.js";
 import User from "../models/User.js";
+import { parsePagination } from "../utils/validation.js";
+
+const WEEKDAY_LABELS = ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"];
 
 // POST /api/trips — Driver: start a trip
 export const startTrip = async (req, res) => {
@@ -19,6 +22,13 @@ export const startTrip = async (req, res) => {
   const route = await Route.findOne({ _id: routeId, driver: req.user._id });
   if (!route) {
     return res.status(404).json({ error: "Route not found or not owned by you" });
+  }
+
+  if (Array.isArray(route.daysOfOperation) && route.daysOfOperation.length > 0) {
+    const today = WEEKDAY_LABELS[new Date().getDay()];
+    if (!route.daysOfOperation.includes(today)) {
+      return res.status(400).json({ error: `This route is not scheduled for ${today}` });
+    }
   }
 
   // Check for existing active trip
@@ -131,7 +141,7 @@ export const completeTrip = async (req, res) => {
     trip.duration = Math.round((trip.completedAt - trip.startedAt) / 60000);
   }
 
-  if (req.body.distance) {
+  if (req.body.distance !== undefined) {
     trip.distance = req.body.distance;
   }
 
@@ -146,6 +156,7 @@ export const completeTrip = async (req, res) => {
 // GET /api/trips/history — Trip history
 export const getTripHistory = async (req, res) => {
   const { page = 1, limit = 20, type } = req.query;
+  const pagination = parsePagination(page, limit);
 
   const filter = { status: "completed" };
 
@@ -160,14 +171,13 @@ export const getTripHistory = async (req, res) => {
 
   if (type) filter.type = type;
 
-  const skip = (parseInt(page) - 1) * parseInt(limit);
   const [trips, total] = await Promise.all([
     Trip.find(filter)
       .populate("route", "name school")
       .populate("driver", "fullName profilePhoto")
       .sort({ completedAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit)),
+      .skip(pagination.skip)
+      .limit(pagination.limit),
     Trip.countDocuments(filter),
   ]);
 
@@ -175,9 +185,9 @@ export const getTripHistory = async (req, res) => {
     trips,
     pagination: {
       total,
-      page: parseInt(page),
-      limit: parseInt(limit),
-      pages: Math.ceil(total / parseInt(limit)),
+      page: pagination.page,
+      limit: pagination.limit,
+      pages: Math.ceil(total / pagination.limit),
     },
   });
 };

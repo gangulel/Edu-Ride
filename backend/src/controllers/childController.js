@@ -10,16 +10,12 @@ export const getChildren = async (req, res) => {
 export const addChild = async (req, res) => {
   const { fullName, grade, school, age, specialNotes } = req.body;
 
-  if (!fullName || !grade || !school) {
-    return res.status(400).json({ error: "fullName, grade, and school are required" });
-  }
-
   const child = await Child.create({
     parent: req.user._id,
-    fullName,
+    fullName: fullName.trim(),
     grade,
-    school,
-    age: age || null,
+    school: school.trim(),
+    age: age ?? null,
     specialNotes: specialNotes || "",
   });
 

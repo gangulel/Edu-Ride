@@ -1,5 +1,6 @@
 import AdminContent from "../models/AdminContent.js";
 import User from "../models/User.js";
+import { escapeRegex } from "../utils/validation.js";
 
 // GET /api/public/admin-content — Public: admin dashboard content data
 export const getAdminContent = async (_req, res) => {
@@ -15,6 +16,7 @@ export const getAdminContent = async (_req, res) => {
         driverPerformanceData: [],
       },
       complaints: [],
+      payments: [],
       audit: { loginHistory: [], adminActions: [], suspiciousActivity: [] },
       communication: { notifications: [], templates: [] },
       settings: { features: [] },
@@ -31,6 +33,7 @@ export const getAdminContent = async (_req, res) => {
       driverPerformanceData: [],
     },
     complaints: content.complaints || [],
+    payments: content.payments || [],
     audit: content.audit || { loginHistory: [], adminActions: [], suspiciousActivity: [] },
     communication: content.communication || { notifications: [], templates: [] },
     settings: content.settings || { features: [] },
@@ -53,11 +56,12 @@ export const getPublicUsers = async (req, res) => {
     filter.status = status;
   }
   if (search) {
+    const safeSearch = escapeRegex(search);
     filter.$or = [
-      { fullName: { $regex: search, $options: "i" } },
-      { email: { $regex: search, $options: "i" } },
-      { phone: { $regex: search, $options: "i" } },
-      { school: { $regex: search, $options: "i" } },
+      { fullName: { $regex: safeSearch, $options: "i" } },
+      { email: { $regex: safeSearch, $options: "i" } },
+      { phone: { $regex: safeSearch, $options: "i" } },
+      { school: { $regex: safeSearch, $options: "i" } },
     ];
   }
 

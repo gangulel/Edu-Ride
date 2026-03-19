@@ -17,8 +17,16 @@ function fromBase64Url(input) {
   return Buffer.from(padded, "base64").toString("utf8");
 }
 
-function getTokenSecret() {
-  return process.env.ADMIN_PANEL_TOKEN_SECRET || "edu-ride-admin-dev-secret";
+function getTokenSecret(required = false) {
+  if (!process.env.ADMIN_PANEL_TOKEN_SECRET) {
+    if (!required) {
+      return null;
+    }
+
+    throw new Error("ADMIN_PANEL_TOKEN_SECRET is required for admin session tokens");
+  }
+
+  return process.env.ADMIN_PANEL_TOKEN_SECRET;
 }
 
 export function createAdminSessionToken(adminUser) {
@@ -32,7 +40,7 @@ export function createAdminSessionToken(adminUser) {
 
   const encodedPayload = toBase64Url(JSON.stringify(payload));
   const signature = crypto
-    .createHmac("sha256", getTokenSecret())
+    .createHmac("sha256", getTokenSecret(true))
     .update(encodedPayload)
     .digest("hex");
 
@@ -41,6 +49,11 @@ export function createAdminSessionToken(adminUser) {
 
 export function verifyAdminSessionToken(token) {
   if (!token || typeof token !== "string") {
+    return null;
+  }
+
+  const secret = getTokenSecret();
+  if (!secret) {
     return null;
   }
 
@@ -53,7 +66,7 @@ export function verifyAdminSessionToken(token) {
   const receivedSignature = parts[2];
 
   const expectedSignature = crypto
-    .createHmac("sha256", getTokenSecret())
+    .createHmac("sha256", secret)
     .update(encodedPayload)
     .digest("hex");
 

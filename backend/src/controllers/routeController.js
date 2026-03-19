@@ -1,29 +1,31 @@
 import Route from "../models/Route.js";
+import { escapeRegex, parsePagination } from "../utils/validation.js";
 
 // GET /api/routes — Public: list/search routes
 export const listRoutes = async (req, res) => {
   const { school, status, driver, search, page = 1, limit = 20 } = req.query;
+  const pagination = parsePagination(page, limit);
 
   const filter = {};
-  if (school) filter.school = { $regex: school, $options: "i" };
+  if (school) filter.school = { $regex: escapeRegex(school), $options: "i" };
   if (status) filter.status = status;
   if (driver) filter.driver = driver;
   if (search) {
+    const safeSearch = escapeRegex(search);
     filter.$or = [
-      { name: { $regex: search, $options: "i" } },
-      { school: { $regex: search, $options: "i" } },
-      { "stops.location": { $regex: search, $options: "i" } },
+      { name: { $regex: safeSearch, $options: "i" } },
+      { school: { $regex: safeSearch, $options: "i" } },
+      { "stops.location": { $regex: safeSearch, $options: "i" } },
     ];
   }
 
-  const skip = (parseInt(page) - 1) * parseInt(limit);
   const [routes, total] = await Promise.all([
     Route.find(filter)
       .populate("driver", "fullName email phone rating reviewCount monthlyFee isVerified profilePhoto areasServed isAC")
       .populate("vehicle", "make model vehicleType capacity licensePlate isAC")
       .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit)),
+      .skip(pagination.skip)
+      .limit(pagination.limit),
     Route.countDocuments(filter),
   ]);
 
@@ -31,9 +33,9 @@ export const listRoutes = async (req, res) => {
     routes,
     pagination: {
       total,
-      page: parseInt(page),
-      limit: parseInt(limit),
-      pages: Math.ceil(total / parseInt(limit)),
+      page: pagination.page,
+      limit: pagination.limit,
+      pages: Math.ceil(total / pagination.limit),
     },
   });
 };

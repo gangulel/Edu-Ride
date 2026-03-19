@@ -10,17 +10,13 @@ export const getVehicles = async (req, res) => {
 export const addVehicle = async (req, res) => {
   const { make, model, year, color, licensePlate, vin, vehicleType, capacity, registrationExpiry, insuranceProvider, insurancePolicy, insuranceExpiry, isAC } = req.body;
 
-  if (!make || !model || !year || !licensePlate || !capacity) {
-    return res.status(400).json({ error: "make, model, year, licensePlate, and capacity are required" });
-  }
-
   const vehicle = await Vehicle.create({
     driver: req.user._id,
-    make,
-    model,
-    year,
+    make: make.trim(),
+    model: model.trim(),
+    year: year.trim(),
     color: color || null,
-    licensePlate,
+    licensePlate: licensePlate.trim().toUpperCase(),
     vin: vin || null,
     vehicleType: vehicleType || "van",
     capacity,
@@ -44,7 +40,13 @@ export const updateVehicle = async (req, res) => {
   const allowedFields = ["make", "model", "year", "color", "licensePlate", "vin", "vehicleType", "capacity", "registrationExpiry", "insuranceProvider", "insurancePolicy", "insuranceExpiry", "isAC"];
   for (const field of allowedFields) {
     if (req.body[field] !== undefined) {
-      vehicle[field] = req.body[field];
+      if (field === "licensePlate" && req.body[field]) {
+        vehicle[field] = req.body[field].trim().toUpperCase();
+      } else if ((field === "make" || field === "model" || field === "year") && req.body[field]) {
+        vehicle[field] = req.body[field].trim();
+      } else {
+        vehicle[field] = req.body[field];
+      }
     }
   }
 

@@ -1,5 +1,6 @@
 import express from "express";
 import cors from "cors";
+import helmet from "helmet";
 import { createServer } from "http";
 import fs from "fs";
 import net from "net";
@@ -11,6 +12,8 @@ import { connectDB } from "./lib/db.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { authenticate } from "./middleware/auth.js";
 import { requireRole } from "./middleware/roleCheck.js";
+import { apiRateLimiter } from "./middleware/rateLimit.js";
+import { sanitizeRequest } from "./middleware/sanitize.js";
 
 import authRoutes from "./routes/authRoutes.js";
 import userRoutes from "./routes/userRoutes.js";
@@ -28,6 +31,22 @@ const server = createServer(app);
 const __filename = fileURLToPath(import.meta.url);
 const __dirname = path.dirname(__filename);
 const adminBuildPath = path.resolve(__dirname, "../../admin/build");
+
+function getCorsOrigins() {
+  const envOrigins = process.env.CORS_ORIGINS;
+  if (!envOrigins) {
+    return [
+      "http://localhost:5173",
+      "http://localhost:3000",
+      "http://localhost:8081",
+    ];
+  }
+
+  return envOrigins
+    .split(",")
+    .map((origin) => origin.trim())
+    .filter(Boolean);
+}
 
 async function findAvailablePort(startPort, host = "::") {
   const isAvailable = (port) =>
@@ -51,8 +70,24 @@ async function findAvailablePort(startPort, host = "::") {
 }
 
 // Middleware
-app.use(cors());
+const allowedOrigins = getCorsOrigins();
+
+app.use(helmet());
+app.use(
+  cors({
+    origin(origin, callback) {
+      if (!origin || allowedOrigins.includes(origin)) {
+        return callback(null, true);
+      }
+
+      return callback(new Error("CORS origin not allowed"));
+    },
+    credentials: true,
+  })
+);
 app.use(express.json());
+app.use(sanitizeRequest);
+app.use(apiRateLimiter);
 
 // Public routes
 app.use("/api/auth", authRoutes);

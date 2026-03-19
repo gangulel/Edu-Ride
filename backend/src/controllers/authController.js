@@ -1,4 +1,5 @@
 import admin from "../config/firebase.js";
+import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import { createAdminSessionToken } from "../lib/adminSessionToken.js";
 
@@ -12,7 +13,6 @@ const FIREBASE_LOGIN_ERROR_MESSAGES = {
 };
 
 const DEFAULT_ADMIN_EMAIL = "admin@eduride.com";
-const DEFAULT_ADMIN_PASSWORD = "Admin@123";
 
 function extractFirebaseErrorCode(payload) {
   if (!payload || typeof payload !== "object" || !("error" in payload)) {
@@ -30,6 +30,37 @@ function extractFirebaseErrorCode(payload) {
   }
 
   return message.split(" ")[0];
+}
+
+function getInternalAdminCredentialConfig() {
+  const email = process.env.ADMIN_PANEL_EMAIL || DEFAULT_ADMIN_EMAIL;
+  const passwordHash = process.env.ADMIN_PANEL_PASSWORD_HASH;
+  const legacyPassword = process.env.ADMIN_PANEL_PASSWORD;
+  const isProduction = process.env.NODE_ENV === "production";
+
+  if (passwordHash) {
+    return {
+      email,
+      enabled: true,
+      compare: async (password) => bcrypt.compare(password, passwordHash),
+    };
+  }
+
+  // Backward-compatible path for local development environments that still
+  // use ADMIN_PANEL_PASSWORD. Production must use ADMIN_PANEL_PASSWORD_HASH.
+  if (!isProduction && legacyPassword) {
+    return {
+      email,
+      enabled: true,
+      compare: async (password) => password === legacyPassword,
+    };
+  }
+
+  return {
+    email,
+    enabled: false,
+    compare: async () => false,
+  };
 }
 
 // POST /api/auth/register
@@ -117,15 +148,11 @@ export const login = async (req, res) => {
 export const adminLogin = async (req, res) => {
   const { email, password } = req.body;
 
-  if (!email || !password) {
-    return res.status(400).json({ error: "Email and password are required" });
-  }
+  const internalAdmin = getInternalAdminCredentialConfig();
+  const isInternalAdminCandidate = email === internalAdmin.email && internalAdmin.enabled;
 
-  const fixedAdminEmail = process.env.ADMIN_PANEL_EMAIL || DEFAULT_ADMIN_EMAIL;
-  const fixedAdminPassword = process.env.ADMIN_PANEL_PASSWORD || DEFAULT_ADMIN_PASSWORD;
-
-  if (email === fixedAdminEmail && password === fixedAdminPassword) {
-    const existingAdmin = await User.findOne({ email: fixedAdminEmail, role: "admin" });
+  if (isInternalAdminCandidate && (await internalAdmin.compare(password))) {
+    const existingAdmin = await User.findOne({ email: internalAdmin.email, role: "admin" });
 
     const internalAdminUser = existingAdmin
       ? {
@@ -141,7 +168,7 @@ export const adminLogin = async (req, res) => {
       : {
         id: "fixed-admin",
         firebaseUid: "internal-admin",
-        email: fixedAdminEmail,
+        email: internalAdmin.email,
         fullName: process.env.ADMIN_PANEL_NAME || "Edu-Ride Admin",
         phone: "",
         role: "admin",

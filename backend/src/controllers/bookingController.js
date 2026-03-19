@@ -1,5 +1,8 @@
 import Booking from "../models/Booking.js";
 import Route from "../models/Route.js";
+import Child from "../models/Child.js";
+import User from "../models/User.js";
+import { parsePagination } from "../utils/validation.js";
 
 // POST /api/bookings — Parent: create booking request
 export const createBooking = async (req, res) => {
@@ -9,8 +12,39 @@ export const createBooking = async (req, res) => {
 
   const { driver, child, route, pickupAddress, dropoffAddress, monthlyFee, startDate, specialInstructions } = req.body;
 
-  if (!driver || !child || !pickupAddress || !monthlyFee || !startDate) {
-    return res.status(400).json({ error: "driver, child, pickupAddress, monthlyFee, and startDate are required" });
+  const [driverUser, childRecord] = await Promise.all([
+    User.findOne({ _id: driver, role: "driver", status: "active" }).select("_id"),
+    Child.findOne({ _id: child, parent: req.user._id }).select("_id"),
+  ]);
+
+  if (!driverUser) {
+    return res.status(400).json({ error: "Driver must exist and be active" });
+  }
+
+  if (!childRecord) {
+    return res.status(400).json({ error: "Child must belong to the logged-in parent" });
+  }
+
+  if (new Date(startDate).getTime() <= Date.now()) {
+    return res.status(400).json({ error: "startDate must be in the future" });
+  }
+
+  const existingActiveBooking = await Booking.findOne({
+    parent: req.user._id,
+    driver,
+    child,
+    status: { $in: ["pending", "accepted"] },
+  }).select("_id");
+
+  if (existingActiveBooking) {
+    return res.status(409).json({ error: "An active booking already exists for this parent, child, and driver" });
+  }
+
+  if (route) {
+    const routeDoc = await Route.findOne({ _id: route, driver }).select("_id");
+    if (!routeDoc) {
+      return res.status(400).json({ error: "Selected route does not belong to this driver" });
+    }
   }
 
   const booking = await Booking.create({
@@ -18,7 +52,7 @@ export const createBooking = async (req, res) => {
     driver,
     child,
     route: route || null,
-    pickupAddress,
+    pickupAddress: pickupAddress.trim(),
     dropoffAddress: dropoffAddress || null,
     monthlyFee,
     startDate,
@@ -37,6 +71,7 @@ export const createBooking = async (req, res) => {
 // GET /api/bookings — Role-filtered listing
 export const getBookings = async (req, res) => {
   const { status, page = 1, limit = 20 } = req.query;
+  const pagination = parsePagination(page, limit);
 
   const filter = {};
   if (req.user.role === "parent") {
@@ -48,7 +83,6 @@ export const getBookings = async (req, res) => {
 
   if (status) filter.status = status;
 
-  const skip = (parseInt(page) - 1) * parseInt(limit);
   const [bookings, total] = await Promise.all([
     Booking.find(filter)
       .populate("parent", "fullName email phone")
@@ -56,8 +90,8 @@ export const getBookings = async (req, res) => {
       .populate("child", "fullName grade school specialNotes")
       .populate("route", "name school")
       .sort({ createdAt: -1 })
-      .skip(skip)
-      .limit(parseInt(limit)),
+      .skip(pagination.skip)
+      .limit(pagination.limit),
     Booking.countDocuments(filter),
   ]);
 
@@ -65,9 +99,9 @@ export const getBookings = async (req, res) => {
     bookings,
     pagination: {
       total,
-      page: parseInt(page),
-      limit: parseInt(limit),
-      pages: Math.ceil(total / parseInt(limit)),
+      page: pagination.page,
+      limit: pagination.limit,
+      pages: Math.ceil(total / pagination.limit),
     },
   });
 };
