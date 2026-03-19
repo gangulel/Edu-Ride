@@ -35,8 +35,7 @@ export function CommunicationManagement() {
     <div className="space-y-6">
       <div className="flex justify-between items-start">
         <div>
-          <h2>Communication & Notification Management</h2>
-          <p className="text-gray-500 mt-1">Send announcements and manage notifications</p>
+          
         </div>
         <Button onClick={() => setDialogOpen(true)}>
           <Send className="h-4 w-4 mr-2" />

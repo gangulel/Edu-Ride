@@ -37,10 +37,10 @@ export function RatingsReviews() {
 
   return (
     <div className="space-y-6">
-      <div>
+      {/* <div>
         <h2>Ratings, Reviews & Quality Monitoring</h2>
         <p className="text-gray-500 mt-1">Monitor driver performance and service quality</p>
-      </div>
+      </div> */}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

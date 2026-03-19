@@ -110,11 +110,11 @@ export function DashboardOverview() {
 
   return (
     <div className="space-y-6">
-      <div>
+      {/* <div>
         <h2>Dashboard Overview</h2>
         <p className="text-gray-500 mt-1">Welcome back! Here's what's happening with your bus system today.</p>
         {shouldShowError ? <p className="text-sm text-red-600 mt-2">{error}</p> : null}
-      </div>
+      </div> */}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">

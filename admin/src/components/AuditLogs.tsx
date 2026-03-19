@@ -34,8 +34,7 @@ export function AuditLogs() {
     <div className="space-y-6">
       <div className="flex justify-between items-start">
         <div>
-          <h2>Audit Logs & Security Monitoring</h2>
-          <p className="text-gray-500 mt-1">Monitor system activity and security events</p>
+          
         </div>
         <Button>
           <Download className="h-4 w-4 mr-2" />

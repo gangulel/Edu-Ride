@@ -79,9 +79,7 @@ export function PaymentManagement() {
     <div className="space-y-6">
       <div className="flex justify-between items-start">
         <div>
-          <h2>Payment & Transaction Management</h2>
-          <p className="text-gray-500 mt-1">Monitor payments, transactions, and revenue</p>
-          {shouldShowError ? <p className="text-sm text-red-600 mt-2">{error}</p> : null}
+          
         </div>
         <Button>
           <Download className="h-4 w-4 mr-2" />

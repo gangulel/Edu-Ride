@@ -33,10 +33,10 @@ export function SystemSettings() {
 
   return (
     <div className="space-y-6">
-      <div>
+      {/* <div>
         <h2>System Configuration & Settings</h2>
         <p className="text-gray-500 mt-1">Manage platform settings and configurations</p>
-      </div>
+      </div> */}
 
       {/* Platform Settings */}
       <Card>

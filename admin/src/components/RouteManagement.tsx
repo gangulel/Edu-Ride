@@ -58,9 +58,7 @@ export function RouteManagement() {
     <div className="space-y-6">
       <div className="flex justify-between items-start">
         <div>
-          <h2>Route & Bus Management</h2>
-          <p className="text-gray-500 mt-1">Manage bus routes and monitor route efficiency</p>
-          {error ? <p className="text-sm text-red-600 mt-2">{error}</p> : null}
+          
         </div>
         <Button>
           <MapPin className="h-4 w-4 mr-2" />

@@ -37,10 +37,10 @@ export function ComplaintsSupport() {
 
   return (
     <div className="space-y-6">
-      <div>
+      {/* <div>
         <h2>Complaints & Support Management</h2>
         <p className="text-gray-500 mt-1">Track and resolve user complaints and support tickets</p>
-      </div>
+      </div> */}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">

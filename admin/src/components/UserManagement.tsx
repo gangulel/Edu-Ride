@@ -266,11 +266,11 @@ export function UserManagement() {
 
   return (
     <div className="space-y-6">
-      <div>
+      {/* <div>
         <h2>User Management</h2>
         <p className="text-gray-500 mt-1">Manage parents and drivers in your bus system</p>
         {shouldShowError ? <p className="text-sm text-red-600 mt-2">{error}</p> : null}
-      </div>
+      </div> */}
 
       <Tabs defaultValue="parents">
         <TabsList>

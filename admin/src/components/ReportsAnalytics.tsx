@@ -46,8 +46,7 @@ export function ReportsAnalytics() {
     <div className="space-y-6">
       <div className="flex justify-between items-start">
         <div>
-          <h2>Reports & Analytics</h2>
-          <p className="text-gray-500 mt-1">Comprehensive insights and data analytics</p>
+          
         </div>
         <div className="flex gap-2">
           <Select className="w-40">
