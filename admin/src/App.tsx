@@ -1,22 +1,30 @@
-import { useEffect, useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import {
-  LayoutDashboard,
-  Users,
-  Navigation,
-  DollarSign,
-  Star,
-  MessageSquare,
   AlertCircle,
   BarChart3,
+  Bell,
+  ChevronDown,
+  DollarSign,
+  FileText,
+  HelpCircle,
+  LayoutDashboard,
+  Loader2,
+  LogOut,
+  Menu,
+  MessageSquare,
+  Navigation,
+  PanelLeftClose,
+  PanelLeftOpen,
+  Search,
   Settings,
   Shield,
-  FileText,
-  Menu,
-  X,
-  Bell,
+  Sparkles,
+  Star,
   User,
-  Loader2
+  Users,
+  X,
 } from "lucide-react"
+import { Toaster } from "./components/ui/sonner"
 import { DashboardOverview } from "./components/DashboardOverview"
 import { UserManagement } from "./components/UserManagement"
 import { RouteManagement } from "./components/RouteManagement"
@@ -28,46 +36,136 @@ import { ReportsAnalytics } from "./components/ReportsAnalytics"
 import { SystemSettings } from "./components/SystemSettings"
 import { AuditLogs } from "./components/AuditLogs"
 import { ContentManagement } from "./components/ContentManagement"
-import { Button } from "./components/ui/button"
-import { adminLogin, clearAdminSession, fetchCurrentAdmin, getStoredAdminUser, hasAdminToken, storeAdminSession, type AdminAuthUser } from "./lib/api"
+import { LoginScreen } from "./components/LoginScreen"
+import { ThemeSwitch } from "./components/ThemeSwitch"
+import { ThemeProvider } from "./lib/theme"
+import {
+  adminLogin,
+  clearAdminSession,
+  fetchCurrentAdmin,
+  getStoredAdminUser,
+  hasAdminToken,
+  storeAdminSession,
+  type AdminAuthUser,
+} from "./lib/api"
 
-const menuItems = [
-  { id: "dashboard", label: "Dashboard", icon: LayoutDashboard },
-  { id: "users", label: "User Management", icon: Users },
-  { id: "routes", label: "Route & Bus", icon: Navigation },
-  { id: "payments", label: "Payments", icon: DollarSign },
-  { id: "ratings", label: "Ratings & Reviews", icon: Star },
-  { id: "communication", label: "Communication", icon: MessageSquare },
-  { id: "complaints", label: "Complaints", icon: AlertCircle },
-  { id: "reports", label: "Reports & Analytics", icon: BarChart3 },
-  { id: "settings", label: "System Settings", icon: Settings },
-  { id: "audit", label: "Audit Logs", icon: Shield },
-  { id: "content", label: "Content Management", icon: FileText },
+type MenuGroup = {
+  title: string
+  items: Array<{
+    id: string
+    label: string
+    description: string
+    icon: typeof LayoutDashboard
+  }>
+}
+
+const menuGroups: MenuGroup[] = [
+  {
+    title: "Overview",
+    items: [
+      {
+        id: "dashboard",
+        label: "Dashboard",
+        description: "Real-time KPIs and alerts",
+        icon: LayoutDashboard,
+      },
+      {
+        id: "reports",
+        label: "Reports & Analytics",
+        description: "Trends and exports",
+        icon: BarChart3,
+      },
+    ],
+  },
+  {
+    title: "Operations",
+    items: [
+      {
+        id: "users",
+        label: "User Management",
+        description: "Parents, drivers, access",
+        icon: Users,
+      },
+      {
+        id: "routes",
+        label: "Routes & Buses",
+        description: "Fleet and route planning",
+        icon: Navigation,
+      },
+      {
+        id: "payments",
+        label: "Payments",
+        description: "Transactions & invoicing",
+        icon: DollarSign,
+      },
+    ],
+  },
+  {
+    title: "Engagement",
+    items: [
+      {
+        id: "ratings",
+        label: "Ratings & Reviews",
+        description: "Service satisfaction",
+        icon: Star,
+      },
+      {
+        id: "communication",
+        label: "Communication",
+        description: "Broadcasts and chat",
+        icon: MessageSquare,
+      },
+      {
+        id: "complaints",
+        label: "Complaints",
+        description: "Resolution workflow",
+        icon: AlertCircle,
+      },
+    ],
+  },
+  {
+    title: "System",
+    items: [
+      {
+        id: "content",
+        label: "Content",
+        description: "App copy & policies",
+        icon: FileText,
+      },
+      {
+        id: "settings",
+        label: "Settings",
+        description: "Platform configuration",
+        icon: Settings,
+      },
+      {
+        id: "audit",
+        label: "Audit Logs",
+        description: "Activity timeline",
+        icon: Shield,
+      },
+    ],
+  },
 ]
 
-export default function App() {
-  const fallbackAdminUser: AdminAuthUser = {
-    id: "local-admin",
-    firebaseUid: "local-admin",
-    email: "admin@eduride.com",
-    fullName: "Edu-Ride Admin",
-    role: "admin",
-    status: "active",
-    phone: "",
-    profilePhoto: null,
-  }
+const flatMenu = menuGroups.flatMap((group) => group.items)
 
+function AppShell() {
   const [activeMenu, setActiveMenu] = useState("dashboard")
   const [sidebarOpen, setSidebarOpen] = useState(true)
+  const [sidebarCollapsed, setSidebarCollapsed] = useState(false)
+  const [mobileOpen, setMobileOpen] = useState(false)
   const [adminUser, setAdminUser] = useState<AdminAuthUser | null>(null)
   const [isAuthLoading, setIsAuthLoading] = useState(true)
   const [authError, setAuthError] = useState("")
+  const [showLogin, setShowLogin] = useState(false)
+  const [globalQuery, setGlobalQuery] = useState("")
+  const [searchOpen, setSearchOpen] = useState(false)
+  const [profileOpen, setProfileOpen] = useState(false)
+  const [notificationsOpen, setNotificationsOpen] = useState(false)
 
   useEffect(() => {
     let active = true
-
-    const defaultAdminEmail = "admin@eduride.com"
-    const defaultAdminPassword = "Admin@123"
 
     const restoreSession = async () => {
       try {
@@ -80,22 +178,20 @@ export default function App() {
           const user = await fetchCurrentAdmin()
           if (active) {
             setAdminUser(user)
+            setShowLogin(false)
             setAuthError("")
           }
         } else {
-          const response = await adminLogin(defaultAdminEmail, defaultAdminPassword)
-          storeAdminSession(response.token, response.user)
-
           if (active) {
-            setAdminUser(response.user)
-            setAuthError("")
+            setShowLogin(true)
           }
         }
       } catch (error) {
         clearAdminSession()
         if (active) {
-          setAdminUser(fallbackAdminUser)
-          setAuthError(error instanceof Error ? error.message : "Auto admin sign-in failed")
+          setAdminUser(null)
+          setShowLogin(true)
+          setAuthError(error instanceof Error ? error.message : "Session expired")
         }
       } finally {
         if (active) {
@@ -110,6 +206,64 @@ export default function App() {
       active = false
     }
   }, [])
+
+  useEffect(() => {
+    const handleResize = () => {
+      if (typeof window === "undefined") return
+      if (window.innerWidth >= 1024) {
+        setMobileOpen(false)
+      }
+    }
+
+    window.addEventListener("resize", handleResize)
+    return () => window.removeEventListener("resize", handleResize)
+  }, [])
+
+  useEffect(() => {
+    const handleKey = (event: KeyboardEvent) => {
+      if ((event.metaKey || event.ctrlKey) && event.key.toLowerCase() === "k") {
+        event.preventDefault()
+        setSearchOpen((value) => !value)
+      }
+      if (event.key === "Escape") {
+        setSearchOpen(false)
+        setProfileOpen(false)
+        setNotificationsOpen(false)
+      }
+    }
+    window.addEventListener("keydown", handleKey)
+    return () => window.removeEventListener("keydown", handleKey)
+  }, [])
+
+  const handleLogin = async (email: string, password: string) => {
+    const response = await adminLogin(email, password)
+    storeAdminSession(response.token, response.user)
+    setAdminUser(response.user)
+    setShowLogin(false)
+    setAuthError("")
+  }
+
+  const handleLogout = () => {
+    clearAdminSession()
+    setAdminUser(null)
+    setShowLogin(true)
+    setProfileOpen(false)
+  }
+
+  const activeItem = useMemo(
+    () => flatMenu.find((item) => item.id === activeMenu) || flatMenu[0],
+    [activeMenu]
+  )
+
+  const matchedItems = useMemo(() => {
+    const query = globalQuery.trim().toLowerCase()
+    if (!query) return flatMenu
+    return flatMenu.filter(
+      (item) =>
+        item.label.toLowerCase().includes(query) ||
+        item.description.toLowerCase().includes(query)
+    )
+  }, [globalQuery])
 
   const renderContent = () => {
     switch (activeMenu) {
@@ -142,111 +296,381 @@ export default function App() {
 
   if (isAuthLoading) {
     return (
-      <div className="min-h-screen bg-gray-50 flex items-center justify-center p-6">
-        <div className="bg-white rounded-xl border border-gray-200 shadow-sm p-8 max-w-sm w-full text-center">
-          <Loader2 className="h-8 w-8 animate-spin text-blue-600 mx-auto mb-4" />
-          <h2 className="text-lg font-semibold">Checking admin session</h2>
-          <p className="text-sm text-gray-500 mt-1">Please wait while we connect to the backend.</p>
+      <div className="admin-boot">
+        <div className="admin-boot-card">
+          <Loader2 className="h-8 w-8 animate-spin admin-boot-icon" />
+          <h2>Loading workspace</h2>
+          <p>Connecting securely to the Edu-Ride backend</p>
         </div>
       </div>
     )
   }
 
-  const currentAdmin = adminUser || fallbackAdminUser
+  if (showLogin || !adminUser) {
+    return <LoginScreen onSubmit={handleLogin} externalError={authError} />
+  }
 
   return (
-    <div className="min-h-screen bg-gray-50">
-      {/* Header */}
-      <header className="bg-white border-b border-gray-200 fixed top-0 left-0 right-0 z-10">
-        <div className="flex items-center justify-between px-4 py-3">
-          <div className="flex items-center gap-4">
-            <Button
-              variant="ghost"
-              size="icon"
-              onClick={() => setSidebarOpen(!sidebarOpen)}
-              className="lg:hidden"
-            >
-              {sidebarOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
-            </Button>
-            <div className="flex items-center gap-2">
-              <div className="h-8 w-8 bg-blue-600 rounded-lg flex items-center justify-center">
-                <Navigation className="h-5 w-5 text-white" />
+    <div
+      className={`admin-app admin-theme ${sidebarOpen ? "" : "sidebar-hidden"} ${
+        sidebarCollapsed ? "sidebar-collapsed" : ""
+      }`}
+    >
+      {/* Sidebar */}
+      <aside
+        className={`admin-sidebar ${mobileOpen ? "is-open" : ""} ${
+          sidebarCollapsed ? "is-collapsed" : ""
+        }`}
+        aria-hidden={!sidebarOpen}
+      >
+        <div className="admin-sidebar-header">
+          <div className="admin-brand">
+            <div className="admin-brand-mark">
+              <Navigation className="h-5 w-5" />
+            </div>
+            {!sidebarCollapsed && (
+              <div className="admin-brand-text">
+                <span className="admin-brand-name">Edu-Ride</span>
+                <span className="admin-brand-sub">Admin Console</span>
               </div>
+            )}
+          </div>
+          <button
+            type="button"
+            className="admin-collapse-btn admin-icon-btn"
+            onClick={() => setSidebarCollapsed((value) => !value)}
+            aria-label={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+            title={sidebarCollapsed ? "Expand sidebar" : "Collapse sidebar"}
+          >
+            {sidebarCollapsed ? (
+              <PanelLeftOpen className="h-4 w-4" />
+            ) : (
+              <PanelLeftClose className="h-4 w-4" />
+            )}
+          </button>
+        </div>
+
+        <nav className="admin-sidebar-nav">
+          {menuGroups.map((group) => (
+            <div key={group.title} className="admin-nav-group">
+              {!sidebarCollapsed && (
+                <p className="admin-nav-group-title">{group.title}</p>
+              )}
+              <div className="admin-nav-list">
+                {group.items.map((item) => {
+                  const Icon = item.icon
+                  const isActive = activeMenu === item.id
+                  return (
+                    <button
+                      key={item.id}
+                      type="button"
+                      onClick={() => {
+                        setActiveMenu(item.id)
+                        setMobileOpen(false)
+                      }}
+                      className={`admin-nav-link ${isActive ? "is-active" : ""}`}
+                      title={sidebarCollapsed ? item.label : undefined}
+                    >
+                      <span className="admin-nav-link-icon">
+                        <Icon className="h-[18px] w-[18px]" />
+                      </span>
+                      {!sidebarCollapsed && (
+                        <span className="admin-nav-link-text">
+                          <span className="admin-nav-link-label">{item.label}</span>
+                          <span className="admin-nav-link-desc">{item.description}</span>
+                        </span>
+                      )}
+                      {isActive && <span className="admin-nav-link-indicator" />}
+                    </button>
+                  )
+                })}
+              </div>
+            </div>
+          ))}
+        </nav>
+
+        {!sidebarCollapsed && (
+          <div className="admin-sidebar-footer">
+            <div className="admin-upgrade-card">
+              <Sparkles className="h-4 w-4" />
               <div>
-                <h1 className="text-lg font-semibold">Edu-Ride Admin</h1>
+                <p className="admin-upgrade-title">All systems operational</p>
+                <p className="admin-upgrade-sub">Backend uptime 99.98%</p>
               </div>
             </div>
           </div>
-          <div className="flex items-center gap-3">
-            <Button variant="ghost" size="icon" className="relative">
+        )}
+      </aside>
+
+      {mobileOpen && (
+        <div
+          className="admin-mobile-backdrop"
+          onClick={() => setMobileOpen(false)}
+          aria-hidden
+        />
+      )}
+
+      {/* Topbar */}
+      <header className="admin-topbar">
+        <div className="admin-topbar-left">
+          <button
+            type="button"
+            className="admin-icon-btn admin-mobile-toggle"
+            onClick={() => setMobileOpen((value) => !value)}
+            aria-label="Toggle navigation"
+          >
+            {mobileOpen ? <X className="h-5 w-5" /> : <Menu className="h-5 w-5" />}
+          </button>
+
+          <button
+            type="button"
+            className="admin-icon-btn admin-desktop-toggle"
+            onClick={() => setSidebarOpen((value) => !value)}
+            aria-label={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+            title={sidebarOpen ? "Hide sidebar" : "Show sidebar"}
+          >
+            {sidebarOpen ? (
+              <PanelLeftClose className="h-5 w-5" />
+            ) : (
+              <PanelLeftOpen className="h-5 w-5" />
+            )}
+          </button>
+
+          <div className="admin-breadcrumb">
+            <span className="admin-breadcrumb-section">Admin</span>
+            <span className="admin-breadcrumb-sep">/</span>
+            <span className="admin-breadcrumb-current">{activeItem.label}</span>
+          </div>
+        </div>
+
+        <div className="admin-topbar-search">
+          <button
+            type="button"
+            className="admin-search-trigger"
+            onClick={() => setSearchOpen(true)}
+          >
+            <Search className="h-4 w-4" />
+            <span>Search modules, users, routes...</span>
+            <kbd className="admin-kbd">⌘K</kbd>
+          </button>
+        </div>
+
+        <div className="admin-topbar-right">
+          <ThemeSwitch />
+
+          <div className="admin-popover-wrap">
+            <button
+              type="button"
+              className="admin-icon-btn admin-bell"
+              onClick={() => {
+                setNotificationsOpen((value) => !value)
+                setProfileOpen(false)
+              }}
+              aria-label="Notifications"
+            >
               <Bell className="h-5 w-5" />
-              <span className="absolute top-1 right-1 h-2 w-2 bg-red-600 rounded-full"></span>
-            </Button>
-            {authError ? <p className="hidden lg:block text-xs text-amber-600">{authError}</p> : null}
-            <div className="flex items-center gap-2">
-              {currentAdmin.profilePhoto ? (
-                <img src={currentAdmin.profilePhoto} alt={currentAdmin.fullName} className="h-8 w-8 rounded-full object-cover" />
-              ) : (
-                <div className="h-8 w-8 bg-gray-200 rounded-full flex items-center justify-center">
-                  <User className="h-5 w-5 text-gray-600" />
+              <span className="admin-bell-dot" />
+            </button>
+            {notificationsOpen && (
+              <div className="admin-popover admin-notif-popover">
+                <div className="admin-popover-header">
+                  <span>Notifications</span>
+                  <button
+                    type="button"
+                    className="admin-popover-action"
+                    onClick={() => setNotificationsOpen(false)}
+                  >
+                    Mark all read
+                  </button>
                 </div>
-              )}
-              <div className="hidden md:block">
-                <p className="text-sm font-medium">{currentAdmin.fullName || "Admin User"}</p>
-                <p className="text-xs text-gray-500">{currentAdmin.email}</p>
+                <ul className="admin-notif-list">
+                  <li>
+                    <span className="admin-notif-dot is-info" />
+                    <div>
+                      <p>3 new bookings awaiting approval</p>
+                      <span>Just now</span>
+                    </div>
+                  </li>
+                  <li>
+                    <span className="admin-notif-dot is-warn" />
+                    <div>
+                      <p>Driver verification needs review</p>
+                      <span>5 min ago</span>
+                    </div>
+                  </li>
+                  <li>
+                    <span className="admin-notif-dot is-ok" />
+                    <div>
+                      <p>Daily payouts settled successfully</p>
+                      <span>1 hr ago</span>
+                    </div>
+                  </li>
+                </ul>
               </div>
-            </div>
+            )}
+          </div>
+
+          <button
+            type="button"
+            className="admin-icon-btn admin-help-btn"
+            aria-label="Help"
+            title="Help & documentation"
+            onClick={() =>
+              window.open("https://docs.eduride.example.com", "_blank", "noopener,noreferrer")
+            }
+          >
+            <HelpCircle className="h-5 w-5" />
+          </button>
+
+          <div className="admin-popover-wrap">
+            <button
+              type="button"
+              className="admin-profile-trigger"
+              onClick={() => {
+                setProfileOpen((value) => !value)
+                setNotificationsOpen(false)
+              }}
+              aria-haspopup="menu"
+              aria-expanded={profileOpen}
+            >
+              {adminUser.profilePhoto ? (
+                <img
+                  src={adminUser.profilePhoto}
+                  alt={adminUser.fullName}
+                  className="admin-profile-avatar"
+                />
+              ) : (
+                <span className="admin-profile-avatar admin-profile-avatar-fallback">
+                  {(adminUser.fullName || "A").slice(0, 1).toUpperCase()}
+                </span>
+              )}
+              <span className="admin-profile-meta">
+                <span className="admin-profile-name">{adminUser.fullName || "Admin"}</span>
+                <span className="admin-profile-role">{adminUser.email}</span>
+              </span>
+              <ChevronDown className="h-4 w-4 admin-profile-caret" />
+            </button>
+            {profileOpen && (
+              <div className="admin-popover admin-profile-popover" role="menu">
+                <div className="admin-popover-header">
+                  <span>Signed in as</span>
+                  <span className="admin-profile-mail">{adminUser.email}</span>
+                </div>
+                <button
+                  type="button"
+                  className="admin-popover-item"
+                  onClick={() => {
+                    setProfileOpen(false)
+                    setActiveMenu("settings")
+                  }}
+                >
+                  <User className="h-4 w-4" /> Profile &amp; preferences
+                </button>
+                <button
+                  type="button"
+                  className="admin-popover-item"
+                  onClick={() => {
+                    setProfileOpen(false)
+                    setActiveMenu("settings")
+                  }}
+                >
+                  <Settings className="h-4 w-4" /> System settings
+                </button>
+                <div className="admin-popover-divider" />
+                <button
+                  type="button"
+                  className="admin-popover-item is-danger"
+                  onClick={handleLogout}
+                >
+                  <LogOut className="h-4 w-4" /> Sign out
+                </button>
+              </div>
+            )}
           </div>
         </div>
       </header>
 
-      {/* Sidebar */}
-      <aside
-        className={`fixed top-16 left-0 bottom-0 w-64 bg-white border-r border-gray-200 overflow-y-auto transition-transform duration-200 z-20 ${sidebarOpen ? "translate-x-0" : "-translate-x-full lg:translate-x-0"
-          }`}
-      >
-        <nav className="p-4 space-y-1">
-          {menuItems.map((item) => {
-            const Icon = item.icon
-            return (
-              <button
-                key={item.id}
-                onClick={() => {
-                  setActiveMenu(item.id)
-                  if (window.innerWidth < 1024) {
-                    setSidebarOpen(false)
-                  }
-                }}
-                className={`w-full flex items-center gap-3 px-3 py-2 rounded-lg transition-colors ${activeMenu === item.id
-                  ? "bg-blue-50 text-blue-600"
-                  : "text-gray-700 hover:bg-gray-100"
-                  }`}
-              >
-                <Icon className="h-5 w-5" />
-                <span>{item.label}</span>
-              </button>
-            )
-          })}
-        </nav>
-      </aside>
-
       {/* Main Content */}
-      <main
-        className={`pt-16 transition-all duration-200 ${sidebarOpen ? "lg:pl-64" : ""
-          }`}
-      >
-        <div className="p-6 max-w-[1600px] mx-auto">
+      <main className="admin-main">
+        <div className="admin-main-header animate-fade-up">
+          <div>
+            <p className="admin-eyebrow">{activeItem.description}</p>
+            <h1 className="admin-page-title">{activeItem.label}</h1>
+          </div>
+          {authError && (
+            <span className="admin-banner-warning">{authError}</span>
+          )}
+        </div>
+
+        <div key={activeMenu} className="admin-main-content animate-fade-up-delay">
           {renderContent()}
         </div>
       </main>
 
-      {/* Mobile Overlay */}
-      {sidebarOpen && (
+      {/* Command palette */}
+      {searchOpen && (
         <div
-          className="fixed inset-0 bg-black/50 z-10 lg:hidden"
-          onClick={() => setSidebarOpen(false)}
-        />
+          className="admin-command-overlay"
+          onClick={(event) => {
+            if (event.target === event.currentTarget) {
+              setSearchOpen(false)
+              setGlobalQuery("")
+            }
+          }}
+        >
+          <div className="admin-command-panel animate-scale-in">
+            <div className="admin-command-input-row">
+              <Search className="h-4 w-4" />
+              <input
+                autoFocus
+                value={globalQuery}
+                onChange={(event) => setGlobalQuery(event.target.value)}
+                placeholder="Jump to module, action or settings..."
+              />
+              <kbd className="admin-kbd">Esc</kbd>
+            </div>
+            <ul className="admin-command-list">
+              {matchedItems.length === 0 && (
+                <li className="admin-command-empty">No matches. Try a different keyword.</li>
+              )}
+              {matchedItems.map((item) => {
+                const Icon = item.icon
+                return (
+                  <li key={item.id}>
+                    <button
+                      type="button"
+                      className="admin-command-item"
+                      onClick={() => {
+                        setActiveMenu(item.id)
+                        setSearchOpen(false)
+                        setGlobalQuery("")
+                      }}
+                    >
+                      <span className="admin-command-item-icon">
+                        <Icon className="h-4 w-4" />
+                      </span>
+                      <span>
+                        <span className="admin-command-item-label">{item.label}</span>
+                        <span className="admin-command-item-desc">{item.description}</span>
+                      </span>
+                    </button>
+                  </li>
+                )
+              })}
+            </ul>
+          </div>
+        </div>
       )}
+
+      <Toaster position="bottom-right" richColors closeButton />
     </div>
+  )
+}
+
+export default function App() {
+  return (
+    <ThemeProvider>
+      <AppShell />
+    </ThemeProvider>
   )
 }

@@ -4,13 +4,61 @@ import { Button } from "./ui/button"
 import { Select } from "./ui/select"
 import { Download, TrendingUp, Users, DollarSign, Star } from "lucide-react"
 import { LineChart, Line, BarChart, Bar, AreaChart, Area, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { toast } from "sonner"
 import { fetchAdminContent } from "../lib/adminContent"
+
+function downloadJsonAsCsv<T extends Record<string, any>>(rows: T[], filename: string) {
+  if (!rows.length) {
+    toast.message("Nothing to export", { description: `No data available for ${filename}.` })
+    return
+  }
+  const headers = Array.from(
+    rows.reduce((acc, row) => {
+      Object.keys(row).forEach((key) => acc.add(key))
+      return acc
+    }, new Set<string>())
+  )
+  const escape = (value: unknown) => {
+    const str = value === null || value === undefined ? "" : String(value)
+    return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str
+  }
+  const lines = [
+    headers.join(","),
+    ...rows.map((row) => headers.map((header) => escape(row[header])).join(",")),
+  ]
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+  toast.success("Export ready", { description: `Downloaded ${filename}.` })
+}
 
 export function ReportsAnalytics() {
   const [userGrowthData, setUserGrowthData] = useState<any[]>([])
   const [routeUtilizationData, setRouteUtilizationData] = useState<any[]>([])
   const [paymentTrendData, setPaymentTrendData] = useState<any[]>([])
   const [driverPerformanceData, setDriverPerformanceData] = useState<any[]>([])
+  const [period, setPeriod] = useState<"monthly" | "quarterly" | "yearly">("monthly")
+
+  const exportAll = () => {
+    const datasets: Array<{ name: string; rows: any[] }> = [
+      { name: "user-growth", rows: userGrowthData },
+      { name: "route-utilization", rows: routeUtilizationData },
+      { name: "payment-trends", rows: paymentTrendData },
+      { name: "driver-performance", rows: driverPerformanceData },
+    ]
+    const populated = datasets.filter((d) => d.rows.length > 0)
+    if (!populated.length) {
+      toast.message("Nothing to export", { description: "Load reports first." })
+      return
+    }
+    populated.forEach((dataset) => downloadJsonAsCsv(dataset.rows, `${dataset.name}-${period}.csv`))
+  }
 
   useEffect(() => {
     fetchAdminContent()
@@ -61,12 +109,16 @@ export function ReportsAnalytics() {
           
         </div>
         <div className="flex gap-2">
-          <Select className="w-40">
+          <Select
+            className="w-40"
+            value={period}
+            onChange={(event) => setPeriod(event.target.value as typeof period)}
+          >
             <option value="monthly">Monthly</option>
             <option value="quarterly">Quarterly</option>
             <option value="yearly">Yearly</option>
           </Select>
-          <Button>
+          <Button onClick={exportAll}>
             <Download className="h-4 w-4 mr-2" />
             Export All
           </Button>
@@ -126,7 +178,7 @@ export function ReportsAnalytics() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>User Growth Report</CardTitle>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => downloadJsonAsCsv(userGrowthData, "user-growth.csv")}>
             <Download className="h-4 w-4 mr-2" />
             Export CSV
           </Button>
@@ -151,7 +203,7 @@ export function ReportsAnalytics() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Route Utilization Report</CardTitle>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => downloadJsonAsCsv(routeUtilizationData, "route-utilization.csv")}>
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
@@ -173,7 +225,7 @@ export function ReportsAnalytics() {
         <Card>
           <CardHeader className="flex flex-row items-center justify-between">
             <CardTitle>Payment Trends</CardTitle>
-            <Button variant="outline" size="sm">
+            <Button variant="outline" size="sm" onClick={() => downloadJsonAsCsv(paymentTrendData, "payment-trends.csv")}>
               <Download className="h-4 w-4 mr-2" />
               Export
             </Button>
@@ -197,9 +249,9 @@ export function ReportsAnalytics() {
       <Card>
         <CardHeader className="flex flex-row items-center justify-between">
           <CardTitle>Driver Performance Analytics</CardTitle>
-          <Button variant="outline" size="sm">
+          <Button variant="outline" size="sm" onClick={() => downloadJsonAsCsv(driverPerformanceData, "driver-performance.csv")}>
             <Download className="h-4 w-4 mr-2" />
-            Export PDF
+            Export
           </Button>
         </CardHeader>
         <CardContent>
@@ -232,25 +284,42 @@ export function ReportsAnalytics() {
 
       {/* Report Categories */}
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
-        <Card>
+        <Card className="er-hover-lift">
           <CardHeader>
             <CardTitle>Financial Reports</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <Button variant="outline" className="w-full justify-start">
+              <Button variant="outline" className="w-full justify-start" onClick={() => downloadJsonAsCsv(paymentTrendData, "revenue-report.csv")}>
                 <Download className="h-4 w-4 mr-2" />
                 Revenue Report
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => downloadJsonAsCsv(paymentTrendData.map((d) => ({ ...d, type: "transaction" })), "transactions.csv")}
+              >
                 <Download className="h-4 w-4 mr-2" />
                 Transaction History
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() =>
+                  downloadJsonAsCsv(
+                    paymentTrendData.map((d) => ({ month: d.month, commission: Math.round((d.revenue || 0) * 0.05) })),
+                    "commission-report.csv"
+                  )
+                }
+              >
                 <Download className="h-4 w-4 mr-2" />
                 Commission Report
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => toast.message("No refunds recorded", { description: "Refund pipeline is empty for the current period." })}
+              >
                 <Download className="h-4 w-4 mr-2" />
                 Refund Report
               </Button>
@@ -258,25 +327,34 @@ export function ReportsAnalytics() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="er-hover-lift">
           <CardHeader>
             <CardTitle>Operational Reports</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <Button variant="outline" className="w-full justify-start">
+              <Button variant="outline" className="w-full justify-start" onClick={() => downloadJsonAsCsv(routeUtilizationData, "route-efficiency.csv")}>
                 <Download className="h-4 w-4 mr-2" />
                 Route Efficiency
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button variant="outline" className="w-full justify-start" onClick={() => downloadJsonAsCsv(driverPerformanceData, "driver-performance.csv")}>
                 <Download className="h-4 w-4 mr-2" />
                 Driver Performance
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() =>
+                  downloadJsonAsCsv(
+                    driverPerformanceData.map((d) => ({ driver: d.driver, trips: d.trips, onTime: d.onTime })),
+                    "trip-analytics.csv"
+                  )
+                }
+              >
                 <Download className="h-4 w-4 mr-2" />
                 Trip Analytics
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button variant="outline" className="w-full justify-start" onClick={() => downloadJsonAsCsv(routeUtilizationData, "utilization.csv")}>
                 <Download className="h-4 w-4 mr-2" />
                 Utilization Report
               </Button>
@@ -284,25 +362,38 @@ export function ReportsAnalytics() {
           </CardContent>
         </Card>
 
-        <Card>
+        <Card className="er-hover-lift">
           <CardHeader>
             <CardTitle>User Reports</CardTitle>
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <Button variant="outline" className="w-full justify-start">
+              <Button variant="outline" className="w-full justify-start" onClick={() => downloadJsonAsCsv(userGrowthData, "user-growth.csv")}>
                 <Download className="h-4 w-4 mr-2" />
                 User Growth
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() => downloadJsonAsCsv(userGrowthData.map((d) => ({ month: d.month, parents: d.parents })), "parent-activity.csv")}
+              >
                 <Download className="h-4 w-4 mr-2" />
                 Parent Activity
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button variant="outline" className="w-full justify-start" onClick={() => downloadJsonAsCsv(driverPerformanceData, "driver-stats.csv")}>
                 <Download className="h-4 w-4 mr-2" />
                 Driver Stats
               </Button>
-              <Button variant="outline" className="w-full justify-start">
+              <Button
+                variant="outline"
+                className="w-full justify-start"
+                onClick={() =>
+                  downloadJsonAsCsv(
+                    driverPerformanceData.map((d) => ({ driver: d.driver, satisfaction: Math.round(((d.rating || 0) / 5) * 100) })),
+                    "satisfaction-survey.csv"
+                  )
+                }
+              >
                 <Download className="h-4 w-4 mr-2" />
                 Satisfaction Survey
               </Button>

@@ -4,7 +4,9 @@ import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Badge } from "./ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
-import { MapPin, Navigation, Users, AlertTriangle, Eye } from "lucide-react"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog"
+import { MapPin, Navigation, Users, AlertTriangle, Eye, Plus, Map, Power } from "lucide-react"
+import { toast } from "sonner"
 import { apiRequest } from "../lib/api"
 
 type RouteData = {
@@ -24,6 +26,10 @@ export function RouteManagement() {
   const [routes, setRoutes] = useState<RouteData[]>([])
   const [search, setSearch] = useState("")
   const [error, setError] = useState("")
+  const [loading, setLoading] = useState(true)
+  const [confirmDeactivate, setConfirmDeactivate] = useState<RouteData | null>(null)
+  const [mutating, setMutating] = useState(false)
+  const [showAddInfo, setShowAddInfo] = useState(false)
 
   useEffect(() => {
     let mounted = true
@@ -32,6 +38,7 @@ export function RouteManagement() {
       .then((payload) => {
         if (mounted) {
           setRoutes(payload.routes)
+          setError("")
         }
       })
       .catch((err) => {
@@ -39,11 +46,40 @@ export function RouteManagement() {
           setError(err.message)
         }
       })
+      .finally(() => {
+        if (mounted) setLoading(false)
+      })
 
     return () => {
       mounted = false
     }
   }, [])
+
+  const openMap = (route: RouteData) => {
+    const stops = route.stops?.map((s) => s.location).filter(Boolean) ?? []
+    if (stops.length === 0) {
+      toast.message("No stops to map", { description: "This route has no stops yet." })
+      return
+    }
+    const query = encodeURIComponent(stops.join(" / "))
+    window.open(`https://www.google.com/maps/search/?api=1&query=${query}`, "_blank", "noopener,noreferrer")
+  }
+
+  const handleDeactivate = async (route: RouteData) => {
+    setMutating(true)
+    try {
+      await apiRequest(`/routes/${route._id}`, "DELETE")
+      setRoutes((prev) => prev.filter((item) => item._id !== route._id))
+      if (selectedRoute?._id === route._id) setSelectedRoute(null)
+      setConfirmDeactivate(null)
+      toast.success("Route deactivated", { description: `${route.name} has been removed.` })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Could not deactivate route"
+      toast.error("Action failed", { description: message })
+    } finally {
+      setMutating(false)
+    }
+  }
 
   const filteredRoutes = useMemo(
     () => routes.filter((route) => `${route.name} ${route.driver?.fullName || ""} ${route.stops.map((s) => s.location).join(" ")}`.toLowerCase().includes(search.toLowerCase())),
@@ -56,12 +92,19 @@ export function RouteManagement() {
 
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-start">
-        <div>
-          
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="flex items-center gap-2 text-sm" style={{ color: "var(--er-text-muted)" }}>
+          {loading ? (
+            <span className="er-skeleton" style={{ width: 140, height: 14 }} />
+          ) : (
+            <>
+              <span className="er-live-dot" />
+              {routes.length} route{routes.length === 1 ? "" : "s"} loaded
+            </>
+          )}
         </div>
-        <Button>
-          <MapPin className="h-4 w-4 mr-2" />
+        <Button onClick={() => setShowAddInfo(true)}>
+          <Plus className="h-4 w-4 mr-2" />
           Add New Route
         </Button>
       </div>
@@ -177,6 +220,13 @@ export function RouteManagement() {
         </CardContent>
       </Card>
 
+      {error && !loading ? (
+        <div className="er-banner er-banner-warning">
+          <AlertTriangle className="h-4 w-4" />
+          <span>{error}</span>
+        </div>
+      ) : null}
+
       {/* Route Details */}
       {selectedRoute && (
         <Card>
@@ -233,14 +283,74 @@ export function RouteManagement() {
                 )}
               </div>
             </div>
-            <div className="flex gap-2 mt-6">
-              <Button>Edit Route</Button>
-              <Button variant="outline">View on Map</Button>
-              <Button variant="destructive">Deactivate Route</Button>
+            <div className="flex flex-wrap gap-2 mt-6">
+              <Button
+                onClick={() =>
+                  toast.message("Edit handled by driver app", {
+                    description: "Route updates are scoped to the assigned driver. Coordinate via chat.",
+                  })
+                }
+              >
+                Edit Route
+              </Button>
+              <Button variant="outline" onClick={() => openMap(selectedRoute)}>
+                <Map className="h-4 w-4 mr-2" />
+                View on Map
+              </Button>
+              <Button variant="destructive" onClick={() => setConfirmDeactivate(selectedRoute)} disabled={mutating}>
+                <Power className="h-4 w-4 mr-2" />
+                Deactivate Route
+              </Button>
             </div>
           </CardContent>
         </Card>
       )}
+
+      <Dialog open={showAddInfo} onOpenChange={setShowAddInfo}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Add a new route</DialogTitle>
+            <DialogDescription>
+              Routes are created by drivers from the mobile app — they include the live GPS, vehicle and stops they own.
+              From here you can monitor, audit and deactivate routes.
+            </DialogDescription>
+          </DialogHeader>
+          <div className="rounded-lg border p-3 text-sm" style={{ borderColor: "var(--er-border)", color: "var(--er-text-muted)" }}>
+            Need to invite a driver? Use the User Management screen to verify a pending driver. Once approved they will be able to publish a new route from the mobile app.
+          </div>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setShowAddInfo(false)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(confirmDeactivate)}
+        onOpenChange={(open) => {
+          if (!open && !mutating) setConfirmDeactivate(null)
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Deactivate route?</DialogTitle>
+            <DialogDescription>
+              This will remove “{confirmDeactivate?.name}” from active routing. Parents will no longer see live tracking for this route.
+            </DialogDescription>
+          </DialogHeader>
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setConfirmDeactivate(null)} disabled={mutating}>
+              Cancel
+            </Button>
+            <Button
+              variant="destructive"
+              disabled={mutating || !confirmDeactivate}
+              onClick={() => confirmDeactivate && handleDeactivate(confirmDeactivate)}
+            >
+              {mutating ? "Deactivating..." : "Yes, deactivate"}
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -1,7 +1,11 @@
 {
   "permissions": {
     "allow": [
-      "Bash(git -C /c/Project/Edu-Ride log --oneline -30)"
+      "Bash(git -C /c/Project/Edu-Ride log --oneline -30)",
+      "Bash(grep -oE \"\\(md\\\\\\\\\\\\\\\\:grid-cols-[0-9]+|lg\\\\\\\\\\\\\\\\:grid-cols-[0-9]+|lg\\\\\\\\\\\\\\\\:col-span-[0-9]+|animate-spin|sm\\\\\\\\\\\\\\\\:max-w|min-w-0|min-w-\\\\[\\)\" /c/Project/Edu-Ride/admin/src/index.css)",
+      "Bash(npx vite *)",
+      "Read(//c/c/Project/Edu-Ride/**)",
+      "Read(//c/c/Project/Edu-Ride/backend/**)"
     ]
   }
 }

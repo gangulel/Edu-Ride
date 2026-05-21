@@ -59,22 +59,46 @@ async function parseResponse(response: Response) {
 
 export async function apiRequest<T>(path: string, method: HttpMethod = "GET", body?: unknown): Promise<T> {
   const token = getAdminToken();
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    method,
-    headers: {
-      "Content-Type": "application/json",
-      ...(token ? { Authorization: `Bearer ${token}` } : {}),
-    },
-    ...(body ? { body: JSON.stringify(body) } : {}),
-  });
+  let response: Response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      method,
+      headers: {
+        "Content-Type": "application/json",
+        ...(token ? { Authorization: `Bearer ${token}` } : {}),
+      },
+      ...(body ? { body: JSON.stringify(body) } : {}),
+    });
+  } catch (networkError) {
+    const detail = networkError instanceof Error ? networkError.message : "Unknown network error";
+    throw new Error(`Cannot reach the server (${detail}). Check your backend at ${API_BASE_URL}.`);
+  }
 
   const payload = await parseResponse(response);
 
   if (!response.ok) {
-    const message =
-      (payload && typeof payload === "object" && "error" in payload && String(payload.error)) ||
-      `Request failed with status ${response.status}`;
-    throw new Error(message);
+    const explicitError =
+      payload && typeof payload === "object" && "error" in payload && String((payload as { error: unknown }).error);
+
+    if (explicitError) {
+      throw new Error(explicitError);
+    }
+
+    if (response.status === 503) {
+      throw new Error("Service is starting up or the database is unreachable. Please retry shortly.");
+    }
+
+    if (response.status === 401) {
+      throw new Error("Your session expired. Please sign in again.");
+    }
+
+    if (response.status >= 500) {
+      throw new Error(
+        `Server error (HTTP ${response.status}). The backend logged the failure — check console / Vercel logs for details.`
+      );
+    }
+
+    throw new Error(`Request failed with status ${response.status}`);
   }
 
   return payload as T;

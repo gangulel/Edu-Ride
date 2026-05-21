@@ -8,7 +8,7 @@ import path from "path";
 import { fileURLToPath } from "url";
 import "dotenv/config";
 
-import { connectDB } from "./lib/db.js";
+import { connectDB, getDbStatus } from "./lib/db.js";
 import { errorHandler } from "./middleware/errorHandler.js";
 import { authenticate } from "./middleware/auth.js";
 import { requireRole } from "./middleware/roleCheck.js";
@@ -90,6 +90,16 @@ app.use(express.json());
 app.use(sanitizeRequest);
 app.use(apiRateLimiter);
 
+// Health check — never touches the DB so it's safe during cold starts.
+app.get("/api/health", (_req, res) => {
+  res.json({
+    status: "ok",
+    uptime: process.uptime(),
+    db: getDbStatus(),
+    timestamp: new Date().toISOString(),
+  });
+});
+
 // Public routes
 app.use("/api/auth", authRoutes);
 app.use("/api/public", contentRoutes);
@@ -119,8 +129,16 @@ app.use(errorHandler);
 initSocket(server);
 
 const PORT = Number(process.env.PORT || 3000);
+const IS_SERVERLESS = Boolean(process.env.VERCEL || process.env.AWS_LAMBDA_FUNCTION_NAME);
 
-connectDB().then(() => {
+// Kick off the DB connection eagerly. It runs in the background; the server
+// listens regardless so endpoints can return clear error JSON if the DB is
+// unreachable, instead of the runtime crashing with an empty 500.
+connectDB().catch((err) => {
+  console.error("Initial DB connection attempt failed:", err.message);
+});
+
+if (!IS_SERVERLESS) {
   findAvailablePort(PORT).then((availablePort) => {
     if (availablePort !== PORT) {
       console.warn(
@@ -132,6 +150,6 @@ connectDB().then(() => {
       console.log(`Server running on port ${availablePort}`);
     });
   });
-});
+}
 
 export default app;

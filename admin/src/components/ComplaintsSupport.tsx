@@ -7,13 +7,20 @@ import { Select } from "./ui/select"
 import { Badge } from "./ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog"
-import { AlertCircle, MessageSquare, Clock, CheckCircle, XCircle } from "lucide-react"
+import { AlertCircle, MessageSquare, Clock, CheckCircle } from "lucide-react"
+import { toast } from "sonner"
 import { fetchAdminContent } from "../lib/adminContent"
 
 export function ComplaintsSupport() {
   const [complaints, setComplaints] = useState<any[]>([])
   const [selectedComplaint, setSelectedComplaint] = useState<any>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [search, setSearch] = useState("")
+  const [categoryFilter, setCategoryFilter] = useState("")
+  const [priorityFilter, setPriorityFilter] = useState("")
+  const [statusFilter, setStatusFilter] = useState("")
+  const [response, setResponse] = useState("")
+  const [statusDraft, setStatusDraft] = useState("")
 
   useEffect(() => {
     fetchAdminContent()
@@ -62,7 +69,37 @@ export function ComplaintsSupport() {
 
   const openComplaintDetails = (complaint: any) => {
     setSelectedComplaint(complaint)
+    setResponse(complaint.response || "")
+    setStatusDraft(complaint.status || "open")
     setDialogOpen(true)
+  }
+
+  const filteredComplaints = useMemo(() => {
+    const term = search.trim().toLowerCase()
+    return complaints.filter((complaint) => {
+      if (categoryFilter && complaint.category !== categoryFilter) return false
+      if (priorityFilter && complaint.priority !== priorityFilter) return false
+      if (statusFilter && complaint.status !== statusFilter) return false
+      if (!term) return true
+      return [complaint.id, complaint.user, complaint.category]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(term))
+    })
+  }, [complaints, search, categoryFilter, priorityFilter, statusFilter])
+
+  const saveResponse = () => {
+    if (!selectedComplaint) return
+    setComplaints((prev) =>
+      prev.map((item) =>
+        item.id === selectedComplaint.id
+          ? { ...item, response, status: statusDraft || item.status }
+          : item
+      )
+    )
+    toast.success("Response saved", {
+      description: `Ticket ${selectedComplaint.id} updated to ${statusDraft || selectedComplaint.status}.`,
+    })
+    setDialogOpen(false)
   }
 
   return (
@@ -122,9 +159,13 @@ export function ComplaintsSupport() {
       {/* Filter and Search */}
       <Card>
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Input placeholder="Search by ID or user..." />
-            <Select>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+            <Input
+              placeholder="Search by ID or user..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+            <Select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
               <option value="">All Categories</option>
               <option value="late">Late Pickup</option>
               <option value="safety">Safety Concern</option>
@@ -132,19 +173,30 @@ export function ComplaintsSupport() {
               <option value="route">Route Issue</option>
               <option value="vehicle">Vehicle Problem</option>
             </Select>
-            <Select>
+            <Select value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value)}>
               <option value="">All Priorities</option>
               <option value="high">High</option>
               <option value="medium">Medium</option>
               <option value="low">Low</option>
             </Select>
-            <Select>
+            <Select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
               <option value="">All Statuses</option>
               <option value="open">Open</option>
               <option value="in-progress">In Progress</option>
               <option value="resolved">Resolved</option>
               <option value="closed">Closed</option>
             </Select>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSearch("")
+                setCategoryFilter("")
+                setPriorityFilter("")
+                setStatusFilter("")
+              }}
+            >
+              Reset
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -170,7 +222,14 @@ export function ComplaintsSupport() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {complaints.map((complaint) => (
+              {filteredComplaints.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9}>
+                    <div className="er-empty-state">No complaints match the current filters.</div>
+                  </TableCell>
+                </TableRow>
+              ) : null}
+              {filteredComplaints.map((complaint) => (
                 <TableRow key={complaint.id}>
                   <TableCell className="font-mono text-sm">{complaint.id}</TableCell>
                   <TableCell>{complaint.user}</TableCell>
@@ -320,12 +379,17 @@ export function ComplaintsSupport() {
 
               <div>
                 <p className="text-sm text-gray-500 mb-2">Admin Response</p>
-                <Textarea placeholder="Enter your response..." rows={4} />
+                <Textarea
+                  placeholder="Enter your response..."
+                  rows={4}
+                  value={response}
+                  onChange={(event) => setResponse(event.target.value)}
+                />
               </div>
 
               <div>
                 <p className="text-sm text-gray-500 mb-2">Change Status</p>
-                <Select>
+                <Select value={statusDraft} onChange={(event) => setStatusDraft(event.target.value)}>
                   <option value="open">Open</option>
                   <option value="in-progress">In Progress</option>
                   <option value="resolved">Resolved</option>
@@ -336,7 +400,7 @@ export function ComplaintsSupport() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={() => setDialogOpen(false)}>
+            <Button onClick={saveResponse}>
               Save Response
             </Button>
           </DialogFooter>

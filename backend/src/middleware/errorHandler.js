@@ -1,7 +1,7 @@
-export const errorHandler = (err, req, res, next) => {
+export const errorHandler = (err, req, res, _next) => {
   console.error("Unhandled error:", err);
 
-  if (err.name === "ZodError") {
+  if (err?.name === "ZodError") {
     const details = err.issues?.map((issue) => ({
       path: issue.path.join("."),
       message: issue.message,
@@ -13,25 +13,51 @@ export const errorHandler = (err, req, res, next) => {
     });
   }
 
-  if (err.name === "ValidationError") {
-    const messages = Object.values(err.errors).map((e) => e.message);
+  if (err?.name === "ValidationError") {
+    const messages = Object.values(err.errors || {}).map((e) => e.message);
     return res.status(400).json({ error: "Validation failed", details: messages });
   }
 
-  if (err.code === 11000) {
-    const field = Object.keys(err.keyPattern)[0];
+  // Mongoose cast error (e.g. invalid ObjectId in a URL param).
+  if (err?.name === "CastError") {
+    return res.status(400).json({
+      error: `Invalid value for "${err.path}"`,
+    });
+  }
+
+  if (err?.code === 11000) {
+    const field = err.keyPattern ? Object.keys(err.keyPattern)[0] : "field";
     return res.status(409).json({ error: `Duplicate value for ${field}` });
   }
 
-  if (err.code?.startsWith("auth/")) {
+  if (typeof err?.code === "string" && err.code.startsWith("auth/")) {
     return res.status(401).json({ error: err.message });
   }
 
-  if (err.message === "CORS origin not allowed") {
+  if (err?.message === "CORS origin not allowed") {
     return res.status(403).json({ error: "Request origin is not allowed" });
   }
 
-  res.status(err.status || 500).json({
-    error: process.env.NODE_ENV === "production" ? "Internal server error" : (err.message || "Internal server error"),
+  // MongoDB / Mongoose connectivity issues bubble up here.
+  if (
+    err?.name === "MongooseServerSelectionError" ||
+    err?.name === "MongoNetworkError" ||
+    err?.name === "MongoServerSelectionError" ||
+    err?.name === "MongoNotConnectedError" ||
+    /Client must be connected before running operations/i.test(String(err?.message))
+  ) {
+    return res.status(503).json({
+      error: "Database is temporarily unavailable. Please retry shortly.",
+    });
+  }
+
+  const status = err?.status || err?.statusCode || 500;
+  const isProd = process.env.NODE_ENV === "production";
+  const fallback = status >= 500 ? "Internal server error" : "Request failed";
+
+  res.status(status).json({
+    error: isProd && status >= 500
+      ? fallback
+      : err?.message || fallback,
   });
 };

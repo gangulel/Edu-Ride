@@ -218,7 +218,17 @@ export const adminLogin = async (req, res) => {
   const isInternalAdminCandidate = email === internalAdmin.email && internalAdmin.enabled;
 
   if (isInternalAdminCandidate && (await internalAdmin.compare(password))) {
-    const existingAdmin = await User.findOne({ email: internalAdmin.email, role: "admin" });
+    // Best-effort lookup so we can return the persisted admin profile when one
+    // exists. If the DB is unreachable (cold start, network blip) we still let
+    // the internal admin log in with the synthetic profile rather than 500'ing.
+    let existingAdmin = null;
+    try {
+      existingAdmin = await User.findOne({ email: internalAdmin.email, role: "admin" })
+        .maxTimeMS(2000)
+        .exec();
+    } catch (err) {
+      console.warn("Admin profile lookup skipped:", err.message);
+    }
 
     const internalAdminUser = existingAdmin
       ? {
@@ -253,18 +263,37 @@ export const adminLogin = async (req, res) => {
 
   const webApiKey = process.env.FIREBASE_WEB_API_KEY;
   if (!webApiKey) {
-    return res.status(500).json({
-      error: "Admin login is not configured. Missing FIREBASE_WEB_API_KEY.",
+    // No Firebase web API key configured and the supplied email/password didn't
+    // match the internal admin. This is a *configuration* gap (admin auth has
+    // not been provisioned), so use 503 — keeping the response body's `error`
+    // string makes the frontend surface a clear message instead of a generic
+    // "Request failed with status 500".
+    return res.status(503).json({
+      error:
+        "Admin login is not configured on the server. Set ADMIN_PANEL_PASSWORD (or ADMIN_PANEL_PASSWORD_HASH), or provide FIREBASE_WEB_API_KEY for Firebase admin sign-in.",
     });
   }
 
-  const firebaseResponse = await fetch(`${FIREBASE_AUTH_URL}?key=${webApiKey}`, {
-    method: "POST",
-    headers: { "Content-Type": "application/json" },
-    body: JSON.stringify({ email, password, returnSecureToken: true }),
-  });
+  let firebaseResponse;
+  try {
+    firebaseResponse = await fetch(`${FIREBASE_AUTH_URL}?key=${webApiKey}`, {
+      method: "POST",
+      headers: { "Content-Type": "application/json" },
+      body: JSON.stringify({ email, password, returnSecureToken: true }),
+    });
+  } catch (err) {
+    console.error("Firebase admin sign-in network error:", err.message);
+    return res.status(502).json({
+      error: "Could not reach the authentication provider. Please try again.",
+    });
+  }
 
-  const firebasePayload = await firebaseResponse.json();
+  let firebasePayload;
+  try {
+    firebasePayload = await firebaseResponse.json();
+  } catch {
+    firebasePayload = null;
+  }
   if (!firebaseResponse.ok) {
     const errorCode = extractFirebaseErrorCode(firebasePayload);
     const errorMessage = (errorCode && FIREBASE_LOGIN_ERROR_MESSAGES[errorCode]) || "Unable to sign in";

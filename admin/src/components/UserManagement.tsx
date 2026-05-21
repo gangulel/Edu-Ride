@@ -6,8 +6,51 @@ import { Badge } from "./ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog"
-import { Search, Filter, Eye, Ban, Pencil, Trash2, AlertTriangle } from "lucide-react"
+import { Search, Filter, Eye, Ban, Pencil, Trash2, AlertTriangle, Download } from "lucide-react"
+import { toast } from "sonner"
 import { apiRequest } from "../lib/api"
+
+type StatusFilter = "all" | "active" | "pending" | "suspended"
+
+function exportUsersToCsv(rows: AppUser[], filename: string) {
+  if (!rows.length) {
+    toast.message("Nothing to export", { description: "There are no users to include." })
+    return
+  }
+  const escape = (value: unknown) => {
+    const str = value === null || value === undefined ? "" : String(value)
+    return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str
+  }
+  const headers = ["Full Name", "Email", "Phone", "Role", "Status", "School", "Rating", "Trips", "Joined"]
+  const lines = [
+    headers.join(","),
+    ...rows.map((row) =>
+      [
+        row.fullName,
+        row.email,
+        row.phone,
+        row.role,
+        row.status,
+        row.school || "",
+        row.rating ?? "",
+        row.totalTrips ?? "",
+        new Date(row.createdAt).toISOString(),
+      ]
+        .map(escape)
+        .join(",")
+    ),
+  ]
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+  toast.success("Export ready", { description: `${rows.length} rows downloaded as CSV.` })
+}
 
 type AppUser = {
   _id: string
@@ -44,6 +87,8 @@ const authErrorPattern = /no token provided|unauthorized|forbidden|authenticatio
 
 export function UserManagement() {
   const [searchTerm, setSearchTerm] = useState("")
+  const [statusFilter, setStatusFilter] = useState<StatusFilter>("all")
+  const [statusFilterOpen, setStatusFilterOpen] = useState(false)
   const [selectedUser, setSelectedUser] = useState<(AppUser & { type: "parent" | "driver" }) | null>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
   const [isEditMode, setIsEditMode] = useState(false)
@@ -130,13 +175,21 @@ export function UserManagement() {
   }, [])
 
   const parentFiltered = useMemo(
-    () => parents.filter((u) => `${u.fullName} ${u.email} ${u.phone}`.toLowerCase().includes(searchTerm.toLowerCase())),
-    [parents, searchTerm]
+    () =>
+      parents
+        .filter((u) => statusFilter === "all" || u.status === statusFilter)
+        .filter((u) => `${u.fullName} ${u.email} ${u.phone}`.toLowerCase().includes(searchTerm.toLowerCase())),
+    [parents, searchTerm, statusFilter]
   )
 
   const driverFiltered = useMemo(
-    () => drivers.filter((u) => `${u.fullName} ${u.email} ${u.phone} ${u.school || ""}`.toLowerCase().includes(searchTerm.toLowerCase())),
-    [drivers, searchTerm]
+    () =>
+      drivers
+        .filter((u) => statusFilter === "all" || u.status === statusFilter)
+        .filter((u) =>
+          `${u.fullName} ${u.email} ${u.phone} ${u.school || ""}`.toLowerCase().includes(searchTerm.toLowerCase())
+        ),
+    [drivers, searchTerm, statusFilter]
   )
 
   const roleStats = useMemo(() => {
@@ -204,8 +257,27 @@ export function UserManagement() {
       const response = await apiRequest<{ user: AppUser }>(`/users/${user._id}/status`, "PUT", { status: "suspended" })
       syncUpdatedUser(response.user)
       setError("")
+      toast.success("User suspended", { description: `${user.fullName} has been placed on hold.` })
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to hold user")
+      const message = err instanceof Error ? err.message : "Failed to hold user"
+      setError(message)
+      toast.error("Could not suspend user", { description: message })
+    } finally {
+      setIsMutating(false)
+    }
+  }
+
+  const handleActivateUser = async (user: AppUser) => {
+    setIsMutating(true)
+    try {
+      const response = await apiRequest<{ user: AppUser }>(`/users/${user._id}/status`, "PUT", { status: "active" })
+      syncUpdatedUser(response.user)
+      setError("")
+      toast.success("User reactivated", { description: `${user.fullName} is now active.` })
+    } catch (err) {
+      const message = err instanceof Error ? err.message : "Failed to activate user"
+      setError(message)
+      toast.error("Could not activate user", { description: message })
     } finally {
       setIsMutating(false)
     }
@@ -230,8 +302,11 @@ export function UserManagement() {
       }
       setDeleteCandidate(null)
       setError("")
+      toast.success("User deleted", { description: `${user.fullName} has been removed.` })
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to delete user")
+      const message = err instanceof Error ? err.message : "Failed to delete user"
+      setError(message)
+      toast.error("Delete failed", { description: message })
     } finally {
       setIsMutating(false)
     }
@@ -257,12 +332,22 @@ export function UserManagement() {
       syncUpdatedUser(response.user)
       setIsEditMode(false)
       setError("")
+      toast.success("Profile updated", { description: `Saved changes for ${response.user.fullName}.` })
     } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to update user")
+      const message = err instanceof Error ? err.message : "Failed to update user"
+      setError(message)
+      toast.error("Update failed", { description: message })
     } finally {
       setIsMutating(false)
     }
   }
+
+  const statusOptions: Array<{ value: StatusFilter; label: string }> = [
+    { value: "all", label: "All statuses" },
+    { value: "active", label: "Active" },
+    { value: "pending", label: "Pending" },
+    { value: "suspended", label: "Suspended" },
+  ]
 
   return (
     <div className="space-y-6">
@@ -290,9 +375,55 @@ export function UserManagement() {
                 className="pl-10"
               />
             </div>
-            <Button variant="outline">
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
+            <div className="admin-popover-wrap">
+              <Button
+                variant="outline"
+                onClick={() => setStatusFilterOpen((value) => !value)}
+                aria-expanded={statusFilterOpen}
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                {statusFilter === "all" ? "Filter" : statusOptions.find((opt) => opt.value === statusFilter)?.label}
+              </Button>
+              {statusFilterOpen ? (
+                <div className="admin-popover" style={{ minWidth: 200 }}>
+                  <div className="admin-popover-header">Status</div>
+                  {statusOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      className="admin-popover-item"
+                      onClick={() => {
+                        setStatusFilter(opt.value)
+                        setStatusFilterOpen(false)
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: 999,
+                          background:
+                            opt.value === "active"
+                              ? "var(--er-success)"
+                              : opt.value === "pending"
+                              ? "var(--er-warn)"
+                              : opt.value === "suspended"
+                              ? "var(--er-danger)"
+                              : "var(--er-text-muted)",
+                        }}
+                      />
+                      {opt.label}
+                      {statusFilter === opt.value ? (
+                        <span style={{ marginLeft: "auto", color: "var(--er-accent)" }}>✓</span>
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <Button variant="outline" onClick={() => exportUsersToCsv(parentFiltered, "parents.csv")}>
+              <Download className="h-4 w-4 mr-2" />
+              Export
             </Button>
           </div>
 
@@ -408,9 +539,55 @@ export function UserManagement() {
                 className="pl-10"
               />
             </div>
-            <Button variant="outline">
-              <Filter className="h-4 w-4 mr-2" />
-              Filters
+            <div className="admin-popover-wrap">
+              <Button
+                variant="outline"
+                onClick={() => setStatusFilterOpen((value) => !value)}
+                aria-expanded={statusFilterOpen}
+              >
+                <Filter className="h-4 w-4 mr-2" />
+                {statusFilter === "all" ? "Filter" : statusOptions.find((opt) => opt.value === statusFilter)?.label}
+              </Button>
+              {statusFilterOpen ? (
+                <div className="admin-popover" style={{ minWidth: 200 }}>
+                  <div className="admin-popover-header">Status</div>
+                  {statusOptions.map((opt) => (
+                    <button
+                      key={opt.value}
+                      type="button"
+                      className="admin-popover-item"
+                      onClick={() => {
+                        setStatusFilter(opt.value)
+                        setStatusFilterOpen(false)
+                      }}
+                    >
+                      <span
+                        style={{
+                          width: 8,
+                          height: 8,
+                          borderRadius: 999,
+                          background:
+                            opt.value === "active"
+                              ? "var(--er-success)"
+                              : opt.value === "pending"
+                              ? "var(--er-warn)"
+                              : opt.value === "suspended"
+                              ? "var(--er-danger)"
+                              : "var(--er-text-muted)",
+                        }}
+                      />
+                      {opt.label}
+                      {statusFilter === opt.value ? (
+                        <span style={{ marginLeft: "auto", color: "var(--er-accent)" }}>✓</span>
+                      ) : null}
+                    </button>
+                  ))}
+                </div>
+              ) : null}
+            </div>
+            <Button variant="outline" onClick={() => exportUsersToCsv(driverFiltered, "drivers.csv")}>
+              <Download className="h-4 w-4 mr-2" />
+              Export
             </Button>
           </div>
 
@@ -604,13 +781,23 @@ export function UserManagement() {
                 ) : (
                   <Button onClick={() => setIsEditMode(true)}>Edit</Button>
                 )}
-                <Button
-                  variant="secondary"
-                  onClick={() => handleHoldUser(selectedUser)}
-                  disabled={isMutating || selectedUser.status === "suspended"}
-                >
-                  Hold
-                </Button>
+                {selectedUser.status === "suspended" ? (
+                  <Button
+                    variant="secondary"
+                    onClick={() => handleActivateUser(selectedUser)}
+                    disabled={isMutating}
+                  >
+                    Reactivate
+                  </Button>
+                ) : (
+                  <Button
+                    variant="secondary"
+                    onClick={() => handleHoldUser(selectedUser)}
+                    disabled={isMutating}
+                  >
+                    Hold
+                  </Button>
+                )}
                 <Button variant="destructive" onClick={() => requestDeleteUser(selectedUser)} disabled={isMutating}>
                   Delete
                 </Button>

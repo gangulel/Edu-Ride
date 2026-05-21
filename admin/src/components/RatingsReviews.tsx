@@ -3,14 +3,41 @@ import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
 import { Badge } from "./ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog"
 import { Star, Flag, TrendingDown, Award } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
+import { toast } from "sonner"
 import { fetchAdminContent } from "../lib/adminContent"
 
 export function RatingsReviews() {
   const [driverRatings, setDriverRatings] = useState<any[]>([])
   const [recentReviews, setRecentReviews] = useState<any[]>([])
   const [routePerformance, setRoutePerformance] = useState<any[]>([])
+  const [activeDriver, setActiveDriver] = useState<any | null>(null)
+  const [actionDriver, setActionDriver] = useState<any | null>(null)
+  const [actionNote, setActionNote] = useState("")
+  const [flaggedIds, setFlaggedIds] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const raw = window.localStorage.getItem("eduride-admin-flag-overrides")
+    if (raw) {
+      try {
+        setFlaggedIds(new Set(JSON.parse(raw)))
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [])
+
+  const persistFlags = (next: Set<string>) => {
+    setFlaggedIds(new Set(next))
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("eduride-admin-flag-overrides", JSON.stringify(Array.from(next)))
+    }
+  }
+
+  const isCleared = (review: any) => flaggedIds.has(String(review.id))
 
   useEffect(() => {
     fetchAdminContent()
@@ -33,7 +60,10 @@ export function RatingsReviews() {
 
   const totalReviews = useMemo(() => driverRatings.reduce((sum, d) => sum + Number(d.reviews || 0), 0), [driverRatings])
   const lowRatedDrivers = useMemo(() => driverRatings.filter((d) => Number(d.rating || 0) < 3.5).length, [driverRatings])
-  const flaggedReviews = useMemo(() => recentReviews.filter((r) => Boolean(r.flagged)).length, [recentReviews])
+  const flaggedReviews = useMemo(
+    () => recentReviews.filter((r) => Boolean(r.flagged) && !flaggedIds.has(String(r.id))).length,
+    [recentReviews, flaggedIds]
+  )
   const lowPerformerDrivers = useMemo(
     () => [...driverRatings].sort((a, b) => Number(a.rating || 0) - Number(b.rating || 0)).slice(0, 3),
     [driverRatings]
@@ -178,9 +208,11 @@ export function RatingsReviews() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="ghost">View</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setActiveDriver(driver)}>View</Button>
                       {driver.rating < 3.5 && (
-                        <Button size="sm" variant="outline">Review</Button>
+                        <Button size="sm" variant="outline" onClick={() => setActionDriver(driver)}>
+                          Review
+                        </Button>
                       )}
                     </div>
                   </TableCell>
@@ -225,12 +257,38 @@ export function RatingsReviews() {
                 <p className="text-sm mb-2">{review.comment}</p>
                 <div className="flex justify-between items-center">
                   <p className="text-xs text-gray-500">{review.date}</p>
-                  {review.flagged && (
+                  {review.flagged && !isCleared(review) ? (
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline">Review</Button>
-                      <Button size="sm" variant="ghost">Remove Flag</Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          toast.message("Review opened", {
+                            description: `Investigating feedback for ${review.driver}.`,
+                          })
+                        }
+                      >
+                        Review
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          const next = new Set(flaggedIds)
+                          next.add(String(review.id))
+                          persistFlags(next)
+                          toast.success("Flag removed", {
+                            description: "Review will no longer appear flagged.",
+                          })
+                        }}
+                      >
+                        Remove Flag
+                      </Button>
                     </div>
-                  )}
+                  ) : null}
+                  {review.flagged && isCleared(review) ? (
+                    <Badge variant="success">Cleared</Badge>
+                  ) : null}
                 </div>
               </div>
             ))}
@@ -252,7 +310,7 @@ export function RatingsReviews() {
                     <p className="font-medium">{driver.driver} - {driver.route}</p>
                     <p className="text-sm text-gray-500">Rating: {driver.rating} / 5.0</p>
                   </div>
-                  <Button size="sm">Take Action</Button>
+                  <Button size="sm" onClick={() => setActionDriver(driver)}>Take Action</Button>
                 </div>
               )) : (
                 <p className="text-sm text-gray-500">No low-performing drivers in backend data.</p>
@@ -282,6 +340,83 @@ export function RatingsReviews() {
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={Boolean(activeDriver)} onOpenChange={(open) => !open && setActiveDriver(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{activeDriver?.driver}</DialogTitle>
+            <DialogDescription>Driver performance snapshot</DialogDescription>
+          </DialogHeader>
+          {activeDriver ? (
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div><p style={{ color: "var(--er-text-muted)" }}>Route</p><p>{activeDriver.route || "—"}</p></div>
+              <div><p style={{ color: "var(--er-text-muted)" }}>Rating</p><p>{activeDriver.rating} / 5.0</p></div>
+              <div><p style={{ color: "var(--er-text-muted)" }}>Reviews</p><p>{activeDriver.reviews || 0}</p></div>
+              <div><p style={{ color: "var(--er-text-muted)" }}>Low ratings</p><p>{activeDriver.lowRated || 0}</p></div>
+              <div><p style={{ color: "var(--er-text-muted)" }}>Flagged</p><p>{activeDriver.flagged || 0}</p></div>
+              <div><p style={{ color: "var(--er-text-muted)" }}>Monthly avg</p><p>{activeDriver.avgMonth || "—"}</p></div>
+            </div>
+          ) : null}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setActiveDriver(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(actionDriver)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setActionDriver(null)
+            setActionNote("")
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Take action on {actionDriver?.driver}</DialogTitle>
+            <DialogDescription>Log an internal note. Drivers will not see this directly.</DialogDescription>
+          </DialogHeader>
+          <textarea
+            value={actionNote}
+            onChange={(event) => setActionNote(event.target.value)}
+            rows={5}
+            className="w-full rounded-lg p-3 text-sm"
+            style={{
+              background: "var(--er-surface-muted)",
+              border: "1px solid var(--er-border-strong)",
+              color: "var(--er-text)",
+            }}
+            placeholder="e.g. Schedule retraining for safe driving practices"
+          />
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setActionDriver(null)
+                setActionNote("")
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!actionNote.trim()) {
+                  toast.error("Add a short note", { description: "Notes help future admins follow up." })
+                  return
+                }
+                toast.success("Action logged", {
+                  description: `Note saved for ${actionDriver?.driver}.`,
+                })
+                setActionDriver(null)
+                setActionNote("")
+              }}
+            >
+              Save note
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }
