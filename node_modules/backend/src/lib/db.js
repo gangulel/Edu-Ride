@@ -5,7 +5,12 @@ const PUBLIC_DNS_SERVERS = ["8.8.8.8", "1.1.1.1"];
 
 const isSrvDnsError = (error) => {
   const message = String(error?.message || "");
-  return error?.code === "ENOTFOUND" || message.includes("querySrv ENOTFOUND");
+  return (
+    error?.code === "ENOTFOUND" ||
+    error?.code === "EREFUSED" ||
+    message.includes("querySrv ENOTFOUND") ||
+    message.includes("querySrv EREFUSED")
+  );
 };
 
 const connectOnce = async (mongoUrl) => {

@@ -37,7 +37,6 @@ const tripSchema = new mongoose.Schema(
   { timestamps: true }
 );
 
-tripSchema.index({ driver: 1, status: 1 });
 tripSchema.index(
   { driver: 1, status: 1 },
   {
