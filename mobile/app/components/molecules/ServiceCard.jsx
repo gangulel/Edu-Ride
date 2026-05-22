@@ -1,45 +1,48 @@
 import React from 'react';
-import { View, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
+import { View, Text, StyleSheet } from 'react-native';
+import { Location, Bus, Profile2User, ShieldTick } from 'iconsax-react-native';
 import Avatar from '../atoms/Avatar';
 import Badge from '../atoms/Badge';
 import RatingStars from '../atoms/RatingStars';
 import Card from '../atoms/Card';
-import { responsive, wp } from '../../utils/responsive';
+import { useTheme } from '../../contexts/ThemeContext';
 
-const ServiceCard = ({
-    driver,
-    onPress,
-    variant = 'default', // default, compact
-    style,
-}) => {
+const ServiceCard = ({ driver, onPress, variant = 'default', style }) => {
+    const theme = useTheme();
+    const styles = useStyles(theme);
+
     const {
         name,
         photo,
+        initials,
         verified = false,
         rating = 0,
-        reviewCount = 0,
+        reviewCount,
+        totalReviews,
         monthlyFee,
-        areasServed = [],
-        availableSeats = 0,
-        totalSeats = 0,
-        school,
+        areasServed,
+        areas,
+        availableSeats,
+        seats,
+        vehicleModel,
     } = driver;
+
+    const reviews = reviewCount ?? totalReviews ?? 0;
+    const serviceAreas = areasServed || areas || [];
+    const seatCount = availableSeats ?? seats ?? 0;
 
     if (variant === 'compact') {
         return (
-            <Card onPress={onPress} style={[styles.compactCard, style]}>
+            <Card onPress={onPress} style={[styles.compactCard, style]} variant="elevated">
                 <View style={styles.compactContent}>
-                    <Avatar source={photo} name={name} size="medium" verified={verified} />
+                    <Avatar source={photo} name={name} initials={initials} size="medium" verified={verified} />
                     <View style={styles.compactInfo}>
                         <Text style={styles.driverName} numberOfLines={1}>{name}</Text>
                         <View style={styles.ratingRow}>
                             <RatingStars rating={rating} size="small" />
-                            <Text style={styles.reviewCount}>({reviewCount})</Text>
+                            <Text style={styles.reviewCount}>({reviews})</Text>
                         </View>
-                        <Text style={styles.route} numberOfLines={1}>
-                            {areasServed.slice(0, 2).join(' → ')}
-                        </Text>
+                        <Text style={styles.route} numberOfLines={1}>{serviceAreas.slice(0, 2).join(' • ')}</Text>
                     </View>
                     <View style={styles.priceContainer}>
                         <Text style={styles.priceLabel}>from</Text>
@@ -52,177 +55,176 @@ const ServiceCard = ({
     }
 
     return (
-        <Card onPress={onPress} style={[styles.card, style]}>
-            {/* Header */}
+        <Card onPress={onPress} style={[styles.card, style]} variant="elevated">
             <View style={styles.header}>
-                <Avatar source={photo} name={name} size="large" verified={verified} />
+                <Avatar source={photo} name={name} initials={initials} size="large" verified={verified} />
                 <View style={styles.headerInfo}>
                     <View style={styles.nameRow}>
                         <Text style={styles.driverName} numberOfLines={1}>{name}</Text>
-                        {verified && (
-                            <Badge label="Verified" variant="success" size="small" />
-                        )}
+                        {verified && <Badge label="Verified" variant="success" tone="soft" size="small" />}
                     </View>
                     <View style={styles.ratingRow}>
                         <RatingStars rating={rating} size="small" />
                         <Text style={styles.rating}>{rating.toFixed(1)}</Text>
-                        <Text style={styles.reviewCount}>({reviewCount} reviews)</Text>
+                        <Text style={styles.reviewCount}>({reviews} reviews)</Text>
                     </View>
                 </View>
             </View>
 
-            {/* Route Info */}
             <View style={styles.routeSection}>
-                <View style={styles.routeRow}>
-                    <Ionicons name="location" size={18} color="#007AFF" />
-                    <Text style={styles.routeText} numberOfLines={2}>
-                        {areasServed.join(' → ')}
-                    </Text>
-                </View>
-                {school && (
+                {serviceAreas.length > 0 && (
                     <View style={styles.routeRow}>
-                        <Ionicons name="school" size={18} color="#FF9500" />
-                        <Text style={styles.schoolText}>{school}</Text>
+                        <Location size={16} color={theme.colors.primary} variant="Bold" />
+                        <Text style={styles.routeText} numberOfLines={2}>{serviceAreas.join(' • ')}</Text>
+                    </View>
+                )}
+                {vehicleModel && (
+                    <View style={styles.routeRow}>
+                        <Bus size={16} color={theme.colors.textMuted} variant="Bold" />
+                        <Text style={styles.vehicleText}>{vehicleModel}</Text>
                     </View>
                 )}
             </View>
 
-            {/* Footer */}
             <View style={styles.footer}>
                 <View style={styles.seatsContainer}>
-                    <Ionicons name="people" size={18} color="#8E8E93" />
-                    <Text style={styles.seatsText}>
-                        {availableSeats} seats available
-                    </Text>
+                    <Profile2User size={16} color={theme.colors.textMuted} variant="Bold" />
+                    <Text style={styles.seatsText}>{seatCount} seats</Text>
                 </View>
                 <View style={styles.priceContainerFull}>
                     <Text style={styles.priceFull}>LKR {monthlyFee?.toLocaleString()}</Text>
-                    <Text style={styles.pricePeriod}>/month</Text>
+                    <Text style={styles.pricePeriod}>/mo</Text>
                 </View>
             </View>
         </Card>
     );
 };
 
-const styles = StyleSheet.create({
-    card: {
-        marginBottom: responsive.paddingMD,
-    },
-    compactCard: {
-        marginBottom: responsive.paddingSM,
-    },
-    compactContent: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    compactInfo: {
-        flex: 1,
-        marginLeft: responsive.paddingMD,
-    },
-    header: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginBottom: responsive.paddingMD,
-    },
-    headerInfo: {
-        flex: 1,
-        marginLeft: responsive.paddingMD,
-    },
-    nameRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        gap: responsive.paddingSM,
-        flexWrap: 'wrap',
-    },
-    driverName: {
-        fontSize: responsive.fontLG,
-        fontWeight: '600',
-        color: '#000',
-        flex: 1,
-    },
-    ratingRow: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        marginTop: responsive.paddingXS,
-    },
-    rating: {
-        fontSize: responsive.fontMD,
-        fontWeight: '600',
-        color: '#000',
-        marginLeft: responsive.paddingSM,
-    },
-    reviewCount: {
-        fontSize: responsive.fontSM,
-        color: '#8E8E93',
-        marginLeft: responsive.paddingXS,
-    },
-    routeSection: {
-        marginBottom: responsive.paddingMD,
-    },
-    routeRow: {
-        flexDirection: 'row',
-        alignItems: 'flex-start',
-        marginBottom: responsive.paddingSM,
-    },
-    routeText: {
-        fontSize: responsive.fontMD,
-        color: '#000',
-        marginLeft: responsive.paddingSM,
-        flex: 1,
-    },
-    schoolText: {
-        fontSize: responsive.fontMD,
-        color: '#000',
-        marginLeft: responsive.paddingSM,
-    },
-    footer: {
-        flexDirection: 'row',
-        justifyContent: 'space-between',
-        alignItems: 'center',
-        paddingTop: responsive.paddingMD,
-        borderTopWidth: 1,
-        borderTopColor: '#E5E5EA',
-    },
-    seatsContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    seatsText: {
-        fontSize: responsive.fontSM,
-        color: '#8E8E93',
-        marginLeft: responsive.paddingSM,
-    },
-    priceContainer: {
-        alignItems: 'flex-end',
-    },
-    priceContainerFull: {
-        flexDirection: 'row',
-        alignItems: 'baseline',
-    },
-    priceLabel: {
-        fontSize: responsive.fontXS,
-        color: '#8E8E93',
-    },
-    price: {
-        fontSize: responsive.fontMD,
-        fontWeight: 'bold',
-        color: '#007AFF',
-    },
-    priceFull: {
-        fontSize: responsive.fontXL,
-        fontWeight: 'bold',
-        color: '#007AFF',
-    },
-    pricePeriod: {
-        fontSize: responsive.fontSM,
-        color: '#8E8E93',
-        marginLeft: 2,
-    },
-    route: {
-        fontSize: responsive.fontSM,
-        color: '#8E8E93',
-        marginTop: 2,
-    },
-});
+const useStyles = (theme) =>
+    StyleSheet.create({
+        card: {
+            marginBottom: theme.spacing.md,
+        },
+        compactCard: {
+            marginBottom: theme.spacing.sm,
+        },
+        compactContent: {
+            flexDirection: 'row',
+            alignItems: 'center',
+        },
+        compactInfo: {
+            flex: 1,
+            marginLeft: theme.spacing.md,
+        },
+        header: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginBottom: theme.spacing.md,
+        },
+        headerInfo: {
+            flex: 1,
+            marginLeft: theme.spacing.md,
+        },
+        nameRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.sm,
+            flexWrap: 'wrap',
+        },
+        driverName: {
+            fontFamily: theme.fontFamily.bold,
+            fontSize: theme.fontSize.lg,
+            color: theme.colors.textPrimary,
+            flex: 1,
+        },
+        ratingRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            marginTop: theme.spacing.xs,
+            gap: theme.spacing.xs,
+        },
+        rating: {
+            fontFamily: theme.fontFamily.medium,
+            fontSize: theme.fontSize.sm,
+            color: theme.colors.textPrimary,
+        },
+        reviewCount: {
+            fontFamily: theme.fontFamily.regular,
+            fontSize: theme.fontSize.xs,
+            color: theme.colors.textMuted,
+        },
+        routeSection: {
+            marginBottom: theme.spacing.md,
+            gap: theme.spacing.sm,
+        },
+        routeRow: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.sm,
+        },
+        routeText: {
+            fontFamily: theme.fontFamily.regular,
+            fontSize: theme.fontSize.sm,
+            color: theme.colors.textSecondary,
+            flex: 1,
+        },
+        vehicleText: {
+            fontFamily: theme.fontFamily.regular,
+            fontSize: theme.fontSize.sm,
+            color: theme.colors.textMuted,
+        },
+        footer: {
+            flexDirection: 'row',
+            justifyContent: 'space-between',
+            alignItems: 'center',
+            paddingTop: theme.spacing.md,
+            borderTopWidth: 1,
+            borderTopColor: theme.colors.divider,
+        },
+        seatsContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            gap: theme.spacing.xs,
+        },
+        seatsText: {
+            fontFamily: theme.fontFamily.regular,
+            fontSize: theme.fontSize.sm,
+            color: theme.colors.textMuted,
+        },
+        priceContainer: {
+            alignItems: 'flex-end',
+        },
+        priceContainerFull: {
+            flexDirection: 'row',
+            alignItems: 'baseline',
+        },
+        priceLabel: {
+            fontFamily: theme.fontFamily.regular,
+            fontSize: theme.fontSize.xs,
+            color: theme.colors.textMuted,
+        },
+        price: {
+            fontFamily: theme.fontFamily.bold,
+            fontSize: theme.fontSize.md,
+            color: theme.colors.primary,
+        },
+        priceFull: {
+            fontFamily: theme.fontFamily.bold,
+            fontSize: theme.fontSize.xl,
+            color: theme.colors.primary,
+        },
+        pricePeriod: {
+            fontFamily: theme.fontFamily.regular,
+            fontSize: theme.fontSize.sm,
+            color: theme.colors.textMuted,
+            marginLeft: 2,
+        },
+        route: {
+            fontFamily: theme.fontFamily.regular,
+            fontSize: theme.fontSize.xs,
+            color: theme.colors.textMuted,
+            marginTop: 2,
+        },
+    });
 
 export default ServiceCard;

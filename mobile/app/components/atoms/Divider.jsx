@@ -1,40 +1,34 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { responsive } from '../../utils/responsive';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const Divider = ({
     text,
-    orientation = 'horizontal', // horizontal, vertical
-    color = '#E5E5EA',
+    orientation = 'horizontal',
+    color,
     thickness = 1,
     spacing = 'medium', // none, small, medium, large
     style,
 }) => {
-    const getSpacing = () => {
-        switch (spacing) {
-            case 'none':
-                return 0;
-            case 'small':
-                return responsive.marginSM;
-            case 'large':
-                return responsive.marginXL;
-            default:
-                return responsive.marginMD;
-        }
-    };
+    const theme = useTheme();
+    const styles = useStyles(theme);
+    const dividerColor = color || theme.colors.divider;
 
-    const spacingValue = getSpacing();
+    const spacingValue = (() => {
+        switch (spacing) {
+            case 'none': return 0;
+            case 'small': return theme.spacing.sm;
+            case 'large': return theme.spacing.xl;
+            default: return theme.spacing.md;
+        }
+    })();
 
     if (orientation === 'vertical') {
         return (
             <View
                 style={[
                     styles.vertical,
-                    {
-                        backgroundColor: color,
-                        width: thickness,
-                        marginHorizontal: spacingValue,
-                    },
+                    { backgroundColor: dividerColor, width: thickness, marginHorizontal: spacingValue },
                     style,
                 ]}
             />
@@ -43,16 +37,10 @@ const Divider = ({
 
     if (text) {
         return (
-            <View
-                style={[
-                    styles.withText,
-                    { marginVertical: spacingValue },
-                    style,
-                ]}
-            >
-                <View style={[styles.line, { backgroundColor: color, height: thickness }]} />
+            <View style={[styles.withText, { marginVertical: spacingValue }, style]}>
+                <View style={[styles.line, { backgroundColor: dividerColor, height: thickness }]} />
                 <Text style={styles.text}>{text}</Text>
-                <View style={[styles.line, { backgroundColor: color, height: thickness }]} />
+                <View style={[styles.line, { backgroundColor: dividerColor, height: thickness }]} />
             </View>
         );
     }
@@ -61,36 +49,28 @@ const Divider = ({
         <View
             style={[
                 styles.horizontal,
-                {
-                    backgroundColor: color,
-                    height: thickness,
-                    marginVertical: spacingValue,
-                },
+                { backgroundColor: dividerColor, height: thickness, marginVertical: spacingValue },
                 style,
             ]}
         />
     );
 };
 
-const styles = StyleSheet.create({
-    horizontal: {
-        width: '100%',
-    },
-    vertical: {
-        height: '100%',
-    },
-    withText: {
-        flexDirection: 'row',
-        alignItems: 'center',
-    },
-    line: {
-        flex: 1,
-    },
-    text: {
-        paddingHorizontal: responsive.paddingMD,
-        fontSize: responsive.fontSM,
-        color: '#8E8E93',
-    },
-});
+const useStyles = (theme) =>
+    StyleSheet.create({
+        horizontal: { width: '100%' },
+        vertical: { height: '100%' },
+        withText: {
+            flexDirection: 'row',
+            alignItems: 'center',
+        },
+        line: { flex: 1 },
+        text: {
+            paddingHorizontal: theme.spacing.lg,
+            fontFamily: theme.fontFamily.regular,
+            fontSize: theme.fontSize.sm,
+            color: theme.colors.textMuted,
+        },
+    });
 
 export default Divider;

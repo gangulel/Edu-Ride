@@ -1,45 +1,47 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
-import { responsive } from '../../utils/responsive';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const Card = ({
     children,
     onPress,
-    variant = 'default', // default, elevated, outlined
+    variant = 'default', // default, elevated, outlined, flat
     padding = 'medium', // none, small, medium, large
     style,
+    activeOpacity = 0.85,
     ...props
 }) => {
-    const getCardStyle = () => {
-        const baseStyle = [styles.card];
+    const theme = useTheme();
+    const styles = useStyles(theme);
 
-        // Padding
+    const getCardStyle = () => {
+        const base = [styles.card];
         switch (padding) {
             case 'none':
                 break;
             case 'small':
-                baseStyle.push(styles.paddingSmall);
+                base.push(styles.paddingSmall);
                 break;
             case 'large':
-                baseStyle.push(styles.paddingLarge);
+                base.push(styles.paddingLarge);
                 break;
             default:
-                baseStyle.push(styles.paddingMedium);
+                base.push(styles.paddingMedium);
         }
-
-        // Variant
         switch (variant) {
             case 'elevated':
-                baseStyle.push(styles.elevated);
+                base.push(styles.elevated);
                 break;
             case 'outlined':
-                baseStyle.push(styles.outlined);
+                base.push(styles.outlined);
+                break;
+            case 'flat':
+                base.push(styles.flat);
                 break;
             default:
-                baseStyle.push(styles.default);
+                base.push(styles.default);
         }
-
-        return baseStyle;
+        return base;
     };
 
     if (onPress) {
@@ -47,7 +49,7 @@ const Card = ({
             <TouchableOpacity
                 style={[...getCardStyle(), style]}
                 onPress={onPress}
-                activeOpacity={0.7}
+                activeOpacity={activeOpacity}
                 {...props}
             >
                 {children}
@@ -62,40 +64,34 @@ const Card = ({
     );
 };
 
-const styles = StyleSheet.create({
-    card: {
-        backgroundColor: '#fff',
-        borderRadius: responsive.radiusLG,
-    },
-    // Padding variants
-    paddingSmall: {
-        padding: responsive.paddingSM,
-    },
-    paddingMedium: {
-        padding: responsive.paddingLG,
-    },
-    paddingLarge: {
-        padding: responsive.paddingXL,
-    },
-    // Style variants
-    default: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
-    },
-    elevated: {
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: 4 },
-        shadowOpacity: 0.1,
-        shadowRadius: 8,
-        elevation: 4,
-    },
-    outlined: {
-        borderWidth: 1,
-        borderColor: '#E5E5EA',
-    },
-});
+const useStyles = (theme) =>
+    StyleSheet.create({
+        card: {
+            backgroundColor: theme.colors.surface,
+            borderRadius: theme.radius.lg,
+        },
+        paddingSmall: {
+            padding: theme.spacing.md,
+        },
+        paddingMedium: {
+            padding: theme.spacing.lg,
+        },
+        paddingLarge: {
+            padding: theme.spacing.xl,
+        },
+        default: {
+            ...theme.shadows.sm,
+        },
+        elevated: {
+            ...theme.shadows.md,
+        },
+        outlined: {
+            borderWidth: 1,
+            borderColor: theme.colors.border,
+        },
+        flat: {
+            backgroundColor: theme.colors.surfaceMuted,
+        },
+    });
 
 export default Card;
