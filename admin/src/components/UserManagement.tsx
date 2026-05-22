@@ -83,7 +83,7 @@ const emptyRoleStats = {
   suspended: 0,
 }
 
-const authErrorPattern = /no token provided|unauthorized|forbidden|authentication required/i
+const authErrorPattern = /no token provided|unauthorized|forbidden|authentication required|session expired/i
 
 export function UserManagement() {
   const [searchTerm, setSearchTerm] = useState("")
@@ -474,6 +474,13 @@ export function UserManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
+                  {parentFiltered.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center text-gray-400 py-8">
+                        No parents found
+                      </TableCell>
+                    </TableRow>
+                  )}
                   {parentFiltered.map((parent) => (
                     <TableRow key={parent._id}>
                       <TableCell>{parent.fullName}</TableCell>
@@ -639,6 +646,13 @@ export function UserManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
+                  {driverFiltered.length === 0 && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center text-gray-400 py-8">
+                        No drivers found
+                      </TableCell>
+                    </TableRow>
+                  )}
                   {driverFiltered.map((driver) => (
                     <TableRow key={driver._id}>
                       <TableCell>{driver.fullName}</TableCell>

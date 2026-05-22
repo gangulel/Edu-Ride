@@ -1,62 +1,72 @@
-import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
-import {
-  mockLogin,
-  mockRegister,
-  mockLogout,
-  mockSwitchRole,
-  getCurrentUser,
-} from '../../services/mock';
+import React, {
+  createContext,
+  useContext,
+  useState,
+  useCallback,
+  useMemo,
+} from 'react';
+import { login as dataLogin, register as dataRegister, logout as dataLogout, switchRole as dataSwitchRole, IS_BACKEND } from '../../services/data';
+import { setAuthToken } from '../../services/api/client';
+import { getCurrentUser } from '../../services/mock';
 
 const AuthContext = createContext(null);
 
 export function AuthProvider({ children }) {
-  const [user, setUser] = useState(() => getCurrentUser());
+  // Mock layer keeps a current user across calls; real backend doesn't, so we
+  // only read mock state on boot.
+  const [user, setUser] = useState(() => (IS_BACKEND ? null : getCurrentUser()));
   const [loading, setLoading] = useState(false);
+
+  const handleAuthResult = useCallback((result) => {
+    if (!result) return null;
+    const u = result.user || result;
+    if (result.token && IS_BACKEND) {
+      setAuthToken(result.token);
+    }
+    setUser(u);
+    return u;
+  }, []);
 
   const login = useCallback(async (email, password) => {
     setLoading(true);
     try {
-      const { user: signedIn } = await mockLogin({ email, password });
-      setUser(signedIn);
-      return signedIn;
+      const result = await dataLogin({ email, password });
+      return handleAuthResult(result);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [handleAuthResult]);
 
   const register = useCallback(async (payload) => {
     setLoading(true);
     try {
-      const { user: registered } = await mockRegister(payload);
-      setUser(registered);
-      return registered;
+      const result = await dataRegister(payload);
+      return handleAuthResult(result);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [handleAuthResult]);
 
   const logout = useCallback(async () => {
     setLoading(true);
     try {
-      await mockLogout();
+      await dataLogout();
+      if (IS_BACKEND) setAuthToken(null);
       setUser(null);
     } finally {
       setLoading(false);
     }
   }, []);
 
-  // Swap to the linked account in the requested role (e.g. switch from
-  // parent dashboard to driver dashboard for users who play both roles).
   const switchRole = useCallback(async (targetRole) => {
     setLoading(true);
     try {
-      const swapped = await mockSwitchRole(targetRole);
-      setUser(swapped);
-      return swapped;
+      const result = await dataSwitchRole(targetRole);
+      return handleAuthResult(result);
     } finally {
       setLoading(false);
     }
-  }, []);
+  }, [handleAuthResult]);
 
   const value = useMemo(
     () => ({ user, loading, login, register, logout, switchRole, setUser }),
@@ -68,9 +78,7 @@ export function AuthProvider({ children }) {
 
 export function useAuth() {
   const ctx = useContext(AuthContext);
-  if (!ctx) {
-    throw new Error('useAuth must be used within an AuthProvider');
-  }
+  if (!ctx) throw new Error('useAuth must be used within an AuthProvider');
   return ctx;
 }
 
