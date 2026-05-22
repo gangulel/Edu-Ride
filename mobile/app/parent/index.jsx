@@ -148,18 +148,6 @@ export default function ParentHome() {
                                     </View>
                                 )}
                             </TouchableOpacity>
-                            <TouchableOpacity
-                                style={styles.avatarBtn}
-                                onPress={() => router.push('/parent/profile')}
-                                activeOpacity={0.85}
-                            >
-                                <LinearGradient
-                                    colors={['#fff', theme.colors.palette.blue[100]]}
-                                    style={styles.avatarGradient}
-                                >
-                                    <Text style={styles.avatarText}>{getInitials(fullName)}</Text>
-                                </LinearGradient>
-                            </TouchableOpacity>
                         </View>
                     </View>
 
@@ -461,19 +449,6 @@ const useStyles = (theme) =>
             fontFamily: theme.fontFamily.bold,
             fontSize: fs(9),
             color: '#fff',
-        },
-        avatarBtn: {},
-        avatarGradient: {
-            width: 44,
-            height: 44,
-            borderRadius: 22,
-            alignItems: 'center',
-            justifyContent: 'center',
-        },
-        avatarText: {
-            fontFamily: theme.fontFamily.bold,
-            fontSize: fs(15),
-            color: theme.colors.primary,
         },
         statsContainer: {
             paddingHorizontal: wp(20),

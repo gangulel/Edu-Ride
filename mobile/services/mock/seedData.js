@@ -10,6 +10,10 @@ export const seedUsers = [
     password: 'parent123',
     mobile: '+94 77 123 4567',
     avatar: null,
+    // This demo user is dual-role: they can switch between their parent and
+    // driver dashboards via the Switch Role action on the Profile screen.
+    availableRoles: ['parent', 'driver'],
+    linkedAccountId: 'u-driver-1',
   },
   {
     id: 'u-driver-1',
@@ -19,6 +23,8 @@ export const seedUsers = [
     password: 'driver123',
     mobile: '+94 71 222 8899',
     avatar: null,
+    availableRoles: ['driver', 'parent'],
+    linkedAccountId: 'u-parent-1',
   },
 ];
 

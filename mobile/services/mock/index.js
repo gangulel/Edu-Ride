@@ -54,6 +54,34 @@ export function getCurrentUser() {
   return getState().currentUser;
 }
 
+// Swap the signed-in user for their linked account in the opposite role.
+// Used by the Switch Role action when a single person plays both parent
+// and driver. Throws if the current user has no linked account.
+export async function mockSwitchRole(targetRole) {
+  await delay(180);
+  const current = getState().currentUser;
+  if (!current) {
+    throw new Error('You must be signed in to switch roles.');
+  }
+  if (current.role === targetRole) {
+    return current;
+  }
+  if (!current.availableRoles || !current.availableRoles.includes(targetRole)) {
+    throw new Error(`This account does not have access to the ${targetRole} role.`);
+  }
+  const linkedId = current.linkedAccountId;
+  if (!linkedId) {
+    throw new Error('No linked account is configured for this user.');
+  }
+  const linked = getState().users.find((u) => u.id === linkedId && u.role === targetRole);
+  if (!linked) {
+    throw new Error(`No ${targetRole} account is linked to this user.`);
+  }
+  const { password: _ignored, ...safe } = linked;
+  update({ currentUser: safe });
+  return safe;
+}
+
 // ───────── Parent ─────────
 
 export async function getChildrenForParent(parentId) {

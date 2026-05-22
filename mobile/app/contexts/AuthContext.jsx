@@ -1,5 +1,11 @@
 import React, { createContext, useContext, useState, useCallback, useMemo } from 'react';
-import { mockLogin, mockRegister, mockLogout, getCurrentUser } from '../../services/mock';
+import {
+  mockLogin,
+  mockRegister,
+  mockLogout,
+  mockSwitchRole,
+  getCurrentUser,
+} from '../../services/mock';
 
 const AuthContext = createContext(null);
 
@@ -39,9 +45,22 @@ export function AuthProvider({ children }) {
     }
   }, []);
 
+  // Swap to the linked account in the requested role (e.g. switch from
+  // parent dashboard to driver dashboard for users who play both roles).
+  const switchRole = useCallback(async (targetRole) => {
+    setLoading(true);
+    try {
+      const swapped = await mockSwitchRole(targetRole);
+      setUser(swapped);
+      return swapped;
+    } finally {
+      setLoading(false);
+    }
+  }, []);
+
   const value = useMemo(
-    () => ({ user, loading, login, register, logout, setUser }),
-    [user, loading, login, register, logout],
+    () => ({ user, loading, login, register, logout, switchRole, setUser }),
+    [user, loading, login, register, logout, switchRole],
   );
 
   return <AuthContext.Provider value={value}>{children}</AuthContext.Provider>;

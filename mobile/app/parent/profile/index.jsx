@@ -1,19 +1,51 @@
 import React from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { Car } from 'iconsax-react-native';
 import { responsive, hp, wp } from '../../utils/responsive';
 import { Avatar, Card, Badge } from '../../components/atoms';
 import { Header, ParentBottomNav } from '../../components/organisms';
+import { useAuth } from '../../contexts/AuthContext';
 
 export default function ProfileScreen() {
     const router = useRouter();
+    const { user: authUser, switchRole, logout } = useAuth();
 
     const user = {
-        name: 'Samantha Fernando',
-        email: 'samantha.fernando@email.com',
-        phone: '+94 77 123 4567',
+        name: authUser?.name || 'Samantha Fernando',
+        email: authUser?.email || 'samantha.fernando@email.com',
+        phone: authUser?.mobile || '+94 77 123 4567',
         memberSince: 'January 2025',
+    };
+
+    const canSwitchToDriver =
+        Array.isArray(authUser?.availableRoles) && authUser.availableRoles.includes('driver');
+
+    const handleSwitchToDriver = () => {
+        Alert.alert(
+            'Switch to driver mode',
+            'You will be taken to your driver dashboard. You can switch back anytime from your driver profile.',
+            [
+                { text: 'Cancel', style: 'cancel' },
+                {
+                    text: 'Switch',
+                    onPress: async () => {
+                        try {
+                            await switchRole('driver');
+                            router.replace('/driver');
+                        } catch (err) {
+                            Alert.alert('Unable to switch', err.message || 'Please try again.');
+                        }
+                    },
+                },
+            ],
+        );
+    };
+
+    const handleLogout = async () => {
+        await logout();
+        router.replace('/login/login');
     };
 
     const menuItems = [
@@ -35,10 +67,22 @@ export default function ProfileScreen() {
                     <Text style={styles.userName}>{user.name}</Text>
                     <Text style={styles.userEmail}>{user.email}</Text>
                     <Text style={styles.memberSince}>Member since {user.memberSince}</Text>
+
+                    {canSwitchToDriver && (
+                        <TouchableOpacity
+                            style={styles.switchRoleButton}
+                            onPress={handleSwitchToDriver}
+                            activeOpacity={0.85}
+                            accessibilityLabel="Switch to driver mode"
+                        >
+                            <Car size={18} color="#fff" variant="Bold" />
+                            <Text style={styles.switchRoleText}>Switch to Driver</Text>
+                        </TouchableOpacity>
+                    )}
                 </Card>
 
                 <View style={styles.menuSection}>
-                    {menuItems.map((item, index) => (
+                    {menuItems.map((item) => (
                         <TouchableOpacity
                             key={item.label}
                             style={styles.menuItem}
@@ -58,7 +102,7 @@ export default function ProfileScreen() {
                     ))}
                 </View>
 
-                <TouchableOpacity style={styles.logoutButton} onPress={() => router.replace('/login/login')}>
+                <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
                     <Ionicons name="log-out-outline" size={22} color="#FF3B30" />
                     <Text style={styles.logoutText}>Log Out</Text>
                 </TouchableOpacity>
@@ -78,6 +122,28 @@ const styles = StyleSheet.create({
     userName: { fontSize: responsive.font2XL, fontWeight: 'bold', marginTop: responsive.paddingMD },
     userEmail: { fontSize: responsive.fontMD, color: '#8E8E93', marginTop: 4 },
     memberSince: { fontSize: responsive.fontSM, color: '#8E8E93', marginTop: 4 },
+    switchRoleButton: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'center',
+        marginTop: responsive.paddingLG,
+        paddingHorizontal: responsive.paddingXL,
+        paddingVertical: responsive.paddingMD,
+        backgroundColor: '#3B82F6',
+        borderRadius: 9999,
+        gap: 8,
+        shadowColor: '#3B82F6',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.25,
+        shadowRadius: 12,
+        elevation: 6,
+    },
+    switchRoleText: {
+        color: '#fff',
+        fontSize: responsive.fontMD,
+        fontWeight: '600',
+        letterSpacing: 0.2,
+    },
     menuSection: { margin: responsive.paddingLG, backgroundColor: '#fff', borderRadius: responsive.radiusLG },
     menuItem: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', padding: responsive.paddingMD, borderBottomWidth: 1, borderBottomColor: '#E5E5EA' },
     menuLeft: { flexDirection: 'row', alignItems: 'center' },
