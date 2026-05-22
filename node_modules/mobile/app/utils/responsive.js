@@ -6,6 +6,10 @@ const { width: SCREEN_WIDTH, height: SCREEN_HEIGHT } = Dimensions.get('window');
 const BASE_WIDTH = 375;
 const BASE_HEIGHT = 812;
 
+const clamp = (value, min, max) => {
+  return Math.max(min, Math.min(value, max));
+};
+
 // Width percentage
 export const wp = (size) => {
   return (size / BASE_WIDTH) * SCREEN_WIDTH;
@@ -18,7 +22,7 @@ export const hp = (size) => {
 
 // Font scaling
 export const fs = (size) => {
-  const scale = SCREEN_WIDTH / BASE_WIDTH;
+  const scale = clamp(SCREEN_WIDTH / BASE_WIDTH, 0.9, 1.18);
   const newSize = size * scale;
   return Math.round(PixelRatio.roundToNearestPixel(newSize));
 };
@@ -32,7 +36,7 @@ export const responsive = {
   paddingLG: hp(16),
   paddingXL: hp(24),
   padding2XL: hp(32),
-  
+
   // Margin
   marginXS: hp(4),
   marginSM: hp(8),
@@ -40,7 +44,7 @@ export const responsive = {
   marginLG: hp(16),
   marginXL: hp(24),
   margin2XL: hp(32),
-  
+
   // Border radius
   radiusXS: 4,
   radiusSM: 8,
@@ -48,7 +52,7 @@ export const responsive = {
   radiusLG: 16,
   radiusXL: 24,
   radiusFull: 9999,
-  
+
   // Font sizes
   fontXS: fs(12),
   fontSM: fs(14),
@@ -57,4 +61,12 @@ export const responsive = {
   fontXL: fs(20),
   font2XL: fs(24),
   font3XL: fs(30),
+
+  // Button height
+  buttonHeight: hp(48),
+
+  // Navigation heights
+  tabBarMinHeight: 64,
+  tabBarHeight: hp(72),
+  headerHeight: hp(60),
 };

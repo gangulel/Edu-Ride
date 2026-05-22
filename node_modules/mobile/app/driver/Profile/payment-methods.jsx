@@ -12,7 +12,7 @@ export default function PaymentMethods() {
     {
       id: 1,
       type: "bank",
-      name: "Chase Bank",
+      name: "Commercial Bank",
       details: "Account ****6789",
       isDefault: true,
       icon: "business-outline",
@@ -31,7 +31,7 @@ export default function PaymentMethods() {
       id: 3,
       type: "paypal",
       name: "PayPal",
-      details: "john.driver@example.com",
+      details: "kasun.perera@eduride.lk",
       isDefault: false,
       icon: "logo-paypal",
       color: "#003087",
@@ -39,8 +39,8 @@ export default function PaymentMethods() {
   ]);
 
   const [earnings] = useState({
-    thisWeek: 1247.50,
-    pendingPayout: 450.00,
+    thisWeek: 124750.00,
+    pendingPayout: 45000.00,
     nextPayoutDate: "Dec 18, 2025",
   });
 
@@ -85,7 +85,7 @@ export default function PaymentMethods() {
   const handleRequestPayout = () => {
     Alert.alert(
       "Request Early Payout",
-      `Request early payout of $${earnings.pendingPayout.toFixed(2)}? A small fee may apply.`,
+      `Request early payout of Rs. ${earnings.pendingPayout.toLocaleString()}? A small fee may apply.`,
       [
         { text: "Cancel", style: "cancel" },
         { text: "Request", onPress: () => Alert.alert("Success", "Payout requested") },
@@ -96,7 +96,7 @@ export default function PaymentMethods() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
@@ -113,15 +113,15 @@ export default function PaymentMethods() {
             <Ionicons name="wallet-outline" size={24} color="#34C759" />
             <Text style={styles.earningsTitle}>Your Earnings</Text>
           </View>
-          
+
           <View style={styles.earningsGrid}>
             <View style={styles.earningItem}>
               <Text style={styles.earningLabel}>This Week</Text>
-              <Text style={styles.earningValue}>${earnings.thisWeek.toFixed(2)}</Text>
+              <Text style={styles.earningValue}>Rs. {earnings.thisWeek.toLocaleString()}</Text>
             </View>
             <View style={styles.earningItem}>
               <Text style={styles.earningLabel}>Pending Payout</Text>
-              <Text style={styles.earningValue}>${earnings.pendingPayout.toFixed(2)}</Text>
+              <Text style={styles.earningValue}>Rs. {earnings.pendingPayout.toLocaleString()}</Text>
             </View>
           </View>
 
@@ -261,7 +261,7 @@ export default function PaymentMethods() {
           <View style={styles.infoItem}>
             <Ionicons name="cash-outline" size={20} color="#34C759" />
             <Text style={styles.infoText}>
-              Minimum payout amount is $50.00
+              Minimum payout amount is Rs. 5,000.00
             </Text>
           </View>
         </View>

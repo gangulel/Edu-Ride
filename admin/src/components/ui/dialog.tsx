@@ -1,9 +1,9 @@
 import * as React from "react"
-import { X } from "lucide-react"
+import { cn } from "./utils"
 
 const Dialog = ({ open, onOpenChange, children }: { open: boolean, onOpenChange: (open: boolean) => void, children: React.ReactNode }) => {
   if (!open) return null
-  
+
   return (
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/50" onClick={() => onOpenChange(false)} />
@@ -16,7 +16,7 @@ const Dialog = ({ open, onOpenChange, children }: { open: boolean, onOpenChange:
 
 const DialogContent = ({ children, className }: { children: React.ReactNode, className?: string }) => {
   return (
-    <div className={`relative bg-white rounded-lg shadow-lg w-full max-w-lg p-6 ${className || ''}`}>
+    <div className={cn("relative z-50 grid w-full max-w-lg gap-4 rounded-lg border border-gray-200 bg-white p-6 shadow-lg", className)}>
       {children}
     </div>
   )
@@ -24,7 +24,7 @@ const DialogContent = ({ children, className }: { children: React.ReactNode, cla
 
 const DialogHeader = ({ children, className }: { children: React.ReactNode, className?: string }) => {
   return (
-    <div className={`flex flex-col space-y-1.5 ${className || ''}`}>
+    <div className={cn("flex flex-col space-y-1.5 text-center sm:text-left", className)}>
       {children}
     </div>
   )
@@ -32,7 +32,7 @@ const DialogHeader = ({ children, className }: { children: React.ReactNode, clas
 
 const DialogTitle = ({ children, className }: { children: React.ReactNode, className?: string }) => {
   return (
-    <h2 className={`tracking-tight ${className || ''}`}>
+    <h2 className={cn("text-lg font-semibold leading-none tracking-tight", className)}>
       {children}
     </h2>
   )
@@ -40,7 +40,7 @@ const DialogTitle = ({ children, className }: { children: React.ReactNode, class
 
 const DialogDescription = ({ children, className }: { children: React.ReactNode, className?: string }) => {
   return (
-    <p className={`text-sm text-gray-500 ${className || ''}`}>
+    <p className={cn("text-sm text-gray-500", className)}>
       {children}
     </p>
   )
@@ -48,7 +48,7 @@ const DialogDescription = ({ children, className }: { children: React.ReactNode,
 
 const DialogFooter = ({ children, className }: { children: React.ReactNode, className?: string }) => {
   return (
-    <div className={`flex justify-end space-x-2 mt-6 ${className || ''}`}>
+    <div className={cn("mt-6 flex flex-col-reverse gap-2 sm:flex-row sm:justify-end", className)}>
       {children}
     </div>
   )

@@ -1,40 +1,84 @@
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
 import { Badge } from "./ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
+import { Dialog, DialogContent, DialogDescription, DialogFooter, DialogHeader, DialogTitle } from "./ui/dialog"
 import { Star, Flag, TrendingDown, Award } from "lucide-react"
 import { BarChart, Bar, XAxis, YAxis, CartesianGrid, Tooltip, Legend, ResponsiveContainer } from "recharts"
-
-const driverRatings = [
-  { id: 1, driver: "Robert Martinez", route: "Route A", rating: 4.8, reviews: 234, lowRated: 8, flagged: 2, avgMonth: 4.7 },
-  { id: 2, driver: "Linda Anderson", route: "Route B", rating: 4.9, reviews: 312, lowRated: 3, flagged: 0, avgMonth: 4.9 },
-  { id: 3, driver: "David Brown", route: "Route C", rating: 3.2, reviews: 145, lowRated: 45, flagged: 12, avgMonth: 3.5 },
-  { id: 4, driver: "Patricia Taylor", route: "Route D", rating: 4.5, reviews: 198, lowRated: 12, flagged: 3, avgMonth: 4.4 },
-  { id: 5, driver: "John Smith", route: "Route E", rating: 4.7, reviews: 267, lowRated: 15, flagged: 1, avgMonth: 4.6 },
-]
-
-const recentReviews = [
-  { id: 1, parent: "Sarah Johnson", driver: "Robert Martinez", rating: 5, comment: "Always on time and very friendly!", date: "2024-12-10", flagged: false },
-  { id: 2, parent: "Michael Chen", driver: "Linda Anderson", rating: 5, comment: "Excellent service, my kids feel safe.", date: "2024-12-09", flagged: false },
-  { id: 3, parent: "Emma Davis", driver: "David Brown", rating: 2, comment: "Consistently late and unprofessional.", date: "2024-12-08", flagged: true },
-  { id: 4, parent: "James Wilson", driver: "Robert Martinez", rating: 4, comment: "Good service overall, minor delays sometimes.", date: "2024-12-07", flagged: false },
-]
-
-const routePerformance = [
-  { route: "Route A", avgRating: 4.8, reviews: 234 },
-  { route: "Route B", avgRating: 4.9, reviews: 312 },
-  { route: "Route C", avgRating: 3.2, reviews: 145 },
-  { route: "Route D", avgRating: 4.5, reviews: 198 },
-  { route: "Route E", avgRating: 4.7, reviews: 267 },
-]
+import { toast } from "sonner"
+import { fetchAdminContent } from "../lib/adminContent"
 
 export function RatingsReviews() {
+  const [driverRatings, setDriverRatings] = useState<any[]>([])
+  const [recentReviews, setRecentReviews] = useState<any[]>([])
+  const [routePerformance, setRoutePerformance] = useState<any[]>([])
+  const [activeDriver, setActiveDriver] = useState<any | null>(null)
+  const [actionDriver, setActionDriver] = useState<any | null>(null)
+  const [actionNote, setActionNote] = useState("")
+  const [flaggedIds, setFlaggedIds] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    if (typeof window === "undefined") return
+    const raw = window.localStorage.getItem("eduride-admin-flag-overrides")
+    if (raw) {
+      try {
+        setFlaggedIds(new Set(JSON.parse(raw)))
+      } catch {
+        /* ignore */
+      }
+    }
+  }, [])
+
+  const persistFlags = (next: Set<string>) => {
+    setFlaggedIds(new Set(next))
+    if (typeof window !== "undefined") {
+      window.localStorage.setItem("eduride-admin-flag-overrides", JSON.stringify(Array.from(next)))
+    }
+  }
+
+  const isCleared = (review: any) => flaggedIds.has(String(review.id))
+
+  useEffect(() => {
+    fetchAdminContent()
+      .then((payload) => {
+        setDriverRatings(payload.ratings?.driverRatings || [])
+        setRecentReviews(payload.ratings?.recentReviews || [])
+        setRoutePerformance(payload.ratings?.routePerformance || [])
+      })
+      .catch(() => {
+        setDriverRatings([])
+        setRecentReviews([])
+        setRoutePerformance([])
+      })
+  }, [])
+
+  const avgRating = useMemo(() => {
+    if (!driverRatings.length) return 0
+    return Math.round((driverRatings.reduce((sum, d) => sum + Number(d.rating || 0), 0) / driverRatings.length) * 10) / 10
+  }, [driverRatings])
+
+  const totalReviews = useMemo(() => driverRatings.reduce((sum, d) => sum + Number(d.reviews || 0), 0), [driverRatings])
+  const lowRatedDrivers = useMemo(() => driverRatings.filter((d) => Number(d.rating || 0) < 3.5).length, [driverRatings])
+  const flaggedReviews = useMemo(
+    () => recentReviews.filter((r) => Boolean(r.flagged) && !flaggedIds.has(String(r.id))).length,
+    [recentReviews, flaggedIds]
+  )
+  const lowPerformerDrivers = useMemo(
+    () => [...driverRatings].sort((a, b) => Number(a.rating || 0) - Number(b.rating || 0)).slice(0, 3),
+    [driverRatings]
+  )
+  const topPerformerDrivers = useMemo(
+    () => [...driverRatings].sort((a, b) => Number(b.rating || 0) - Number(a.rating || 0)).slice(0, 3),
+    [driverRatings]
+  )
+
   return (
     <div className="space-y-6">
-      <div>
+      {/* <div>
         <h2>Ratings, Reviews & Quality Monitoring</h2>
         <p className="text-gray-500 mt-1">Monitor driver performance and service quality</p>
-      </div>
+      </div> */}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -44,7 +88,7 @@ export function RatingsReviews() {
             <Star className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">4.6</div>
+            <div className="text-2xl font-bold">{avgRating || "-"}</div>
             <p className="text-xs text-gray-500 mt-1">Across all drivers</p>
           </CardContent>
         </Card>
@@ -55,9 +99,9 @@ export function RatingsReviews() {
             <Award className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,156</div>
+            <div className="text-2xl font-bold">{totalReviews.toLocaleString()}</div>
             <p className="text-xs text-gray-500 mt-1">
-              <span className="text-green-600">+156</span> this month
+              Based on DB data
             </p>
           </CardContent>
         </Card>
@@ -68,7 +112,7 @@ export function RatingsReviews() {
             <TrendingDown className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">23</div>
+            <div className="text-2xl font-bold text-red-600">{lowRatedDrivers}</div>
             <p className="text-xs text-gray-500 mt-1">Below 3.5 rating</p>
           </CardContent>
         </Card>
@@ -79,7 +123,7 @@ export function RatingsReviews() {
             <Flag className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">18</div>
+            <div className="text-2xl font-bold text-yellow-600">{flaggedReviews}</div>
             <p className="text-xs text-gray-500 mt-1">Pending review</p>
           </CardContent>
         </Card>
@@ -164,9 +208,11 @@ export function RatingsReviews() {
                   </TableCell>
                   <TableCell>
                     <div className="flex gap-2">
-                      <Button size="sm" variant="ghost">View</Button>
+                      <Button size="sm" variant="ghost" onClick={() => setActiveDriver(driver)}>View</Button>
                       {driver.rating < 3.5 && (
-                        <Button size="sm" variant="outline">Review</Button>
+                        <Button size="sm" variant="outline" onClick={() => setActionDriver(driver)}>
+                          Review
+                        </Button>
                       )}
                     </div>
                   </TableCell>
@@ -211,12 +257,38 @@ export function RatingsReviews() {
                 <p className="text-sm mb-2">{review.comment}</p>
                 <div className="flex justify-between items-center">
                   <p className="text-xs text-gray-500">{review.date}</p>
-                  {review.flagged && (
+                  {review.flagged && !isCleared(review) ? (
                     <div className="flex gap-2">
-                      <Button size="sm" variant="outline">Review</Button>
-                      <Button size="sm" variant="ghost">Remove Flag</Button>
+                      <Button
+                        size="sm"
+                        variant="outline"
+                        onClick={() =>
+                          toast.message("Review opened", {
+                            description: `Investigating feedback for ${review.driver}.`,
+                          })
+                        }
+                      >
+                        Review
+                      </Button>
+                      <Button
+                        size="sm"
+                        variant="ghost"
+                        onClick={() => {
+                          const next = new Set(flaggedIds)
+                          next.add(String(review.id))
+                          persistFlags(next)
+                          toast.success("Flag removed", {
+                            description: "Review will no longer appear flagged.",
+                          })
+                        }}
+                      >
+                        Remove Flag
+                      </Button>
                     </div>
-                  )}
+                  ) : null}
+                  {review.flagged && isCleared(review) ? (
+                    <Badge variant="success">Cleared</Badge>
+                  ) : null}
                 </div>
               </div>
             ))}
@@ -232,27 +304,17 @@ export function RatingsReviews() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
-                <div>
-                  <p className="font-medium">David Brown - Route C</p>
-                  <p className="text-sm text-gray-500">Rating: 3.2 / 5.0</p>
+              {lowPerformerDrivers.length ? lowPerformerDrivers.map((driver) => (
+                <div key={driver.id} className="flex justify-between items-center p-3 bg-red-50 rounded-lg">
+                  <div>
+                    <p className="font-medium">{driver.driver} - {driver.route}</p>
+                    <p className="text-sm text-gray-500">Rating: {driver.rating} / 5.0</p>
+                  </div>
+                  <Button size="sm" onClick={() => setActionDriver(driver)}>Take Action</Button>
                 </div>
-                <Button size="sm">Take Action</Button>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
-                <div>
-                  <p className="font-medium">Multiple late pickup reports</p>
-                  <p className="text-sm text-gray-500">Zone A routes affected</p>
-                </div>
-                <Button size="sm" variant="outline">Investigate</Button>
-              </div>
-              <div className="flex justify-between items-center p-3 bg-yellow-50 rounded-lg">
-                <div>
-                  <p className="font-medium">Communication issues reported</p>
-                  <p className="text-sm text-gray-500">5 drivers mentioned</p>
-                </div>
-                <Button size="sm" variant="outline">Review</Button>
-              </div>
+              )) : (
+                <p className="text-sm text-gray-500">No low-performing drivers in backend data.</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -263,31 +325,98 @@ export function RatingsReviews() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                <div>
-                  <p className="font-medium">Linda Anderson - Route B</p>
-                  <p className="text-sm text-gray-500">Rating: 4.9 / 5.0 (312 reviews)</p>
+              {topPerformerDrivers.length ? topPerformerDrivers.map((driver) => (
+                <div key={driver.id} className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
+                  <div>
+                    <p className="font-medium">{driver.driver} - {driver.route}</p>
+                    <p className="text-sm text-gray-500">Rating: {driver.rating} / 5.0 ({driver.reviews || 0} reviews)</p>
+                  </div>
+                  <Award className="h-6 w-6 text-green-600" />
                 </div>
-                <Award className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                <div>
-                  <p className="font-medium">Robert Martinez - Route A</p>
-                  <p className="text-sm text-gray-500">Rating: 4.8 / 5.0 (234 reviews)</p>
-                </div>
-                <Award className="h-6 w-6 text-green-600" />
-              </div>
-              <div className="flex justify-between items-center p-3 bg-green-50 rounded-lg">
-                <div>
-                  <p className="font-medium">John Smith - Route E</p>
-                  <p className="text-sm text-gray-500">Rating: 4.7 / 5.0 (267 reviews)</p>
-                </div>
-                <Award className="h-6 w-6 text-green-600" />
-              </div>
+              )) : (
+                <p className="text-sm text-gray-500">No top performer data available.</p>
+              )}
             </div>
           </CardContent>
         </Card>
       </div>
+
+      <Dialog open={Boolean(activeDriver)} onOpenChange={(open) => !open && setActiveDriver(null)}>
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>{activeDriver?.driver}</DialogTitle>
+            <DialogDescription>Driver performance snapshot</DialogDescription>
+          </DialogHeader>
+          {activeDriver ? (
+            <div className="grid grid-cols-2 gap-3 text-sm">
+              <div><p style={{ color: "var(--er-text-muted)" }}>Route</p><p>{activeDriver.route || "—"}</p></div>
+              <div><p style={{ color: "var(--er-text-muted)" }}>Rating</p><p>{activeDriver.rating} / 5.0</p></div>
+              <div><p style={{ color: "var(--er-text-muted)" }}>Reviews</p><p>{activeDriver.reviews || 0}</p></div>
+              <div><p style={{ color: "var(--er-text-muted)" }}>Low ratings</p><p>{activeDriver.lowRated || 0}</p></div>
+              <div><p style={{ color: "var(--er-text-muted)" }}>Flagged</p><p>{activeDriver.flagged || 0}</p></div>
+              <div><p style={{ color: "var(--er-text-muted)" }}>Monthly avg</p><p>{activeDriver.avgMonth || "—"}</p></div>
+            </div>
+          ) : null}
+          <DialogFooter>
+            <Button variant="outline" onClick={() => setActiveDriver(null)}>Close</Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
+
+      <Dialog
+        open={Boolean(actionDriver)}
+        onOpenChange={(open) => {
+          if (!open) {
+            setActionDriver(null)
+            setActionNote("")
+          }
+        }}
+      >
+        <DialogContent>
+          <DialogHeader>
+            <DialogTitle>Take action on {actionDriver?.driver}</DialogTitle>
+            <DialogDescription>Log an internal note. Drivers will not see this directly.</DialogDescription>
+          </DialogHeader>
+          <textarea
+            value={actionNote}
+            onChange={(event) => setActionNote(event.target.value)}
+            rows={5}
+            className="w-full rounded-lg p-3 text-sm"
+            style={{
+              background: "var(--er-surface-muted)",
+              border: "1px solid var(--er-border-strong)",
+              color: "var(--er-text)",
+            }}
+            placeholder="e.g. Schedule retraining for safe driving practices"
+          />
+          <DialogFooter>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setActionDriver(null)
+                setActionNote("")
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              onClick={() => {
+                if (!actionNote.trim()) {
+                  toast.error("Add a short note", { description: "Notes help future admins follow up." })
+                  return
+                }
+                toast.success("Action logged", {
+                  description: `Note saved for ${actionDriver?.driver}.`,
+                })
+                setActionDriver(null)
+                setActionNote("")
+              }}
+            >
+              Save note
+            </Button>
+          </DialogFooter>
+        </DialogContent>
+      </Dialog>
     </div>
   )
 }

@@ -1,31 +1,51 @@
 import React, { useState, useId, useRef } from "react";
-import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, Linking, KeyboardAvoidingView, Platform, ScrollView } from "react-native";
-import { Input } from "../components/ui/Input";
-import { Label } from "../components/ui/Label";
-import PasswordInput from "../components/PasswordInput";
-import Checkbox from "../components/ui/Checkbox";
+import {
+  View,
+  Text,
+  TextInput,
+  TouchableOpacity,
+  ActivityIndicator,
+  Linking,
+  KeyboardAvoidingView,
+  Platform,
+  ScrollView,
+  Image,
+  StatusBar,
+  StyleSheet,
+} from "react-native";
 import { useRouter } from "expo-router";
-import { responsive, wp, hp } from "../utils/responsive";
+import {
+  ArrowLeft,
+  User,
+  Sms,
+  Call,
+  Lock,
+  Eye,
+  EyeSlash,
+  InfoCircle,
+  Teacher,
+  Car,
+  TickCircle,
+} from "iconsax-react-native";
+import { responsive, wp, hp, fs } from "../utils/responsive";
+import { apiFetch } from "../../services/api";
 
 export default function Register() {
   const router = useRouter();
   const id = useId();
-  const passwordId = `${id}-password`;
   const scrollRef = useRef(null);
   const [name, setName] = useState("");
   const [email, setEmail] = useState("");
   const [mobile, setMobile] = useState("");
   const [password, setPassword] = useState("");
-  const [userType, setUserType] = useState(""); // "student" or "driver"
+  const [showPassword, setShowPassword] = useState(false);
+  const [userType, setUserType] = useState(""); // "parent" or "driver"
   const [emailTouched, setEmailTouched] = useState(false);
-  // confirm password removed per request
   const [loading, setLoading] = useState(false);
   const [error, setError] = useState("");
   const [termsChecked, setTermsChecked] = useState(false);
 
   const re = /^(([^<>()[\]\\.,;:\s@\"]+(\.[^<>()[\]\\.,;:\s@\"]+)*)|(\".+\"))@(([^<>()[\]\\.,;:\s@\"]+\.)+[^<>()[\]\\.,;:\s@\"]{2,})$/i;
-
-  // password strength helpers moved to PasswordInput component
 
   const validate = () => {
     if (!name || !email || !mobile || !password || !userType) {
@@ -36,7 +56,6 @@ export default function Register() {
       setError("Please enter a valid email address.");
       return false;
     }
-    // basic mobile number check: optional +, then 7-15 digits
     if (!/^\+?\d{7,15}$/.test(mobile)) {
       setError("Please enter a valid mobile number.");
       return false;
@@ -52,307 +71,501 @@ export default function Register() {
     return true;
   };
 
-  const onSubmit = () => {
+  const onSubmit = async () => {
     setError("");
     if (!validate()) return;
     setLoading(true);
-    // Mock API signup
-    setTimeout(() => {
+
+    try {
+      const payload = await apiFetch("/auth/register", {
+        method: "POST",
+        body: JSON.stringify({
+          fullName: name,
+          email,
+          phone: mobile,
+          password,
+          role: userType,
+        }),
+      });
+
       setLoading(false);
-      // After successful signup, navigate based on user type
-      if (userType === "student") {
-        router.replace("/home"); // Navigate to student page
-      } else if (userType === "driver") {
-        router.replace("/driver"); // Navigate to driver page
+      const resolvedRole = payload?.user?.role || userType;
+
+      if (resolvedRole === "parent") {
+        router.replace("/parent");
+      } else if (resolvedRole === "driver") {
+        router.replace("/driver");
       }
-    }, 1000);
+    } catch (err) {
+      setLoading(false);
+      setError(err.message || "Registration failed. Please try again.");
+    }
   };
 
   return (
-    <KeyboardAvoidingView style={{ flex: 1 }} behavior={Platform.OS === "ios" ? "padding" : "height"} keyboardVerticalOffset={Platform.select({ ios: 0, android: 20 })}>
-      <ScrollView ref={scrollRef} contentContainerStyle={{ flexGrow: 1, justifyContent: "center", padding: responsive.paddingXL, backgroundColor: "#fff" }} keyboardShouldPersistTaps="handled">
-        <View>
-          <Text style={styles.title}>Create account</Text>
+    <View style={styles.container}>
+      <StatusBar barStyle="dark-content" />
 
-          <View style={{ marginBottom: 8 }}>
-            <Label htmlFor={id}>Full name</Label>
-            <Input
-              nativeID={id}
-              placeholder="Full name"
-              value={name}
-              onChangeText={setName}
-              placeholderTextColor="#999"
-              autoFocus={true}
-              onFocus={() => scrollRef.current?.scrollTo({ y: 0, animated: true })}
-            />
+      <KeyboardAvoidingView
+        style={styles.keyboardView}
+        behavior={Platform.OS === "ios" ? "padding" : "height"}
+        keyboardVerticalOffset={Platform.select({ ios: 0, android: 20 })}
+      >
+        <ScrollView
+          ref={scrollRef}
+          contentContainerStyle={styles.scrollContent}
+          keyboardShouldPersistTaps="handled"
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Header */}
+          <View style={styles.headerSection}>
+            <TouchableOpacity
+              style={styles.backButton}
+              onPress={() => router.back()}
+              activeOpacity={0.7}
+            >
+              <ArrowLeft size={24} color="#000" />
+            </TouchableOpacity>
+
+            {/* Logo */}
+            <View style={styles.logoContainer}>
+              <Image
+                source={require("../../assets/images/bluelogo.png")}
+                style={styles.headerImage}
+                resizeMode="contain"
+              />
+            </View>
+
+            {/* Title */}
+            <Text style={styles.title}>Create Account</Text>
+            <Text style={styles.subtitle}>Join Edu-Ride today</Text>
           </View>
 
-          {/* User Type Selection */}
-          <View style={{ marginBottom: 12 }}>
-            <Label htmlFor={`${id}-usertype`}>I am a</Label>
+          {/* Form Section */}
+          <View style={styles.formSection}>
+            {/* User Type Selection */}
+            <Text style={[styles.label, { marginBottom: 12 }]}>I am a</Text>
             <View style={styles.userTypeContainer}>
               <TouchableOpacity
                 style={[
                   styles.userTypeButton,
-                  userType === "student" && styles.userTypeButtonActive
+                  userType === "parent" && styles.userTypeButtonActive,
                 ]}
-                onPress={() => setUserType("student")}
+                onPress={() => setUserType("parent")}
+                activeOpacity={0.7}
               >
-                <Text style={[
-                  styles.userTypeText,
-                  userType === "student" && styles.userTypeTextActive
-                ]}>
-                  Student
+                <Teacher
+                  size={24}
+                  color={userType === "parent" ? "#fff" : "#666"}
+                  variant={userType === "parent" ? "Bold" : "Outline"}
+                />
+                <Text
+                  style={[
+                    styles.userTypeText,
+                    userType === "parent" && styles.userTypeTextActive,
+                  ]}
+                >
+                  Parent
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
                 style={[
                   styles.userTypeButton,
-                  userType === "driver" && styles.userTypeButtonActive
+                  userType === "driver" && styles.userTypeButtonActive,
                 ]}
                 onPress={() => setUserType("driver")}
+                activeOpacity={0.7}
               >
-                <Text style={[
-                  styles.userTypeText,
-                  userType === "driver" && styles.userTypeTextActive
-                ]}>
+                <Car
+                  size={24}
+                  color={userType === "driver" ? "#fff" : "#666"}
+                  variant={userType === "driver" ? "Bold" : "Outline"}
+                />
+                <Text
+                  style={[
+                    styles.userTypeText,
+                    userType === "driver" && styles.userTypeTextActive,
+                  ]}
+                >
                   Driver
                 </Text>
               </TouchableOpacity>
             </View>
-          </View>
 
-          {/* Labeled email input with accessibility linking; show inline error next to label */}
-          <View style={styles.emailLabelRow}>
-            <Text nativeID={`${id}-label`} style={styles.label} accessibilityRole="text">
-              Email
-            </Text>
-            {emailTouched && !re.test(email) ? (
-              <Text
-                style={styles.errorInline}
-                accessibilityRole="alert"
-                accessibilityLiveRegion="polite"
+            {/* Full Name Input */}
+            <View style={styles.inputContainer}>
+              <Text style={[styles.label, { marginBottom: 8 }]}>Full Name</Text>
+              <View style={styles.inputWrapper}>
+                <User size={20} color="#666" variant="Outline" />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your full name"
+                  placeholderTextColor="#999"
+                  value={name}
+                  onChangeText={setName}
+                  autoCapitalize="words"
+                />
+              </View>
+            </View>
+
+            {/* Email Input */}
+            <View style={styles.inputContainer}>
+              <View style={styles.labelRow}>
+                <Text style={styles.label}>Email</Text>
+                {emailTouched && !re.test(email) && email.length > 0 ? (
+                  <Text style={styles.errorInline}>Invalid email</Text>
+                ) : null}
+              </View>
+              <View
+                style={[
+                  styles.inputWrapper,
+                  emailTouched && !re.test(email) && email.length > 0 && styles.inputWrapperError,
+                ]}
               >
-                Email is invalid
-              </Text>
-            ) : null}
-          </View>
+                <Sms size={20} color="#666" variant="Outline" />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your email"
+                  placeholderTextColor="#999"
+                  value={email}
+                  onChangeText={setEmail}
+                  onBlur={() => setEmailTouched(true)}
+                  keyboardType="email-address"
+                  autoCapitalize="none"
+                  autoCorrect={false}
+                />
+              </View>
+            </View>
 
-          <TextInput
-            placeholder="Email"
-            value={email}
-            onChangeText={setEmail}
-            onBlur={() => setEmailTouched(true)}
-            keyboardType="email-address"
-            autoCapitalize="none"
-            style={[
-              styles.input,
-              emailTouched && !re.test(email) ? styles.inputInvalid : null,
-            ]}
-            placeholderTextColor="#999"
-            nativeID={id}
-            accessibilityLabelledBy={`${id}-label`}
-            accessible
-            onFocus={() => scrollRef.current?.scrollTo({ y: 0, animated: true })}
-          />
+            {/* Mobile Input */}
+            <View style={styles.inputContainer}>
+              <Text style={[styles.label, { marginBottom: 8 }]}>Mobile Number</Text>
+              <View style={styles.inputWrapper}>
+                <Call size={20} color="#666" variant="Outline" />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Enter your mobile number"
+                  placeholderTextColor="#999"
+                  value={mobile}
+                  onChangeText={setMobile}
+                  keyboardType="phone-pad"
+                  maxLength={15}
+                />
+              </View>
+            </View>
 
-          <View style={{ marginBottom: 8 }}>
-            <Label htmlFor={`${id}-mobile`}>Mobile number</Label>
-            <Input
-              nativeID={`${id}-mobile`}
-              placeholder="Mobile number"
-              value={mobile}
-              onChangeText={setMobile}
-              keyboardType="phone-pad"
-              placeholderTextColor="#999"
-              maxLength={15}
-              onFocus={() => scrollRef.current?.scrollTo({ y: 0, animated: true })}
-            />
-          </View>
+            {/* Password Input */}
+            <View style={styles.inputContainer}>
+              <Text style={[styles.label, { marginBottom: 8 }]}>Password</Text>
+              <View style={styles.inputWrapper}>
+                <Lock size={20} color="#666" variant="Outline" />
+                <TextInput
+                  style={styles.input}
+                  placeholder="Create a password"
+                  placeholderTextColor="#999"
+                  value={password}
+                  onChangeText={setPassword}
+                  secureTextEntry={!showPassword}
+                  autoCapitalize="none"
+                />
+                <TouchableOpacity
+                  style={styles.eyeButton}
+                  onPress={() => setShowPassword(!showPassword)}
+                  activeOpacity={0.7}
+                >
+                  {showPassword ? (
+                    <EyeSlash size={22} color="#666" variant="Outline" />
+                  ) : (
+                    <Eye size={22} color="#666" variant="Outline" />
+                  )}
+                </TouchableOpacity>
+              </View>
+              <Text style={styles.passwordHint}>Minimum 6 characters</Text>
+            </View>
 
-          {/* Password input with visibility toggle and strength indicator (componentized) */}
-          <View style={{ marginBottom: 8 }}>
-            <Label htmlFor={passwordId}>Password</Label>
-            <PasswordInput id={passwordId} password={password} setPassword={setPassword} showOnlyStrengthBar={true} onFocus={() => scrollRef.current?.scrollTo({ y: 0, animated: true })} />
-          </View>
-
-          {/* Terms of service checkbox */}
-          <View style={{ flexDirection: "row", alignItems: "center", marginBottom: 12 }}>
-            <Checkbox id={id} value={termsChecked} onValueChange={setTermsChecked} />
-            <Text
-              style={{ marginLeft: responsive.paddingSM, color: "#111", fontSize: responsive.fontMD }}
-              accessibilityRole="text"
+            {/* Terms of Service Checkbox */}
+            <TouchableOpacity
+              style={styles.termsContainer}
+              onPress={() => setTermsChecked(!termsChecked)}
+              activeOpacity={0.7}
             >
-              I agree to the
-              {' '}
-              <Text
-                style={{ textDecorationLine: "underline", color: "#007AFF" }}
-                onPress={() => Linking.openURL("https://coss.com/origin")}
+              <View
+                style={[
+                  styles.checkbox,
+                  termsChecked && styles.checkboxChecked,
+                ]}
               >
-                terms of service
+                {termsChecked && (
+                  <TickCircle size={18} color="#fff" variant="Bold" />
+                )}
+              </View>
+              <Text style={styles.termsText}>
+                I agree to the{" "}
+                <Text
+                  style={styles.termsLink}
+                  onPress={() => Linking.openURL("https://eduride.com/terms")}
+                >
+                  Terms of Service
+                </Text>{" "}
+                and{" "}
+                <Text
+                  style={styles.termsLink}
+                  onPress={() => Linking.openURL("https://eduride.com/privacy")}
+                >
+                  Privacy Policy
+                </Text>
               </Text>
-            </Text>
+            </TouchableOpacity>
+
+            {/* Error Message */}
+            {error ? (
+              <View style={styles.errorContainer}>
+                <InfoCircle size={18} color="#E53935" variant="Bold" />
+                <Text style={styles.errorText}>{error}</Text>
+              </View>
+            ) : null}
+
+            {/* Sign Up Button */}
+            <TouchableOpacity
+              style={styles.signUpButton}
+              onPress={onSubmit}
+              disabled={loading}
+              activeOpacity={0.8}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" size="small" />
+              ) : (
+                <Text style={styles.signUpButtonText}>Create Account</Text>
+              )}
+            </TouchableOpacity>
+
+            {/* Login Link */}
+            <View style={styles.loginContainer}>
+              <Text style={styles.loginText}>Already have an account? </Text>
+              <TouchableOpacity
+                onPress={() => router.replace("/login/login")}
+                activeOpacity={0.7}
+              >
+                <Text style={styles.loginLink}>Sign In</Text>
+              </TouchableOpacity>
+            </View>
           </View>
-
-          {error ? <Text style={styles.error}>{error}</Text> : null}
-
-          <TouchableOpacity style={styles.button} onPress={onSubmit} disabled={loading}>
-            {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Sign up</Text>}
-          </TouchableOpacity>
-
-          <TouchableOpacity onPress={() => router.replace("/login/login")} style={styles.link}>
-            <Text style={styles.linkText}>Already have an account? Log in</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </KeyboardAvoidingView>
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </View>
   );
 }
 
-const styles = {
+const styles = StyleSheet.create({
   container: {
     flex: 1,
-    padding: responsive.paddingXL,
-    justifyContent: "center",
     backgroundColor: "#fff",
   },
-  title: {
-    fontSize: responsive.font4XL,
-    fontWeight: "700",
-    marginBottom: responsive.paddingLG,
-    color: "#111",
+  keyboardView: {
+    flex: 1,
   },
-  input: {
-    borderWidth: 1,
-    borderColor: "#e6e6e6",
-    padding: responsive.paddingMD,
-    borderRadius: responsive.radiusMD,
-    marginBottom: responsive.paddingMD,
-    fontSize: responsive.fontLG,
-    minHeight: responsive.inputHeight,
+  scrollContent: {
+    flexGrow: 1,
+    paddingBottom: hp(40),
   },
-  button: {
-    backgroundColor: "#007AFF",
-    padding: responsive.paddingMD,
-    borderRadius: responsive.radiusMD,
-    alignItems: "center",
-    marginTop: responsive.paddingSM,
-    minHeight: responsive.buttonHeight,
-    justifyContent: "center",
-  },
-  buttonText: {
-    color: "#fff",
-    fontWeight: "600",
-    fontSize: responsive.fontLG,
-  },
-  error: {
-    color: "#c0392b",
-    marginBottom: responsive.paddingSM,
-    fontSize: responsive.fontMD,
-  },
-  link: {
-    marginTop: responsive.paddingLG,
+  headerSection: {
+    paddingTop: hp(60),
+    paddingHorizontal: wp(24),
     alignItems: "center",
   },
-  linkText: {
-    color: "#007AFF",
-    fontSize: responsive.fontMD,
-  },
-  label: {
-    fontSize: responsive.fontMD,
-    fontWeight: "600",
-    marginBottom: responsive.paddingSM,
-    color: "#111",
-  },
-  inputInvalid: {
-    borderColor: "#c0392b",
-  },
-  emailError: {
-    marginBottom: responsive.paddingSM,
-  },
-  emailLabelRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    marginBottom: responsive.paddingSM,
-  },
-  errorInline: {
-    color: "#c0392b",
-    fontSize: responsive.fontSM,
-    marginLeft: responsive.paddingSM,
-    fontWeight: "600",
-  },
-  passwordContainer: {
-    position: "relative",
-    marginBottom: responsive.paddingMD,
-  },
-  toggleButton: {
+  backButton: {
     position: "absolute",
-    right: wp(10),
-    top: hp(12),
-    height: wp(24),
-    width: wp(24),
+    top: hp(60),
+    left: wp(20),
+    width: 44,
+    height: 44,
     alignItems: "center",
     justifyContent: "center",
+    zIndex: 10,
   },
-  strengthBarWrap: {
-    marginTop: responsive.paddingSM,
-    marginBottom: responsive.paddingSM,
-  },
-  strengthBar: {
-    height: hp(6),
-    width: "100%",
-    borderRadius: responsive.radiusSM,
-    backgroundColor: "#e6eef7",
-    overflow: "hidden",
-  },
-  strengthFill: {
-    height: "100%",
-    borderRadius: responsive.radiusSM,
-  },
-  strengthText: {
-    marginBottom: responsive.paddingSM,
-    fontSize: responsive.fontMD,
-    fontWeight: "600",
-    color: "#111",
-  },
-  requirementsList: {
-    marginBottom: responsive.paddingSM,
-  },
-  requirementRow: {
-    flexDirection: "row",
+  logoContainer: {
+    marginTop: hp(20),
+    marginBottom: hp(20),
     alignItems: "center",
-    gap: responsive.paddingSM,
-    marginBottom: responsive.paddingXS,
+    justifyContent: "center",
+    minHeight: 60,
+    width: "100%",
   },
-  requirementText: {
-    fontSize: responsive.fontSM,
+  headerImage: {
+    width: wp(160),
+    height: 60,
+    minHeight: 50,
+  },
+  title: {
+    fontSize: fs(26),
+    fontFamily: "Roboto-Bold",
+    color: "#000",
+    textAlign: "center",
+    marginBottom: 8,
+  },
+  subtitle: {
+    fontSize: fs(15),
+    fontFamily: "Roboto-Regular",
+    color: "#666",
+    textAlign: "center",
+  },
+  formSection: {
+    flex: 1,
+    paddingHorizontal: wp(24),
+    paddingTop: hp(24),
   },
   userTypeContainer: {
     flexDirection: "row",
-    gap: responsive.paddingMD,
-    marginTop: responsive.paddingXS,
+    gap: 12,
+    marginBottom: hp(20),
   },
   userTypeButton: {
     flex: 1,
-    paddingVertical: responsive.paddingMD,
-    paddingHorizontal: responsive.paddingLG,
-    borderWidth: 1.5,
-    borderColor: "#e6e6e6",
-    borderRadius: responsive.radiusMD,
+    flexDirection: "row",
     alignItems: "center",
+    justifyContent: "center",
+    paddingVertical: 16,
+    borderWidth: 1.5,
+    borderColor: "#E0E0E0",
+    borderRadius: 12,
     backgroundColor: "#fff",
+    gap: 10,
   },
   userTypeButtonActive: {
-    borderColor: "#007AFF",
-    backgroundColor: "#007AFF",
+    borderColor: "#3B82F6",
+    backgroundColor: "#3B82F6",
   },
   userTypeText: {
-    fontSize: responsive.fontLG,
-    fontWeight: "600",
+    fontSize: fs(15),
+    fontFamily: "Roboto-Medium",
     color: "#666",
   },
   userTypeTextActive: {
     color: "#fff",
   },
-};
+  inputContainer: {
+    marginBottom: hp(16),
+  },
+  labelRow: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: 8,
+  },
+  label: {
+    fontSize: fs(14),
+    fontFamily: "Roboto-Medium",
+    color: "#333",
+  },
+  errorInline: {
+    fontSize: fs(12),
+    fontFamily: "Roboto-Medium",
+    color: "#E53935",
+  },
+  inputWrapper: {
+    flexDirection: "row",
+    alignItems: "center",
+    borderWidth: 1,
+    borderColor: "#E0E0E0",
+    borderRadius: 12,
+    backgroundColor: "#FAFAFA",
+    paddingHorizontal: 16,
+    gap: 12,
+  },
+  inputWrapperError: {
+    borderColor: "#E53935",
+    backgroundColor: "#FFF5F5",
+  },
+  input: {
+    flex: 1,
+    fontSize: fs(15),
+    fontFamily: "Roboto-Regular",
+    color: "#000",
+    paddingVertical: 16,
+  },
+  eyeButton: {
+    padding: 8,
+  },
+  passwordHint: {
+    fontSize: fs(12),
+    fontFamily: "Roboto-Regular",
+    color: "#999",
+    marginTop: 6,
+    marginLeft: 4,
+  },
+  termsContainer: {
+    flexDirection: "row",
+    alignItems: "flex-start",
+    marginBottom: hp(16),
+    gap: 12,
+  },
+  checkbox: {
+    width: 24,
+    height: 24,
+    borderRadius: 6,
+    borderWidth: 2,
+    borderColor: "#E0E0E0",
+    backgroundColor: "#fff",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  checkboxChecked: {
+    backgroundColor: "#3B82F6",
+    borderColor: "#3B82F6",
+  },
+  termsText: {
+    flex: 1,
+    fontSize: fs(13),
+    fontFamily: "Roboto-Regular",
+    color: "#666",
+    lineHeight: 20,
+  },
+  termsLink: {
+    color: "#3B82F6",
+    fontFamily: "Roboto-Medium",
+  },
+  errorContainer: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "#FFEBEE",
+    paddingHorizontal: 14,
+    paddingVertical: 12,
+    borderRadius: 10,
+    marginBottom: hp(16),
+    gap: 8,
+  },
+  errorText: {
+    fontSize: fs(13),
+    fontFamily: "Roboto-Regular",
+    color: "#E53935",
+    flex: 1,
+  },
+  signUpButton: {
+    backgroundColor: "#3B82F6",
+    borderRadius: 30,
+    paddingVertical: 18,
+    alignItems: "center",
+    justifyContent: "center",
+    marginBottom: hp(20),
+  },
+  signUpButtonText: {
+    color: "#fff",
+    fontSize: fs(16),
+    fontFamily: "Roboto-Medium",
+  },
+  loginContainer: {
+    flexDirection: "row",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  loginText: {
+    fontSize: fs(14),
+    fontFamily: "Roboto-Regular",
+    color: "#666",
+  },
+  loginLink: {
+    fontSize: fs(14),
+    fontFamily: "Roboto-Bold",
+    color: "#3B82F6",
+  },
+});

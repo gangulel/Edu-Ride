@@ -1,152 +1,252 @@
 import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, StatusBar } from "react-native";
+import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, StatusBar, TextInput, Modal } from "react-native";
+import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
+import { responsive, wp, hp } from "../utils/responsive";
 
 export default function DriverRides() {
-  const [selectedTab, setSelectedTab] = useState("upcoming");
-  
-  const upcomingRides = [
-    { id: 1, student: "Alice Johnson", pickup: "Dormitory A", destination: "Main Campus", time: "08:00 AM", status: "Scheduled" },
-    { id: 2, student: "Bob Smith", pickup: "Library", destination: "Sports Complex", time: "10:30 AM", status: "Scheduled" },
-  ];
+  const router = useRouter();
+  const [showAddStop, setShowAddStop] = useState(false);
+  const [newStopName, setNewStopName] = useState("");
+  const [newStopTime, setNewStopTime] = useState("");
 
-  const completedRides = [
-    { id: 3, student: "Carol Davis", pickup: "Main Campus", destination: "Dormitory B", time: "07:00 AM", status: "Completed", earnings: "$15.00" },
-    { id: 4, student: "David Wilson", pickup: "Sports Complex", destination: "Library", time: "06:30 AM", status: "Completed", earnings: "$12.00" },
-    { id: 5, student: "Emma Brown", pickup: "Dormitory C", destination: "Main Campus", time: "05:45 AM", status: "Completed", earnings: "$18.00" },
-  ];
+  const [routeStops, setRouteStops] = useState([
+    { id: 1, location: "Colombo 07", pickupTime: "6:45 AM", dropoffTime: "3:30 PM" },
+    { id: 2, location: "Dehiwala", pickupTime: "7:10 AM", dropoffTime: "3:05 PM" },
+    { id: 3, location: "Bambalapitiya", pickupTime: "7:25 AM", dropoffTime: "2:50 PM" },
+    { id: 4, location: "Mount Lavinia", pickupTime: "7:40 AM", dropoffTime: "2:35 PM" },
+  ]);
+
+  const [routeDetails, setRouteDetails] = useState({
+    school: "Royal College",
+    schoolArrival: "8:00 AM",
+    schoolDeparture: "2:15 PM",
+    daysOfOperation: ["Mon", "Tue", "Wed", "Thu", "Fri"],
+  });
+
+  const addStop = () => {
+    if (newStopName && newStopTime) {
+      const newStop = {
+        id: routeStops.length + 1,
+        location: newStopName,
+        pickupTime: newStopTime,
+        dropoffTime: "TBD",
+      };
+      setRouteStops([...routeStops, newStop]);
+      setNewStopName("");
+      setNewStopTime("");
+      setShowAddStop(false);
+    }
+  };
+
+  const removeStop = (id) => {
+    setRouteStops(routeStops.filter(stop => stop.id !== id));
+  };
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
+
       {/* Header */}
       <View style={styles.header}>
+        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
+          <Ionicons name="arrow-back" size={24} color="#000" />
+        </TouchableOpacity>
         <Text style={styles.headerTitle}>My Rides</Text>
-      </View>
-
-      {/* Tab Selector */}
-      <View style={styles.tabContainer}>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === "upcoming" && styles.tabActive]}
-          onPress={() => setSelectedTab("upcoming")}
-        >
-          <Text style={[styles.tabText, selectedTab === "upcoming" && styles.tabTextActive]}>
-            Upcoming
-          </Text>
-          {selectedTab === "upcoming" && <View style={styles.tabIndicator} />}
-        </TouchableOpacity>
-        <TouchableOpacity
-          style={[styles.tab, selectedTab === "completed" && styles.tabActive]}
-          onPress={() => setSelectedTab("completed")}
-        >
-          <Text style={[styles.tabText, selectedTab === "completed" && styles.tabTextActive]}>
-            Completed
-          </Text>
-          {selectedTab === "completed" && <View style={styles.tabIndicator} />}
+        <TouchableOpacity style={styles.saveButton}>
+          <Text style={styles.saveButtonText}>Save</Text>
         </TouchableOpacity>
       </View>
 
-      <ScrollView style={styles.scrollView}>
-        {selectedTab === "upcoming" ? (
-          <View style={styles.content}>
-            {upcomingRides.map((ride) => (
-              <View key={ride.id} style={styles.rideCard}>
-                <View style={styles.rideHeader}>
-                  <View style={styles.studentInfo}>
-                    <View style={styles.avatarPlaceholder}>
-                      <Ionicons name="person" size={20} color="#007AFF" />
-                    </View>
-                    <View>
-                      <Text style={styles.studentName}>{ride.student}</Text>
-                      <Text style={styles.rideTime}>{ride.time}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.statusBadge}>
-                    <Text style={styles.statusText}>{ride.status}</Text>
-                  </View>
-                </View>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        {/* Route Summary Card */}
+        <View style={styles.section}>
+          <View style={styles.summaryCard}>
+            <View style={styles.summaryHeader}>
+              <Ionicons name="school" size={24} color="#007AFF" />
+              <View style={styles.summaryTextContainer}>
+                <Text style={styles.summarySchool}>{routeDetails.school}</Text>
+                <Text style={styles.summarySubtext}>{routeStops.length} pickup points</Text>
+              </View>
+            </View>
+            <View style={styles.summaryDivider} />
+            <View style={styles.summaryDetails}>
+              <View style={styles.summaryDetailItem}>
+                <Text style={styles.summaryDetailLabel}>Morning Arrival</Text>
+                <Text style={styles.summaryDetailValue}>{routeDetails.schoolArrival}</Text>
+              </View>
+              <View style={styles.summaryDetailItem}>
+                <Text style={styles.summaryDetailLabel}>Afternoon Departure</Text>
+                <Text style={styles.summaryDetailValue}>{routeDetails.schoolDeparture}</Text>
+              </View>
+            </View>
+          </View>
+        </View>
 
-                <View style={styles.locationInfo}>
-                  <View style={styles.locationRow}>
-                    <View style={styles.locationDot} />
-                    <View style={styles.locationTextContainer}>
-                      <Text style={styles.locationLabel}>Pickup</Text>
-                      <Text style={styles.locationText}>{ride.pickup}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.locationLine} />
-                  <View style={styles.locationRow}>
-                    <View style={[styles.locationDot, styles.locationDotDestination]} />
-                    <View style={styles.locationTextContainer}>
-                      <Text style={styles.locationLabel}>Drop-off</Text>
-                      <Text style={styles.locationText}>{ride.destination}</Text>
-                    </View>
-                  </View>
-                </View>
+        {/* Days of Operation */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Days of Operation</Text>
+          <View style={styles.daysContainer}>
+            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
+              <TouchableOpacity
+                key={day}
+                style={[
+                  styles.dayButton,
+                  routeDetails.daysOfOperation.includes(day) && styles.dayButtonActive
+                ]}
+              >
+                <Text style={[
+                  styles.dayButtonText,
+                  routeDetails.daysOfOperation.includes(day) && styles.dayButtonTextActive
+                ]}>
+                  {day}
+                </Text>
+              </TouchableOpacity>
+            ))}
+          </View>
+        </View>
 
-                <View style={styles.rideActions}>
-                  <TouchableOpacity style={styles.startButton}>
-                    <Ionicons name="navigate" size={18} color="#fff" />
-                    <Text style={styles.startButtonText}>Start Trip</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.contactButton}>
-                    <Ionicons name="call" size={18} color="#007AFF" />
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.contactButton}>
-                    <Ionicons name="chatbubble" size={18} color="#007AFF" />
-                  </TouchableOpacity>
+        {/* Route Stops */}
+        <View style={styles.section}>
+          <View style={styles.sectionHeader}>
+            <Text style={styles.sectionTitle}>Route Stops</Text>
+            <TouchableOpacity
+              style={styles.addButton}
+              onPress={() => setShowAddStop(true)}
+            >
+              <Ionicons name="add-circle" size={24} color="#007AFF" />
+              <Text style={styles.addButtonText}>Add Stop</Text>
+            </TouchableOpacity>
+          </View>
+
+          {/* Route Timeline */}
+          <View style={styles.routeTimeline}>
+            {/* Start Point */}
+            <View style={styles.timelineItem}>
+              <View style={styles.timelineIconContainer}>
+                <View style={[styles.timelineIcon, styles.timelineIconStart]}>
+                  <Ionicons name="flag" size={16} color="#fff" />
+                </View>
+                <View style={styles.timelineLine} />
+              </View>
+              <View style={styles.timelineContent}>
+                <Text style={styles.timelineLabel}>Route Start</Text>
+                <Text style={styles.timelineTime}>{routeStops[0]?.pickupTime || "N/A"}</Text>
+              </View>
+            </View>
+
+            {/* Stops */}
+            {routeStops.map((stop, index) => (
+              <View key={stop.id} style={styles.timelineItem}>
+                <View style={styles.timelineIconContainer}>
+                  <View style={styles.timelineIcon}>
+                    <Ionicons name="location" size={16} color="#007AFF" />
+                  </View>
+                  {index < routeStops.length - 1 && <View style={styles.timelineLine} />}
+                </View>
+                <View style={styles.timelineContent}>
+                  <View style={styles.stopHeader}>
+                    <View style={styles.stopInfo}>
+                      <Text style={styles.stopLocation}>{stop.location}</Text>
+                      <Text style={styles.stopTime}>Pickup: {stop.pickupTime}</Text>
+                      <Text style={styles.stopTime}>Drop-off: {stop.dropoffTime}</Text>
+                    </View>
+                    <TouchableOpacity
+                      style={styles.deleteButton}
+                      onPress={() => removeStop(stop.id)}
+                    >
+                      <Ionicons name="trash-outline" size={20} color="#FF3B30" />
+                    </TouchableOpacity>
+                  </View>
                 </View>
               </View>
             ))}
-          </View>
-        ) : (
-          <View style={styles.content}>
-            {completedRides.map((ride) => (
-              <View key={ride.id} style={styles.rideCard}>
-                <View style={styles.rideHeader}>
-                  <View style={styles.studentInfo}>
-                    <View style={styles.avatarPlaceholder}>
-                      <Ionicons name="person" size={20} color="#34C759" />
-                    </View>
-                    <View>
-                      <Text style={styles.studentName}>{ride.student}</Text>
-                      <Text style={styles.rideTime}>{ride.time}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.earningsContainer}>
-                    <Text style={styles.earningsLabel}>Earned</Text>
-                    <Text style={styles.earningsAmount}>{ride.earnings}</Text>
-                  </View>
-                </View>
 
-                <View style={styles.locationInfo}>
-                  <View style={styles.locationRow}>
-                    <View style={[styles.locationDot, styles.locationDotCompleted]} />
-                    <View style={styles.locationTextContainer}>
-                      <Text style={styles.locationLabel}>Pickup</Text>
-                      <Text style={styles.locationText}>{ride.pickup}</Text>
-                    </View>
-                  </View>
-                  <View style={styles.locationLine} />
-                  <View style={styles.locationRow}>
-                    <View style={[styles.locationDot, styles.locationDotCompleted]} />
-                    <View style={styles.locationTextContainer}>
-                      <Text style={styles.locationLabel}>Drop-off</Text>
-                      <Text style={styles.locationText}>{ride.destination}</Text>
-                    </View>
-                  </View>
+            {/* School Arrival */}
+            <View style={styles.timelineItem}>
+              <View style={styles.timelineIconContainer}>
+                <View style={[styles.timelineIcon, styles.timelineIconEnd]}>
+                  <Ionicons name="school" size={16} color="#fff" />
                 </View>
-
-                <TouchableOpacity style={styles.viewDetailsButton}>
-                  <Text style={styles.viewDetailsText}>View Details</Text>
-                  <Ionicons name="chevron-forward" size={16} color="#007AFF" />
-                </TouchableOpacity>
               </View>
-            ))}
+              <View style={styles.timelineContent}>
+                <Text style={styles.timelineLabel}>{routeDetails.school}</Text>
+                <Text style={styles.timelineTime}>Arrival: {routeDetails.schoolArrival}</Text>
+              </View>
+            </View>
           </View>
-        )}
+        </View>
+
+        {/* Route Statistics */}
+        <View style={styles.section}>
+          <Text style={styles.sectionTitle}>Route Statistics</Text>
+          <View style={styles.statsGrid}>
+            <View style={styles.statCard}>
+              <Ionicons name="people" size={24} color="#007AFF" />
+              <Text style={styles.statValue}>24</Text>
+              <Text style={styles.statLabel}>Students</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Ionicons name="time" size={24} color="#34C759" />
+              <Text style={styles.statValue}>1h 15m</Text>
+              <Text style={styles.statLabel}>Duration</Text>
+            </View>
+            <View style={styles.statCard}>
+              <Ionicons name="navigation" size={24} color="#FF9500" />
+              <Text style={styles.statValue}>18 km</Text>
+              <Text style={styles.statLabel}>Distance</Text>
+            </View>
+          </View>
+        </View>
+
       </ScrollView>
+
+      {/* Add Stop Modal */}
+      <Modal
+        visible={showAddStop}
+        animationType="slide"
+        transparent={true}
+        onRequestClose={() => setShowAddStop(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalContent}>
+            <View style={styles.modalHeader}>
+              <Text style={styles.modalTitle}>Add Route Stop</Text>
+              <TouchableOpacity onPress={() => setShowAddStop(false)}>
+                <Ionicons name="close" size={24} color="#000" />
+              </TouchableOpacity>
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Location Name</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., Colombo 07"
+                value={newStopName}
+                onChangeText={setNewStopName}
+              />
+            </View>
+
+            <View style={styles.inputContainer}>
+              <Text style={styles.inputLabel}>Pickup Time</Text>
+              <TextInput
+                style={styles.input}
+                placeholder="e.g., 7:00 AM"
+                value={newStopTime}
+                onChangeText={setNewStopTime}
+              />
+            </View>
+
+            <TouchableOpacity style={styles.modalButton} onPress={addStop}>
+              <Text style={styles.modalButtonText}>Add Stop</Text>
+            </TouchableOpacity>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }
@@ -157,196 +257,283 @@ const styles = StyleSheet.create({
     backgroundColor: "#F2F2F7",
   },
   header: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    padding: responsive.paddingLG,
     backgroundColor: "#fff",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E5EA",
   },
+  backButton: {
+    padding: responsive.paddingSM,
+  },
   headerTitle: {
-    fontSize: 28,
+    fontSize: responsive.fontXL,
     fontWeight: "bold",
     color: "#000",
   },
-  tabContainer: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5EA",
+  saveButton: {
+    paddingHorizontal: responsive.paddingLG,
+    paddingVertical: responsive.paddingSM,
   },
-  tab: {
-    flex: 1,
-    paddingVertical: 16,
-    alignItems: "center",
-    position: "relative",
-  },
-  tabActive: {
-    // Active state handled by indicator
-  },
-  tabText: {
-    fontSize: 16,
-    color: "#8E8E93",
-    fontWeight: "500",
-  },
-  tabTextActive: {
+  saveButtonText: {
+    fontSize: responsive.fontLG,
     color: "#007AFF",
     fontWeight: "600",
-  },
-  tabIndicator: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    height: 2,
-    backgroundColor: "#007AFF",
   },
   scrollView: {
     flex: 1,
   },
-  content: {
-    padding: 20,
+  scrollContent: {
+    paddingBottom: responsive.tabBarHeight + responsive.paddingLG,
   },
-  rideCard: {
+  section: {
+    marginTop: responsive.paddingLG,
+    paddingHorizontal: responsive.paddingLG,
+  },
+  sectionHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: responsive.paddingMD,
+  },
+  sectionTitle: {
+    fontSize: responsive.fontXL,
+    fontWeight: "600",
+    color: "#000",
+    marginBottom: responsive.paddingMD,
+  },
+  summaryCard: {
     backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
+    borderRadius: responsive.radiusLG,
+    padding: responsive.paddingLG,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
     shadowRadius: 4,
     elevation: 2,
   },
-  rideHeader: {
+  summaryHeader: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  summaryTextContainer: {
+    marginLeft: responsive.paddingMD,
+    flex: 1,
+  },
+  summarySchool: {
+    fontSize: responsive.fontXL,
+    fontWeight: "600",
+    color: "#000",
+  },
+  summarySubtext: {
+    fontSize: responsive.fontMD,
+    color: "#8E8E93",
+    marginTop: responsive.paddingXS,
+  },
+  summaryDivider: {
+    height: 1,
+    backgroundColor: "#E5E5EA",
+    marginVertical: responsive.paddingLG,
+  },
+  summaryDetails: {
+    flexDirection: "row",
+    justifyContent: "space-around",
+  },
+  summaryDetailItem: {
+    alignItems: "center",
+  },
+  summaryDetailLabel: {
+    fontSize: responsive.fontSM,
+    color: "#8E8E93",
+    marginBottom: responsive.paddingXS,
+  },
+  summaryDetailValue: {
+    fontSize: responsive.fontLG,
+    fontWeight: "600",
+    color: "#007AFF",
+  },
+  daysContainer: {
     flexDirection: "row",
     justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 16,
+    flexWrap: "wrap",
+    rowGap: responsive.paddingSM,
   },
-  studentInfo: {
+  dayButton: {
+    width: wp(40),
+    height: wp(40),
+    borderRadius: wp(20),
+    backgroundColor: "#F2F2F7",
+    justifyContent: "center",
+    alignItems: "center",
+  },
+  dayButtonActive: {
+    backgroundColor: "#007AFF",
+  },
+  dayButtonText: {
+    fontSize: responsive.fontSM,
+    color: "#8E8E93",
+    fontWeight: "600",
+  },
+  dayButtonTextActive: {
+    color: "#fff",
+  },
+  addButton: {
     flexDirection: "row",
     alignItems: "center",
+    gap: responsive.paddingSM,
   },
-  avatarPlaceholder: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+  addButtonText: {
+    fontSize: responsive.fontMD,
+    color: "#007AFF",
+    fontWeight: "600",
+  },
+  routeTimeline: {
+    backgroundColor: "#fff",
+    borderRadius: responsive.radiusLG,
+    padding: responsive.paddingLG,
+  },
+  timelineItem: {
+    flexDirection: "row",
+    marginBottom: responsive.paddingMD,
+  },
+  timelineIconContainer: {
+    alignItems: "center",
+    marginRight: responsive.paddingMD,
+  },
+  timelineIcon: {
+    width: wp(32),
+    height: wp(32),
+    borderRadius: wp(16),
     backgroundColor: "#E3F2FD",
     justifyContent: "center",
     alignItems: "center",
-    marginRight: 12,
   },
-  studentName: {
-    fontSize: 16,
+  timelineIconStart: {
+    backgroundColor: "#34C759",
+  },
+  timelineIconEnd: {
+    backgroundColor: "#FF9500",
+  },
+  timelineLine: {
+    width: 2,
+    flex: 1,
+    backgroundColor: "#E5E5EA",
+    marginVertical: responsive.paddingSM,
+  },
+  timelineContent: {
+    flex: 1,
+    paddingTop: responsive.paddingXS,
+  },
+  timelineLabel: {
+    fontSize: responsive.fontLG,
     fontWeight: "600",
     color: "#000",
   },
-  rideTime: {
-    fontSize: 14,
+  timelineTime: {
+    fontSize: responsive.fontMD,
     color: "#8E8E93",
     marginTop: 2,
   },
-  statusBadge: {
-    paddingHorizontal: 12,
-    paddingVertical: 6,
-    borderRadius: 12,
-    backgroundColor: "#007AFF",
-  },
-  statusText: {
-    color: "#fff",
-    fontSize: 12,
-    fontWeight: "600",
-  },
-  locationInfo: {
-    marginBottom: 16,
-  },
-  locationRow: {
+  stopHeader: {
     flexDirection: "row",
+    justifyContent: "space-between",
     alignItems: "flex-start",
   },
-  locationDot: {
-    width: 10,
-    height: 10,
-    borderRadius: 5,
-    backgroundColor: "#007AFF",
-    marginRight: 12,
-    marginTop: 6,
-  },
-  locationDotDestination: {
-    backgroundColor: "#34C759",
-  },
-  locationDotCompleted: {
-    backgroundColor: "#8E8E93",
-  },
-  locationLine: {
-    width: 2,
-    height: 20,
-    backgroundColor: "#E5E5EA",
-    marginLeft: 4,
-    marginVertical: 4,
-  },
-  locationTextContainer: {
+  stopInfo: {
     flex: 1,
   },
-  locationLabel: {
-    fontSize: 12,
-    color: "#8E8E93",
-    marginBottom: 2,
-  },
-  locationText: {
-    fontSize: 14,
+  stopLocation: {
+    fontSize: responsive.fontLG,
+    fontWeight: "600",
     color: "#000",
   },
-  rideActions: {
-    flexDirection: "row",
-    gap: 12,
-  },
-  startButton: {
-    flex: 1,
-    flexDirection: "row",
-    backgroundColor: "#007AFF",
-    paddingVertical: 12,
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-    gap: 8,
-  },
-  startButtonText: {
-    color: "#fff",
-    fontSize: 16,
-    fontWeight: "600",
-  },
-  contactButton: {
-    width: 44,
-    height: 44,
-    backgroundColor: "#F2F2F7",
-    borderRadius: 8,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  earningsContainer: {
-    alignItems: "flex-end",
-  },
-  earningsLabel: {
-    fontSize: 12,
+  stopTime: {
+    fontSize: responsive.fontSM,
     color: "#8E8E93",
-    marginBottom: 2,
+    marginTop: 2,
   },
-  earningsAmount: {
-    fontSize: 18,
-    fontWeight: "bold",
-    color: "#34C759",
+  deleteButton: {
+    padding: responsive.paddingSM,
   },
-  viewDetailsButton: {
+  statsGrid: {
     flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 8,
+    flexWrap: "wrap",
+    gap: responsive.paddingMD,
   },
-  viewDetailsText: {
-    fontSize: 14,
-    color: "#007AFF",
-    fontWeight: "500",
-    marginRight: 4,
+  statCard: {
+    flexGrow: 1,
+    flexBasis: wp(96),
+    backgroundColor: "#fff",
+    borderRadius: responsive.radiusLG,
+    padding: responsive.paddingLG,
+    alignItems: "center",
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 4,
+    elevation: 2,
+  },
+  statValue: {
+    fontSize: responsive.fontXL,
+    fontWeight: "bold",
+    color: "#000",
+    marginTop: responsive.paddingSM,
+  },
+  statLabel: {
+    fontSize: responsive.fontSM,
+    color: "#8E8E93",
+    marginTop: responsive.paddingXS,
+  },
+  modalOverlay: {
+    flex: 1,
+    backgroundColor: "rgba(0,0,0,0.5)",
+    justifyContent: "flex-end",
+  },
+  modalContent: {
+    backgroundColor: "#fff",
+    borderTopLeftRadius: responsive.radiusXL,
+    borderTopRightRadius: responsive.radiusXL,
+    padding: responsive.paddingXL,
+  },
+  modalHeader: {
+    flexDirection: "row",
+    justifyContent: "space-between",
+    alignItems: "center",
+    marginBottom: responsive.paddingXL,
+  },
+  modalTitle: {
+    fontSize: responsive.font2XL,
+    fontWeight: "bold",
+    color: "#000",
+  },
+  inputContainer: {
+    marginBottom: responsive.paddingLG,
+  },
+  inputLabel: {
+    fontSize: responsive.fontMD,
+    fontWeight: "600",
+    color: "#000",
+    marginBottom: responsive.paddingSM,
+  },
+  input: {
+    backgroundColor: "#F2F2F7",
+    borderRadius: responsive.radiusMD,
+    padding: responsive.paddingLG,
+    fontSize: responsive.fontLG,
+    color: "#000",
+  },
+  modalButton: {
+    backgroundColor: "#007AFF",
+    borderRadius: responsive.radiusMD,
+    padding: responsive.paddingLG,
+    alignItems: "center",
+    marginTop: responsive.paddingMD,
+  },
+  modalButtonText: {
+    color: "#fff",
+    fontSize: responsive.fontLG,
+    fontWeight: "600",
   },
 });

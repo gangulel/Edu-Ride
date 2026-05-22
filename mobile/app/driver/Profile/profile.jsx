@@ -16,7 +16,7 @@ export default function DriverProfile() {
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Profile</Text>
@@ -33,9 +33,9 @@ export default function DriverProfile() {
               <Ionicons name="camera" size={16} color="#fff" />
             </TouchableOpacity>
           </View>
-          <Text style={styles.profileName}>John Driver</Text>
-          <Text style={styles.profileEmail}>john.driver@example.com</Text>
-          
+          <Text style={styles.profileName}>Kasun Perera</Text>
+          <Text style={styles.profileEmail}>kasun.perera@eduride.lk</Text>
+
           <View style={styles.statsRow}>
             <View style={styles.statItem}>
               <Text style={styles.statValue}>4.8</Text>
@@ -57,8 +57,8 @@ export default function DriverProfile() {
         {/* Account Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Account</Text>
-          
-          <TouchableOpacity 
+
+          <TouchableOpacity
             style={styles.menuItem}
             onPress={() => router.push("/driver/Profile/edit-profile")}
           >
@@ -69,7 +69,7 @@ export default function DriverProfile() {
             <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.menuItem}
             onPress={() => router.push("/driver/Profile/vehicle-info")}
           >
@@ -80,7 +80,7 @@ export default function DriverProfile() {
             <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.menuItem}
             onPress={() => router.push("/driver/Profile/documents")}
           >
@@ -91,7 +91,7 @@ export default function DriverProfile() {
             <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
           </TouchableOpacity>
 
-          <TouchableOpacity 
+          <TouchableOpacity
             style={styles.menuItem}
             onPress={() => router.push("/driver/Profile/payment-methods")}
           >
@@ -106,7 +106,7 @@ export default function DriverProfile() {
         {/* Preferences Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Preferences</Text>
-          
+
           <View style={styles.menuItem}>
             <View style={styles.menuIconContainer}>
               <Ionicons name="notifications-outline" size={22} color="#FF3B30" />
@@ -148,7 +148,7 @@ export default function DriverProfile() {
         {/* Support Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Support</Text>
-          
+
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuIconContainer}>
               <Ionicons name="help-circle-outline" size={22} color="#007AFF" />
@@ -177,7 +177,7 @@ export default function DriverProfile() {
         {/* Legal Section */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>Legal</Text>
-          
+
           <TouchableOpacity style={styles.menuItem}>
             <View style={styles.menuIconContainer}>
               <Ionicons name="document-outline" size={22} color="#8E8E93" />

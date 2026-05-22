@@ -1,4 +1,4 @@
-import { useState } from "react"
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
@@ -7,31 +7,107 @@ import { Select } from "./ui/select"
 import { Badge } from "./ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog"
-import { AlertCircle, MessageSquare, Clock, CheckCircle, XCircle } from "lucide-react"
-
-const complaints = [
-  { id: "COMP-001", user: "Sarah Johnson", type: "parent", category: "Late Pickup", priority: "high", status: "open", date: "2024-12-10", assignedTo: "Admin Team" },
-  { id: "COMP-002", user: "Robert Martinez", type: "driver", category: "Route Issue", priority: "medium", status: "in-progress", date: "2024-12-09", assignedTo: "John Admin" },
-  { id: "COMP-003", user: "Emma Davis", type: "parent", category: "Safety Concern", priority: "high", status: "open", date: "2024-12-08", assignedTo: "Unassigned" },
-  { id: "COMP-004", user: "Michael Chen", type: "parent", category: "Payment Issue", priority: "low", status: "resolved", date: "2024-12-07", assignedTo: "Sarah Admin" },
-  { id: "COMP-005", user: "Linda Anderson", type: "driver", category: "Vehicle Problem", priority: "medium", status: "in-progress", date: "2024-12-06", assignedTo: "Admin Team" },
-]
+import { AlertCircle, MessageSquare, Clock, CheckCircle } from "lucide-react"
+import { toast } from "sonner"
+import { fetchAdminContent } from "../lib/adminContent"
 
 export function ComplaintsSupport() {
+  const [complaints, setComplaints] = useState<any[]>([])
   const [selectedComplaint, setSelectedComplaint] = useState<any>(null)
   const [dialogOpen, setDialogOpen] = useState(false)
+  const [search, setSearch] = useState("")
+  const [categoryFilter, setCategoryFilter] = useState("")
+  const [priorityFilter, setPriorityFilter] = useState("")
+  const [statusFilter, setStatusFilter] = useState("")
+  const [response, setResponse] = useState("")
+  const [statusDraft, setStatusDraft] = useState("")
+
+  useEffect(() => {
+    fetchAdminContent()
+      .then((payload) => {
+        setComplaints(payload.complaints || [])
+      })
+      .catch(() => {
+        setComplaints([])
+      })
+  }, [])
+
+  const totalComplaints = complaints.length
+  const openTickets = useMemo(() => complaints.filter((item) => ["open", "in-progress"].includes(item.status)).length, [complaints])
+  const resolvedTickets = useMemo(() => complaints.filter((item) => item.status === "resolved").length, [complaints])
+  const highPriority = useMemo(() => complaints.filter((item) => item.priority === "high").length, [complaints])
+  const commonIssues = useMemo(() => {
+    const bucket = new Map<string, number>()
+    for (const complaint of complaints) {
+      const category = String(complaint.category || "Uncategorized")
+      bucket.set(category, (bucket.get(category) || 0) + 1)
+    }
+    return Array.from(bucket.entries())
+      .sort((a, b) => b[1] - a[1])
+      .slice(0, 3)
+  }, [complaints])
+  const teamPerformance = useMemo(() => {
+    const bucket = new Map<string, { total: number; resolved: number }>()
+    for (const complaint of complaints) {
+      const assignee = String(complaint.assignedTo || "Unassigned")
+      if (assignee === "Unassigned") continue
+      const current = bucket.get(assignee) || { total: 0, resolved: 0 }
+      current.total += 1
+      if (complaint.status === "resolved") {
+        current.resolved += 1
+      }
+      bucket.set(assignee, current)
+    }
+    return Array.from(bucket.entries())
+      .map(([name, stats]) => ({
+        name,
+        rate: stats.total ? Math.round((stats.resolved / stats.total) * 100) : 0,
+      }))
+      .sort((a, b) => b.rate - a.rate)
+      .slice(0, 3)
+  }, [complaints])
 
   const openComplaintDetails = (complaint: any) => {
     setSelectedComplaint(complaint)
+    setResponse(complaint.response || "")
+    setStatusDraft(complaint.status || "open")
     setDialogOpen(true)
+  }
+
+  const filteredComplaints = useMemo(() => {
+    const term = search.trim().toLowerCase()
+    return complaints.filter((complaint) => {
+      if (categoryFilter && complaint.category !== categoryFilter) return false
+      if (priorityFilter && complaint.priority !== priorityFilter) return false
+      if (statusFilter && complaint.status !== statusFilter) return false
+      if (!term) return true
+      return [complaint.id, complaint.user, complaint.category]
+        .filter(Boolean)
+        .some((value) => String(value).toLowerCase().includes(term))
+    })
+  }, [complaints, search, categoryFilter, priorityFilter, statusFilter])
+
+  const saveResponse = () => {
+    if (!selectedComplaint) return
+    setComplaints((prev) =>
+      prev.map((item) =>
+        item.id === selectedComplaint.id
+          ? { ...item, response, status: statusDraft || item.status }
+          : item
+      )
+    )
+    toast.success("Response saved", {
+      description: `Ticket ${selectedComplaint.id} updated to ${statusDraft || selectedComplaint.status}.`,
+    })
+    setDialogOpen(false)
   }
 
   return (
     <div className="space-y-6">
-      <div>
+      {/* <div>
         <h2>Complaints & Support Management</h2>
         <p className="text-gray-500 mt-1">Track and resolve user complaints and support tickets</p>
-      </div>
+      </div> */}
 
       {/* Stats Cards */}
       <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
@@ -41,7 +117,7 @@ export function ComplaintsSupport() {
             <MessageSquare className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">248</div>
+            <div className="text-2xl font-bold">{totalComplaints}</div>
             <p className="text-xs text-gray-500 mt-1">This month</p>
           </CardContent>
         </Card>
@@ -52,7 +128,7 @@ export function ComplaintsSupport() {
             <Clock className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">42</div>
+            <div className="text-2xl font-bold text-yellow-600">{openTickets}</div>
             <p className="text-xs text-gray-500 mt-1">Awaiting response</p>
           </CardContent>
         </Card>
@@ -63,8 +139,8 @@ export function ComplaintsSupport() {
             <CheckCircle className="h-4 w-4 text-green-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-green-600">198</div>
-            <p className="text-xs text-gray-500 mt-1">79.8% resolution rate</p>
+            <div className="text-2xl font-bold text-green-600">{resolvedTickets}</div>
+            <p className="text-xs text-gray-500 mt-1">{totalComplaints ? Math.round((resolvedTickets / totalComplaints) * 1000) / 10 : 0}% resolution rate</p>
           </CardContent>
         </Card>
 
@@ -74,7 +150,7 @@ export function ComplaintsSupport() {
             <AlertCircle className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">8</div>
+            <div className="text-2xl font-bold text-red-600">{highPriority}</div>
             <p className="text-xs text-gray-500 mt-1">Requires immediate attention</p>
           </CardContent>
         </Card>
@@ -83,9 +159,13 @@ export function ComplaintsSupport() {
       {/* Filter and Search */}
       <Card>
         <CardContent className="pt-6">
-          <div className="grid grid-cols-1 md:grid-cols-4 gap-4">
-            <Input placeholder="Search by ID or user..." />
-            <Select>
+          <div className="grid grid-cols-1 md:grid-cols-5 gap-4 items-end">
+            <Input
+              placeholder="Search by ID or user..."
+              value={search}
+              onChange={(event) => setSearch(event.target.value)}
+            />
+            <Select value={categoryFilter} onChange={(event) => setCategoryFilter(event.target.value)}>
               <option value="">All Categories</option>
               <option value="late">Late Pickup</option>
               <option value="safety">Safety Concern</option>
@@ -93,19 +173,30 @@ export function ComplaintsSupport() {
               <option value="route">Route Issue</option>
               <option value="vehicle">Vehicle Problem</option>
             </Select>
-            <Select>
+            <Select value={priorityFilter} onChange={(event) => setPriorityFilter(event.target.value)}>
               <option value="">All Priorities</option>
               <option value="high">High</option>
               <option value="medium">Medium</option>
               <option value="low">Low</option>
             </Select>
-            <Select>
+            <Select value={statusFilter} onChange={(event) => setStatusFilter(event.target.value)}>
               <option value="">All Statuses</option>
               <option value="open">Open</option>
               <option value="in-progress">In Progress</option>
               <option value="resolved">Resolved</option>
               <option value="closed">Closed</option>
             </Select>
+            <Button
+              variant="outline"
+              onClick={() => {
+                setSearch("")
+                setCategoryFilter("")
+                setPriorityFilter("")
+                setStatusFilter("")
+              }}
+            >
+              Reset
+            </Button>
           </div>
         </CardContent>
       </Card>
@@ -131,7 +222,14 @@ export function ComplaintsSupport() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {complaints.map((complaint) => (
+              {filteredComplaints.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={9}>
+                    <div className="er-empty-state">No complaints match the current filters.</div>
+                  </TableCell>
+                </TableRow>
+              ) : null}
+              {filteredComplaints.map((complaint) => (
                 <TableRow key={complaint.id}>
                   <TableCell className="font-mono text-sm">{complaint.id}</TableCell>
                   <TableCell>{complaint.user}</TableCell>
@@ -141,16 +239,16 @@ export function ComplaintsSupport() {
                   <TableCell>{complaint.category}</TableCell>
                   <TableCell>
                     <Badge variant={
-                      complaint.priority === 'high' ? 'destructive' : 
-                      complaint.priority === 'medium' ? 'warning' : 'secondary'
+                      complaint.priority === 'high' ? 'destructive' :
+                        complaint.priority === 'medium' ? 'warning' : 'secondary'
                     }>
                       {complaint.priority}
                     </Badge>
                   </TableCell>
                   <TableCell>
                     <Badge variant={
-                      complaint.status === 'resolved' ? 'success' : 
-                      complaint.status === 'in-progress' ? 'warning' : 'default'
+                      complaint.status === 'resolved' ? 'success' :
+                        complaint.status === 'in-progress' ? 'warning' : 'default'
                     }>
                       {complaint.status}
                     </Badge>
@@ -179,13 +277,11 @@ export function ComplaintsSupport() {
       <div className="grid grid-cols-1 md:grid-cols-3 gap-6">
         <Card>
           <CardHeader>
-            <CardTitle>Average Resolution Time</CardTitle>
+            <CardTitle>Resolution Rate</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold">2.4 days</div>
-            <p className="text-sm text-gray-500 mt-2">
-              <span className="text-green-600">-0.6 days</span> from last month
-            </p>
+            <div className="text-3xl font-bold">{totalComplaints ? Math.round((resolvedTickets / totalComplaints) * 1000) / 10 : 0}%</div>
+            <p className="text-sm text-gray-500 mt-2">Resolved complaints from backend records</p>
           </CardContent>
         </Card>
 
@@ -195,18 +291,14 @@ export function ComplaintsSupport() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm">Late Pickup</span>
-                <span className="text-sm font-medium">34%</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Safety Concerns</span>
-                <span className="text-sm font-medium">22%</span>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Payment Issues</span>
-                <span className="text-sm font-medium">18%</span>
-              </div>
+              {commonIssues.length ? commonIssues.map(([category, count]) => (
+                <div key={category} className="flex justify-between">
+                  <span className="text-sm">{category}</span>
+                  <span className="text-sm font-medium">{totalComplaints ? Math.round((count / totalComplaints) * 100) : 0}%</span>
+                </div>
+              )) : (
+                <p className="text-sm text-gray-500">No complaint category data available.</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -217,18 +309,14 @@ export function ComplaintsSupport() {
           </CardHeader>
           <CardContent>
             <div className="space-y-2">
-              <div className="flex justify-between">
-                <span className="text-sm">John Admin</span>
-                <Badge variant="success">98%</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Sarah Admin</span>
-                <Badge variant="success">95%</Badge>
-              </div>
-              <div className="flex justify-between">
-                <span className="text-sm">Admin Team</span>
-                <Badge variant="success">92%</Badge>
-              </div>
+              {teamPerformance.length ? teamPerformance.map((member) => (
+                <div key={member.name} className="flex justify-between">
+                  <span className="text-sm">{member.name}</span>
+                  <Badge variant={member.rate >= 80 ? "success" : member.rate >= 50 ? "warning" : "secondary"}>{member.rate}%</Badge>
+                </div>
+              )) : (
+                <p className="text-sm text-gray-500">No assigned complaint data available.</p>
+              )}
             </div>
           </CardContent>
         </Card>
@@ -261,8 +349,8 @@ export function ComplaintsSupport() {
                 <div>
                   <p className="text-sm text-gray-500">Priority</p>
                   <Badge variant={
-                    selectedComplaint.priority === 'high' ? 'destructive' : 
-                    selectedComplaint.priority === 'medium' ? 'warning' : 'secondary'
+                    selectedComplaint.priority === 'high' ? 'destructive' :
+                      selectedComplaint.priority === 'medium' ? 'warning' : 'secondary'
                   }>
                     {selectedComplaint.priority}
                   </Badge>
@@ -270,8 +358,8 @@ export function ComplaintsSupport() {
                 <div>
                   <p className="text-sm text-gray-500">Status</p>
                   <Badge variant={
-                    selectedComplaint.status === 'resolved' ? 'success' : 
-                    selectedComplaint.status === 'in-progress' ? 'warning' : 'default'
+                    selectedComplaint.status === 'resolved' ? 'success' :
+                      selectedComplaint.status === 'in-progress' ? 'warning' : 'default'
                   }>
                     {selectedComplaint.status}
                   </Badge>
@@ -281,24 +369,27 @@ export function ComplaintsSupport() {
                   <p className="font-medium">{selectedComplaint.date}</p>
                 </div>
               </div>
-              
+
               <div>
                 <p className="text-sm text-gray-500 mb-2">Complaint Description</p>
                 <div className="p-3 bg-gray-50 rounded-lg">
-                  <p className="text-sm">
-                    Lorem ipsum dolor sit amet, consectetur adipiscing elit. Driver was consistently late for pickup, causing inconvenience. This has happened multiple times over the past week.
-                  </p>
+                  <p className="text-sm">{selectedComplaint.description || "No description was provided for this complaint."}</p>
                 </div>
               </div>
 
               <div>
                 <p className="text-sm text-gray-500 mb-2">Admin Response</p>
-                <Textarea placeholder="Enter your response..." rows={4} />
+                <Textarea
+                  placeholder="Enter your response..."
+                  rows={4}
+                  value={response}
+                  onChange={(event) => setResponse(event.target.value)}
+                />
               </div>
 
               <div>
                 <p className="text-sm text-gray-500 mb-2">Change Status</p>
-                <Select>
+                <Select value={statusDraft} onChange={(event) => setStatusDraft(event.target.value)}>
                   <option value="open">Open</option>
                   <option value="in-progress">In Progress</option>
                   <option value="resolved">Resolved</option>
@@ -309,7 +400,7 @@ export function ComplaintsSupport() {
           )}
           <DialogFooter>
             <Button variant="outline" onClick={() => setDialogOpen(false)}>Cancel</Button>
-            <Button onClick={() => setDialogOpen(false)}>
+            <Button onClick={saveResponse}>
               Save Response
             </Button>
           </DialogFooter>

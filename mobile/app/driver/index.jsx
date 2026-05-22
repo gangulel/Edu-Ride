@@ -1,170 +1,273 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, StatusBar, Switch } from "react-native";
+import React, { useEffect, useRef } from "react";
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  SafeAreaView,
+  TouchableOpacity,
+  StatusBar,
+  Animated,
+  Image
+} from "react-native";
 import { useRouter } from "expo-router";
 import { Ionicons } from "@expo/vector-icons";
-import { responsive, wp, hp } from "../utils/responsive";
+import { LinearGradient } from "expo-linear-gradient";
+import { responsive, wp, hp, fs } from "../utils/responsive";
 
 export default function DriverHome() {
   const router = useRouter();
-  const [isAvailable, setIsAvailable] = useState(false);
-  const [activeRides, setActiveRides] = useState([
-    { id: 1, student: "Alice Johnson", pickup: "Dormitory A", destination: "Main Campus", time: "08:00 AM", status: "Pending" },
-  ]);
-  const [completedToday, setCompletedToday] = useState(5);
-  const [earnings, setEarnings] = useState(125.50);
+  const fadeAnim = useRef(new Animated.Value(0)).current;
+  const slideAnim = useRef(new Animated.Value(20)).current;
+
+  useEffect(() => {
+    Animated.parallel([
+      Animated.timing(fadeAnim, {
+        toValue: 1,
+        duration: 500,
+        useNativeDriver: true,
+      }),
+      Animated.timing(slideAnim, {
+        toValue: 0,
+        duration: 400,
+        useNativeDriver: true,
+      }),
+    ]).start();
+  }, []);
+
+  const getGreeting = () => {
+    const hour = new Date().getHours();
+    if (hour < 12) return "Good Morning";
+    if (hour < 17) return "Good Afternoon";
+    return "Good Evening";
+  };
+
+  const stats = [
+    { icon: "people", value: "24", label: "Students", color: "#007AFF", bgColor: "#E3F2FD" },
+    { icon: "star", value: "4.9", label: "Rating", color: "#FF9500", bgColor: "#FFF4E5" },
+    { icon: "calendar-outline", value: "156", label: "Trips", color: "#34C759", bgColor: "#E8F8ED" },
+  ];
+
+  const quickActions = [
+    {
+      icon: "map-outline",
+      label: "Routes",
+      subtitle: "Manage stops",
+      route: "/driver/route-management",
+      color: "#007AFF",
+      bgColor: "#E3F2FD"
+    },
+    {
+      icon: "people-outline",
+      label: "Students",
+      subtitle: "24 enrolled",
+      route: "/driver/students",
+      color: "#34C759",
+      bgColor: "#E8F8ED"
+    },
+    {
+      icon: "mail-outline",
+      label: "Requests",
+      subtitle: "3 pending",
+      route: "/driver/booking-requests",
+      color: "#FF9500",
+      bgColor: "#FFF4E5",
+      badge: 3
+    },
+    {
+      icon: "chatbubble-outline",
+      label: "Messages",
+      subtitle: "2 unread",
+      route: "/driver/messages",
+      color: "#5856D6",
+      bgColor: "#F0EFFF",
+      badge: 2
+    },
+  ];
+
+  const menuItems = [
+    { icon: "navigate-outline", label: "Start Active Trip", route: "/driver/active-trip", color: "#FF3B30" },
+    { icon: "time-outline", label: "Ride History", route: "/driver/rides", color: "#007AFF" },
+    { icon: "wallet-outline", label: "Earnings", route: "/driver/earnings", color: "#34C759" },
+    { icon: "settings-outline", label: "Settings", route: "/driver/Profile", color: "#8E8E93" },
+  ];
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      <ScrollView style={styles.scrollView}>
-        {/* Header */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>Good day,</Text>
-            <Text style={styles.userName}>Driver</Text>
-          </View>
-          <TouchableOpacity style={styles.profileButton}>
-            <Ionicons name="person-circle-outline" size={40} color="#007AFF" />
-          </TouchableOpacity>
-        </View>
 
-        {/* Availability Toggle */}
-        <View style={styles.availabilityCard}>
-          <View style={styles.availabilityContent}>
-            <View style={styles.availabilityIcon}>
-              <Ionicons 
-                name={isAvailable ? "checkmark-circle" : "close-circle"} 
-                size={32} 
-                color={isAvailable ? "#34C759" : "#8E8E93"} 
-              />
-            </View>
-            <View style={styles.availabilityText}>
-              <Text style={styles.availabilityTitle}>
-                {isAvailable ? "You're Online" : "You're Offline"}
-              </Text>
-              <Text style={styles.availabilityDescription}>
-                {isAvailable ? "Ready to accept ride requests" : "Toggle to start accepting rides"}
-              </Text>
-            </View>
-          </View>
-          <Switch
-            value={isAvailable}
-            onValueChange={setIsAvailable}
-            trackColor={{ false: "#E5E5EA", true: "#34C759" }}
-            thumbColor="#fff"
-          />
-        </View>
+      <ScrollView
+        style={styles.scrollView}
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={styles.scrollContent}
+      >
+        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
 
-        {/* Stats Overview */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Today's Summary</Text>
-          <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
-              <Ionicons name="car" size={28} color="#007AFF" />
-              <Text style={styles.statValue}>{completedToday}</Text>
-              <Text style={styles.statLabel}>Completed Rides</Text>
+          {/* Header */}
+          <View style={styles.header}>
+            <View style={styles.headerLeft}>
+              <Text style={styles.greeting}>{getGreeting()} 👋</Text>
+              <Text style={styles.userName}>Kasun Perera</Text>
             </View>
-            <View style={styles.statCard}>
-              <Ionicons name="cash" size={28} color="#34C759" />
-              <Text style={styles.statValue}>${earnings.toFixed(2)}</Text>
-              <Text style={styles.statLabel}>Earnings</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Ionicons name="star" size={28} color="#FF9500" />
-              <Text style={styles.statValue}>4.8</Text>
-              <Text style={styles.statLabel}>Rating</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Ionicons name="time" size={28} color="#8E8E93" />
-              <Text style={styles.statValue}>6h 30m</Text>
-              <Text style={styles.statLabel}>Online Time</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Active Rides */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Active Rides</Text>
-            <View style={styles.badge}>
-              <Text style={styles.badgeText}>{activeRides.length}</Text>
+            <View style={styles.headerRight}>
+              <TouchableOpacity style={styles.notificationBtn}>
+                <Ionicons name="notifications-outline" size={24} color="#1a1a2e" />
+                <View style={styles.notificationDot} />
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.avatarBtn}
+                onPress={() => router.push("/driver/Profile")}
+              >
+                <LinearGradient
+                  colors={["#007AFF", "#5856D6"]}
+                  style={styles.avatarGradient}
+                >
+                  <Text style={styles.avatarText}>KP</Text>
+                </LinearGradient>
+              </TouchableOpacity>
             </View>
           </View>
 
-          {activeRides.length > 0 ? (
-            activeRides.map((ride) => (
-              <View key={ride.id} style={styles.rideCard}>
-                <View style={styles.rideHeader}>
-                  <View style={styles.studentInfo}>
-                    <View style={styles.avatarPlaceholder}>
-                      <Ionicons name="person" size={20} color="#007AFF" />
-                    </View>
-                    <View>
-                      <Text style={styles.studentName}>{ride.student}</Text>
-                      <Text style={styles.rideTime}>{ride.time}</Text>
-                    </View>
+          {/* Stats Row */}
+          <View style={styles.statsRow}>
+            {stats.map((stat, index) => (
+              <View key={index} style={styles.statCard}>
+                <View style={[styles.statIcon, { backgroundColor: stat.bgColor }]}>
+                  <Ionicons name={stat.icon} size={20} color={stat.color} />
+                </View>
+                <Text style={styles.statValue}>{stat.value}</Text>
+                <Text style={styles.statLabel}>{stat.label}</Text>
+              </View>
+            ))}
+          </View>
+
+          {/* Next Trip Card */}
+          <View style={styles.section}>
+            <View style={styles.sectionHeader}>
+              <Text style={styles.sectionTitle}>Next Scheduled Trip</Text>
+              <TouchableOpacity>
+                <Text style={styles.seeAllText}>View All</Text>
+              </TouchableOpacity>
+            </View>
+
+            <TouchableOpacity
+              style={styles.tripCard}
+              onPress={() => router.push("/driver/active-trip")}
+              activeOpacity={0.95}
+            >
+              <LinearGradient
+                colors={["#007AFF", "#5856D6"]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 1, y: 1 }}
+                style={styles.tripCardGradient}
+              >
+                <View style={styles.tripBadge}>
+                  <Ionicons name="sunny" size={12} color="#fff" />
+                  <Text style={styles.tripBadgeText}>Morning Route</Text>
+                </View>
+
+                <View style={styles.tripTimeRow}>
+                  <Text style={styles.tripTime}>6:45 AM</Text>
+                  <View style={styles.tripArrow}>
+                    <Ionicons name="arrow-forward" size={16} color="rgba(255,255,255,0.7)" />
                   </View>
-                  <View style={[styles.statusBadge, ride.status === "Pending" && styles.statusPending]}>
-                    <Text style={styles.statusText}>{ride.status}</Text>
+                  <Text style={styles.tripTimeEnd}>8:00 AM</Text>
+                </View>
+
+                <View style={styles.tripDetails}>
+                  <View style={styles.tripDetail}>
+                    <Ionicons name="school-outline" size={16} color="rgba(255,255,255,0.8)" />
+                    <Text style={styles.tripDetailText}>Royal College, Colombo</Text>
+                  </View>
+                  <View style={styles.tripDetail}>
+                    <Ionicons name="people-outline" size={16} color="rgba(255,255,255,0.8)" />
+                    <Text style={styles.tripDetailText}>24 students</Text>
                   </View>
                 </View>
 
-                <View style={styles.locationInfo}>
-                  <View style={styles.locationRow}>
-                    <View style={styles.locationDot} />
-                    <Text style={styles.locationText}>{ride.pickup}</Text>
-                  </View>
-                  <View style={styles.locationLine} />
-                  <View style={styles.locationRow}>
-                    <View style={[styles.locationDot, styles.locationDotDestination]} />
-                    <Text style={styles.locationText}>{ride.destination}</Text>
+                <View style={styles.tripAction}>
+                  <View style={styles.startTripBtn}>
+                    <Ionicons name="play" size={18} color="#007AFF" />
+                    <Text style={styles.startTripText}>Start Trip</Text>
                   </View>
                 </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
 
-                <View style={styles.rideActions}>
-                  <TouchableOpacity style={styles.acceptButton}>
-                    <Text style={styles.acceptButtonText}>Accept Ride</Text>
-                  </TouchableOpacity>
-                  <TouchableOpacity style={styles.declineButton}>
-                    <Text style={styles.declineButtonText}>Decline</Text>
-                  </TouchableOpacity>
+          {/* Quick Actions */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Quick Actions</Text>
+            <View style={styles.actionsGrid}>
+              {quickActions.map((action, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={styles.actionCard}
+                  onPress={() => router.push(action.route)}
+                  activeOpacity={0.8}
+                >
+                  <View style={[styles.actionIcon, { backgroundColor: action.bgColor }]}>
+                    <Ionicons name={action.icon} size={24} color={action.color} />
+                    {action.badge && (
+                      <View style={styles.actionBadge}>
+                        <Text style={styles.actionBadgeText}>{action.badge}</Text>
+                      </View>
+                    )}
+                  </View>
+                  <Text style={styles.actionLabel}>{action.label}</Text>
+                  <Text style={styles.actionSubtitle}>{action.subtitle}</Text>
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Menu List */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>More Options</Text>
+            <View style={styles.menuCard}>
+              {menuItems.map((item, index) => (
+                <TouchableOpacity
+                  key={index}
+                  style={[
+                    styles.menuItem,
+                    index < menuItems.length - 1 && styles.menuItemBorder
+                  ]}
+                  onPress={() => router.push(item.route)}
+                >
+                  <View style={[styles.menuIcon, { backgroundColor: `${item.color}15` }]}>
+                    <Ionicons name={item.icon} size={20} color={item.color} />
+                  </View>
+                  <Text style={styles.menuLabel}>{item.label}</Text>
+                  <Ionicons name="chevron-forward" size={20} color="#C7C7CC" />
+                </TouchableOpacity>
+              ))}
+            </View>
+          </View>
+
+          {/* Today's Summary */}
+          <View style={styles.section}>
+            <Text style={styles.sectionTitle}>Today's Summary</Text>
+            <View style={styles.summaryCard}>
+              <View style={styles.summaryRow}>
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryValue}>2</Text>
+                  <Text style={styles.summaryLabel}>Trips Completed</Text>
+                </View>
+                <View style={styles.summaryDivider} />
+                <View style={styles.summaryItem}>
+                  <Text style={styles.summaryValue}>48</Text>
+                  <Text style={styles.summaryLabel}>Students Served</Text>
+                </View>
+                <View style={styles.summaryDivider} />
+                <View style={styles.summaryItem}>
+                  <Text style={[styles.summaryValue, { color: "#34C759" }]}>LKR 2.5K</Text>
+                  <Text style={styles.summaryLabel}>Earned Today</Text>
                 </View>
               </View>
-            ))
-          ) : (
-            <View style={styles.emptyState}>
-              <Ionicons name="car-outline" size={48} color="#C7C7CC" />
-              <Text style={styles.emptyStateText}>
-                {isAvailable ? "Waiting for ride requests..." : "Go online to receive ride requests"}
-              </Text>
             </View>
-          )}
-        </View>
+          </View>
 
-        {/* Quick Actions */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Quick Actions</Text>
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="list" size={24} color="#007AFF" />
-            <Text style={styles.actionButtonText}>View All Trips</Text>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="wallet" size={24} color="#34C759" />
-            <Text style={styles.actionButtonText}>Earnings Report</Text>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="car-sport" size={24} color="#FF9500" />
-            <Text style={styles.actionButtonText}>Vehicle Information</Text>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-          </TouchableOpacity>
-          <TouchableOpacity style={styles.actionButton}>
-            <Ionicons name="help-circle" size={24} color="#8E8E93" />
-            <Text style={styles.actionButtonText}>Help & Support</Text>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-          </TouchableOpacity>
-        </View>
+        </Animated.View>
       </ScrollView>
     </SafeAreaView>
   );
@@ -173,68 +276,108 @@ export default function DriverHome() {
 const styles = StyleSheet.create({
   container: {
     flex: 1,
-    backgroundColor: "#F2F2F7",
+    backgroundColor: "#F8F9FA",
   },
   scrollView: {
     flex: 1,
+  },
+  scrollContent: {
+    paddingBottom: responsive.tabBarHeight + responsive.paddingXL,
   },
   header: {
     flexDirection: "row",
     justifyContent: "space-between",
     alignItems: "center",
-    padding: responsive.paddingLG,
+    paddingHorizontal: responsive.paddingLG,
+    paddingTop: responsive.paddingMD,
+    paddingBottom: responsive.paddingLG,
     backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5EA",
+  },
+  headerLeft: {
+    flex: 1,
   },
   greeting: {
     fontSize: responsive.fontMD,
     color: "#8E8E93",
-    marginBottom: responsive.paddingXS,
+    marginBottom: 4,
   },
   userName: {
-    fontSize: responsive.font3XL,
+    fontSize: fs(24),
     fontWeight: "bold",
-    color: "#000",
+    color: "#1a1a2e",
   },
-  profileButton: {
-    padding: responsive.paddingXS,
-  },
-  availabilityCard: {
+  headerRight: {
     flexDirection: "row",
-    justifyContent: "space-between",
     alignItems: "center",
+    gap: responsive.paddingSM,
+  },
+  notificationBtn: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    backgroundColor: "#F2F2F7",
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  notificationDot: {
+    position: "absolute",
+    top: 10,
+    right: 10,
+    width: 10,
+    height: 10,
+    borderRadius: 5,
+    backgroundColor: "#FF3B30",
+    borderWidth: 2,
+    borderColor: "#F2F2F7",
+  },
+  avatarBtn: {},
+  avatarGradient: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
+    alignItems: "center",
+    justifyContent: "center",
+  },
+  avatarText: {
+    fontSize: responsive.fontMD,
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  statsRow: {
+    flexDirection: "row",
+    paddingHorizontal: responsive.paddingLG,
+    marginTop: responsive.paddingMD,
+    gap: responsive.paddingSM,
+  },
+  statCard: {
+    flex: 1,
     backgroundColor: "#fff",
-    marginHorizontal: responsive.paddingLG,
-    marginTop: responsive.paddingLG,
-    padding: responsive.paddingLG,
     borderRadius: responsive.radiusLG,
+    padding: responsive.paddingMD,
+    alignItems: "center",
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowRadius: 8,
     elevation: 2,
   },
-  availabilityContent: {
-    flexDirection: "row",
+  statIcon: {
+    width: 44,
+    height: 44,
+    borderRadius: 22,
     alignItems: "center",
-    flex: 1,
+    justifyContent: "center",
+    marginBottom: responsive.paddingSM,
   },
-  availabilityIcon: {
-    marginRight: responsive.paddingMD,
+  statValue: {
+    fontSize: fs(20),
+    fontWeight: "bold",
+    color: "#1a1a2e",
   },
-  availabilityText: {
-    flex: 1,
-  },
-  availabilityTitle: {
-    fontSize: responsive.fontLG,
-    fontWeight: "600",
-    color: "#000",
-    marginBottom: responsive.paddingXS,
-  },
-  availabilityDescription: {
-    fontSize: responsive.fontMD,
+  statLabel: {
+    fontSize: responsive.fontXS,
     color: "#8E8E93",
+    marginTop: 2,
   },
   section: {
     marginTop: responsive.paddingLG,
@@ -247,199 +390,208 @@ const styles = StyleSheet.create({
     marginBottom: responsive.paddingMD,
   },
   sectionTitle: {
-    fontSize: responsive.font2XL,
+    fontSize: responsive.fontXL,
     fontWeight: "600",
-    color: "#000",
+    color: "#1a1a2e",
     marginBottom: responsive.paddingMD,
   },
-  badge: {
-    backgroundColor: "#007AFF",
-    borderRadius: responsive.radiusLG,
-    paddingHorizontal: wp(10),
-    paddingVertical: responsive.paddingXS,
-    minWidth: wp(24),
-    alignItems: "center",
-  },
-  badgeText: {
-    color: "#fff",
+  seeAllText: {
     fontSize: responsive.fontSM,
+    color: "#007AFF",
+    fontWeight: "500",
+    marginBottom: responsive.paddingMD,
+  },
+  tripCard: {
+    borderRadius: responsive.radiusXL,
+    overflow: "hidden",
+    shadowColor: "#007AFF",
+    shadowOffset: { width: 0, height: 8 },
+    shadowOpacity: 0.2,
+    shadowRadius: 16,
+    elevation: 8,
+  },
+  tripCardGradient: {
+    padding: responsive.paddingLG,
+  },
+  tripBadge: {
+    flexDirection: "row",
+    alignItems: "center",
+    backgroundColor: "rgba(255,255,255,0.2)",
+    paddingHorizontal: 10,
+    paddingVertical: 4,
+    borderRadius: responsive.radiusFull,
+    alignSelf: "flex-start",
+    marginBottom: responsive.paddingMD,
+    gap: 4,
+  },
+  tripBadgeText: {
+    fontSize: responsive.fontXS,
+    color: "#fff",
     fontWeight: "600",
   },
-  statsGrid: {
+  tripTimeRow: {
+    flexDirection: "row",
+    alignItems: "center",
+    flexWrap: "wrap",
+    marginBottom: responsive.paddingMD,
+    gap: responsive.paddingSM,
+  },
+  tripTime: {
+    fontSize: fs(28),
+    fontWeight: "bold",
+    color: "#fff",
+  },
+  tripArrow: {
+    paddingHorizontal: responsive.paddingSM,
+  },
+  tripTimeEnd: {
+    fontSize: fs(28),
+    fontWeight: "bold",
+    color: "rgba(255,255,255,0.7)",
+  },
+  tripDetails: {
     flexDirection: "row",
     flexWrap: "wrap",
-    marginHorizontal: wp(-6),
-  },
-  statCard: {
-    width: "48%",
-    backgroundColor: "#fff",
-    borderRadius: responsive.radiusLG,
-    padding: responsive.paddingLG,
-    margin: "1%",
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  statValue: {
-    fontSize: responsive.font3XL,
-    fontWeight: "bold",
-    color: "#000",
-    marginTop: responsive.paddingSM,
-    marginBottom: responsive.paddingXS,
-  },
-  statLabel: {
-    fontSize: responsive.fontSM,
-    color: "#8E8E93",
-    textAlign: "center",
-  },
-  rideCard: {
-    backgroundColor: "#fff",
-    borderRadius: responsive.radiusLG,
-    padding: responsive.paddingLG,
-    marginBottom: responsive.paddingMD,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  rideHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
+    gap: responsive.paddingLG,
     marginBottom: responsive.paddingLG,
   },
-  studentInfo: {
+  tripDetail: {
     flexDirection: "row",
     alignItems: "center",
+    gap: 6,
   },
-  avatarPlaceholder: {
-    width: wp(40),
-    height: wp(40),
-    borderRadius: wp(20),
-    backgroundColor: "#E3F2FD",
-    justifyContent: "center",
+  tripDetailText: {
+    fontSize: responsive.fontSM,
+    color: "rgba(255,255,255,0.8)",
+  },
+  tripAction: {
+    alignItems: "flex-start",
+  },
+  startTripBtn: {
+    flexDirection: "row",
     alignItems: "center",
-    marginRight: responsive.paddingMD,
-  },
-  studentName: {
-    fontSize: responsive.fontLG,
-    fontWeight: "600",
-    color: "#000",
-  },
-  rideTime: {
-    fontSize: responsive.fontMD,
-    color: "#8E8E93",
-    marginTop: 2,
-  },
-  statusBadge: {
-    paddingHorizontal: responsive.paddingMD,
+    backgroundColor: "#fff",
+    paddingHorizontal: responsive.paddingLG,
     paddingVertical: responsive.paddingSM,
-    borderRadius: responsive.radiusLG,
-    backgroundColor: "#34C759",
+    borderRadius: responsive.radiusFull,
+    gap: 6,
   },
-  statusPending: {
-    backgroundColor: "#FF9500",
-  },
-  statusText: {
-    color: "#fff",
-    fontSize: responsive.fontSM,
-    fontWeight: "600",
-  },
-  locationInfo: {
-    marginBottom: responsive.paddingLG,
-  },
-  locationRow: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  locationDot: {
-    width: wp(10),
-    height: wp(10),
-    borderRadius: wp(5),
-    backgroundColor: "#007AFF",
-    marginRight: responsive.paddingMD,
-  },
-  locationDotDestination: {
-    backgroundColor: "#34C759",
-  },
-  locationLine: {
-    width: 2,
-    height: hp(20),
-    backgroundColor: "#E5E5EA",
-    marginLeft: wp(4),
-    marginVertical: responsive.paddingXS,
-  },
-  locationText: {
+  startTripText: {
     fontSize: responsive.fontMD,
-    color: "#000",
-    flex: 1,
+    fontWeight: "600",
+    color: "#007AFF",
   },
-  rideActions: {
+  actionsGrid: {
     flexDirection: "row",
-    gap: responsive.paddingMD,
+    flexWrap: "wrap",
+    marginHorizontal: -responsive.paddingSM / 2,
   },
-  acceptButton: {
-    flex: 1,
-    backgroundColor: "#007AFF",
-    paddingVertical: responsive.paddingMD,
+  actionCard: {
+    width: wp(172),
+    maxWidth: "50%",
+    minWidth: wp(146),
+    paddingHorizontal: responsive.paddingSM / 2,
+    marginBottom: responsive.paddingSM,
+  },
+  actionIcon: {
+    width: 52,
+    height: 52,
     borderRadius: responsive.radiusMD,
     alignItems: "center",
-    minHeight: responsive.buttonHeight,
     justifyContent: "center",
+    marginBottom: responsive.paddingSM,
   },
-  acceptButtonText: {
+  actionBadge: {
+    position: "absolute",
+    top: -6,
+    right: -6,
+    backgroundColor: "#FF3B30",
+    borderRadius: 10,
+    minWidth: 20,
+    height: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    paddingHorizontal: 6,
+  },
+  actionBadgeText: {
+    fontSize: 11,
+    fontWeight: "bold",
     color: "#fff",
-    fontSize: responsive.fontLG,
+  },
+  actionLabel: {
+    fontSize: responsive.fontMD,
     fontWeight: "600",
+    color: "#1a1a2e",
+    marginBottom: 2,
   },
-  declineButton: {
-    flex: 1,
-    backgroundColor: "#F2F2F7",
-    paddingVertical: responsive.paddingMD,
-    borderRadius: responsive.radiusMD,
-    alignItems: "center",
-    minHeight: responsive.buttonHeight,
-    justifyContent: "center",
-  },
-  declineButtonText: {
-    color: "#000",
-    fontSize: responsive.fontLG,
-    fontWeight: "600",
-  },
-  emptyState: {
-    backgroundColor: "#fff",
-    borderRadius: responsive.radiusLG,
-    padding: responsive.padding2XL,
-    alignItems: "center",
-    marginTop: responsive.paddingSM,
-  },
-  emptyStateText: {
-    fontSize: responsive.fontLG,
+  actionSubtitle: {
+    fontSize: responsive.fontSM,
     color: "#8E8E93",
-    marginTop: responsive.paddingMD,
-    textAlign: "center",
   },
-  actionButton: {
-    flexDirection: "row",
-    alignItems: "center",
+  menuCard: {
     backgroundColor: "#fff",
     borderRadius: responsive.radiusLG,
-    padding: responsive.paddingLG,
-    marginBottom: responsive.paddingMD,
     shadowColor: "#000",
     shadowOffset: { width: 0, height: 2 },
     shadowOpacity: 0.05,
-    shadowRadius: 4,
+    shadowRadius: 8,
     elevation: 2,
   },
-  actionButtonText: {
+  menuItem: {
+    flexDirection: "row",
+    alignItems: "center",
+    padding: responsive.paddingMD,
+  },
+  menuItemBorder: {
+    borderBottomWidth: 1,
+    borderBottomColor: "#F2F2F7",
+  },
+  menuIcon: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    alignItems: "center",
+    justifyContent: "center",
+    marginRight: responsive.paddingMD,
+  },
+  menuLabel: {
     flex: 1,
-    fontSize: responsive.fontLG,
-    color: "#000",
-    marginLeft: responsive.paddingMD,
+    fontSize: responsive.fontMD,
+    fontWeight: "500",
+    color: "#1a1a2e",
+  },
+  summaryCard: {
+    backgroundColor: "#fff",
+    borderRadius: responsive.radiusLG,
+    padding: responsive.paddingLG,
+    shadowColor: "#000",
+    shadowOffset: { width: 0, height: 2 },
+    shadowOpacity: 0.05,
+    shadowRadius: 8,
+    elevation: 2,
+  },
+  summaryRow: {
+    flexDirection: "row",
+    alignItems: "center",
+  },
+  summaryItem: {
+    flex: 1,
+    alignItems: "center",
+  },
+  summaryValue: {
+    fontSize: fs(20),
+    fontWeight: "bold",
+    color: "#1a1a2e",
+    marginBottom: 4,
+  },
+  summaryLabel: {
+    fontSize: responsive.fontXS,
+    color: "#8E8E93",
+    textAlign: "center",
+  },
+  summaryDivider: {
+    width: 1,
+    height: 40,
+    backgroundColor: "#E5E5EA",
   },
 });

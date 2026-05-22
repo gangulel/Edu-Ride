@@ -1,51 +1,52 @@
 import React, { useState } from "react";
 import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, StatusBar } from "react-native";
 import { Ionicons } from "@expo/vector-icons";
+import { responsive, fs } from "../utils/responsive";
 
 export default function DriverEarnings() {
   const [selectedPeriod, setSelectedPeriod] = useState("today");
 
   const todayStats = {
-    total: 125.50,
+    total: 12550.00,
     trips: 5,
     hours: 6.5,
-    avgPerTrip: 25.10,
+    avgPerTrip: 2510.00,
   };
 
   const weekStats = {
-    total: 687.30,
+    total: 68730.00,
     trips: 28,
     hours: 35,
-    avgPerTrip: 24.55,
+    avgPerTrip: 2455.00,
   };
 
   const monthStats = {
-    total: 2845.80,
+    total: 284580.00,
     trips: 112,
     hours: 145,
-    avgPerTrip: 25.41,
+    avgPerTrip: 2541.00,
   };
 
   const currentStats = selectedPeriod === "today" ? todayStats : selectedPeriod === "week" ? weekStats : monthStats;
 
   const recentTransactions = [
-    { id: 1, student: "Alice Johnson", amount: 18.50, time: "2:30 PM", destination: "Main Campus" },
-    { id: 2, student: "Bob Smith", amount: 22.00, time: "1:15 PM", destination: "Sports Complex" },
-    { id: 3, student: "Carol Davis", amount: 15.00, time: "12:00 PM", destination: "Library" },
-    { id: 4, student: "David Wilson", amount: 28.00, time: "10:30 AM", destination: "Downtown" },
-    { id: 5, student: "Emma Brown", amount: 19.00, time: "9:00 AM", destination: "Main Campus" },
+    { id: 1, student: "Amaya Perera", amount: 1850.00, time: "2:30 PM", destination: "Main Campus" },
+    { id: 2, student: "Sahan Silva", amount: 2200.00, time: "1:15 PM", destination: "Sports Complex" },
+    { id: 3, student: "Dilini Fernando", amount: 1500.00, time: "12:00 PM", destination: "Library" },
+    { id: 4, student: "Roshan Jayawardena", amount: 2800.00, time: "10:30 AM", destination: "Downtown" },
+    { id: 5, student: "Malini Dissanayake", amount: 1900.00, time: "9:00 AM", destination: "Main Campus" },
   ];
 
   return (
     <SafeAreaView style={styles.container}>
       <StatusBar barStyle="dark-content" />
-      
+
       {/* Header */}
       <View style={styles.header}>
         <Text style={styles.headerTitle}>Earnings</Text>
       </View>
 
-      <ScrollView style={styles.scrollView}>
+      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
         {/* Period Selector */}
         <View style={styles.periodSelector}>
           <TouchableOpacity
@@ -80,7 +81,7 @@ export default function DriverEarnings() {
             <Ionicons name="wallet" size={32} color="#34C759" />
           </View>
           <Text style={styles.totalLabel}>Total Earnings</Text>
-          <Text style={styles.totalAmount}>${currentStats.total.toFixed(2)}</Text>
+          <Text style={styles.totalAmount}>Rs. {currentStats.total.toLocaleString()}</Text>
           <TouchableOpacity style={styles.withdrawButton}>
             <Ionicons name="arrow-down-circle" size={20} color="#fff" />
             <Text style={styles.withdrawButtonText}>Withdraw</Text>
@@ -109,7 +110,7 @@ export default function DriverEarnings() {
             <View style={styles.statIconContainer}>
               <Ionicons name="trending-up" size={24} color="#34C759" />
             </View>
-            <Text style={styles.statValue}>${currentStats.avgPerTrip.toFixed(2)}</Text>
+            <Text style={styles.statValue}>Rs. {currentStats.avgPerTrip.toLocaleString()}</Text>
             <Text style={styles.statLabel}>Avg per Trip</Text>
           </View>
         </View>
@@ -133,7 +134,7 @@ export default function DriverEarnings() {
                 <Text style={styles.transactionDestination}>{transaction.destination}</Text>
                 <Text style={styles.transactionTime}>{transaction.time}</Text>
               </View>
-              <Text style={styles.transactionAmount}>+${transaction.amount.toFixed(2)}</Text>
+              <Text style={styles.transactionAmount}>+Rs. {transaction.amount.toLocaleString()}</Text>
             </View>
           ))}
         </View>
@@ -169,28 +170,31 @@ const styles = StyleSheet.create({
   },
   header: {
     backgroundColor: "#fff",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
+    paddingHorizontal: responsive.paddingLG,
+    paddingVertical: responsive.paddingMD,
     borderBottomWidth: 1,
     borderBottomColor: "#E5E5EA",
   },
   headerTitle: {
-    fontSize: 28,
+    fontSize: fs(28),
     fontWeight: "bold",
     color: "#000",
   },
   scrollView: {
     flex: 1,
   },
+  scrollContent: {
+    paddingBottom: responsive.tabBarHeight + responsive.paddingLG,
+  },
   periodSelector: {
     flexDirection: "row",
-    padding: 20,
+    padding: responsive.paddingLG,
     gap: 8,
   },
   periodButton: {
     flex: 1,
-    paddingVertical: 10,
-    paddingHorizontal: 12,
+    paddingVertical: responsive.paddingSM,
+    paddingHorizontal: responsive.paddingMD,
     borderRadius: 8,
     backgroundColor: "#fff",
     alignItems: "center",
@@ -202,7 +206,7 @@ const styles = StyleSheet.create({
     borderColor: "#007AFF",
   },
   periodText: {
-    fontSize: 14,
+    fontSize: responsive.fontSM,
     color: "#000",
     fontWeight: "500",
   },
@@ -212,9 +216,9 @@ const styles = StyleSheet.create({
   },
   totalCard: {
     backgroundColor: "#fff",
-    marginHorizontal: 20,
-    marginBottom: 20,
-    padding: 24,
+    marginHorizontal: responsive.paddingLG,
+    marginBottom: responsive.paddingLG,
+    padding: responsive.paddingXL,
     borderRadius: 16,
     alignItems: "center",
     shadowColor: "#000",
@@ -224,47 +228,50 @@ const styles = StyleSheet.create({
     elevation: 4,
   },
   totalIconContainer: {
-    width: 64,
-    height: 64,
-    borderRadius: 32,
+    width: fs(60),
+    height: fs(60),
+    borderRadius: fs(30),
     backgroundColor: "#E8F5E9",
     justifyContent: "center",
     alignItems: "center",
     marginBottom: 12,
   },
   totalLabel: {
-    fontSize: 16,
+    fontSize: responsive.fontMD,
     color: "#8E8E93",
-    marginBottom: 8,
+    marginBottom: responsive.paddingSM,
   },
   totalAmount: {
-    fontSize: 42,
+    fontSize: fs(34),
     fontWeight: "bold",
     color: "#000",
-    marginBottom: 20,
+    marginBottom: responsive.paddingLG,
+    textAlign: "center",
   },
   withdrawButton: {
     flexDirection: "row",
     backgroundColor: "#34C759",
-    paddingVertical: 12,
-    paddingHorizontal: 32,
+    paddingVertical: responsive.paddingSM,
+    paddingHorizontal: responsive.paddingXL,
     borderRadius: 8,
     alignItems: "center",
     gap: 8,
   },
   withdrawButtonText: {
     color: "#fff",
-    fontSize: 16,
+    fontSize: responsive.fontMD,
     fontWeight: "600",
   },
   statsGrid: {
     flexDirection: "row",
-    paddingHorizontal: 20,
+    paddingHorizontal: responsive.paddingLG,
+    flexWrap: "wrap",
     gap: 12,
-    marginBottom: 20,
+    marginBottom: responsive.paddingLG,
   },
   statCard: {
-    flex: 1,
+    flexGrow: 1,
+    flexBasis: fs(110),
     backgroundColor: "#fff",
     borderRadius: 12,
     padding: 16,
@@ -279,19 +286,19 @@ const styles = StyleSheet.create({
     marginBottom: 8,
   },
   statValue: {
-    fontSize: 20,
+    fontSize: responsive.fontXL,
     fontWeight: "bold",
     color: "#000",
     marginBottom: 4,
   },
   statLabel: {
-    fontSize: 12,
+    fontSize: responsive.fontXS,
     color: "#8E8E93",
     textAlign: "center",
   },
   section: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
+    paddingHorizontal: responsive.paddingLG,
+    marginBottom: responsive.paddingXL,
   },
   sectionHeader: {
     flexDirection: "row",
@@ -300,13 +307,13 @@ const styles = StyleSheet.create({
     marginBottom: 12,
   },
   sectionTitle: {
-    fontSize: 20,
+    fontSize: responsive.fontXL,
     fontWeight: "600",
     color: "#000",
-    marginBottom: 12,
+    marginBottom: responsive.paddingMD,
   },
   seeAllText: {
-    fontSize: 14,
+    fontSize: responsive.fontSM,
     color: "#007AFF",
     fontWeight: "500",
   },
@@ -314,7 +321,7 @@ const styles = StyleSheet.create({
     flexDirection: "row",
     backgroundColor: "#fff",
     borderRadius: 12,
-    padding: 16,
+    padding: responsive.paddingMD,
     marginBottom: 8,
     alignItems: "center",
     shadowColor: "#000",
@@ -324,9 +331,9 @@ const styles = StyleSheet.create({
     elevation: 1,
   },
   transactionIcon: {
-    width: 40,
-    height: 40,
-    borderRadius: 20,
+    width: fs(40),
+    height: fs(40),
+    borderRadius: fs(20),
     backgroundColor: "#E8F5E9",
     justifyContent: "center",
     alignItems: "center",
@@ -336,30 +343,32 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   transactionStudent: {
-    fontSize: 16,
+    fontSize: responsive.fontMD,
     fontWeight: "600",
     color: "#000",
     marginBottom: 2,
   },
   transactionDestination: {
-    fontSize: 14,
+    fontSize: responsive.fontSM,
     color: "#8E8E93",
     marginBottom: 2,
   },
   transactionTime: {
-    fontSize: 12,
+    fontSize: responsive.fontXS,
     color: "#8E8E93",
   },
   transactionAmount: {
-    fontSize: 18,
+    fontSize: responsive.fontLG,
     fontWeight: "bold",
     color: "#34C759",
+    maxWidth: "42%",
+    textAlign: "right",
   },
   paymentCard: {
     flexDirection: "row",
     backgroundColor: "#fff",
     borderRadius: 12,
-    padding: 16,
+    padding: responsive.paddingMD,
     alignItems: "center",
     marginBottom: 12,
     shadowColor: "#000",
@@ -369,9 +378,9 @@ const styles = StyleSheet.create({
     elevation: 2,
   },
   paymentIconContainer: {
-    width: 48,
-    height: 48,
-    borderRadius: 24,
+    width: fs(46),
+    height: fs(46),
+    borderRadius: fs(23),
     backgroundColor: "#E3F2FD",
     justifyContent: "center",
     alignItems: "center",
@@ -381,13 +390,13 @@ const styles = StyleSheet.create({
     flex: 1,
   },
   paymentTitle: {
-    fontSize: 16,
+    fontSize: responsive.fontMD,
     fontWeight: "600",
     color: "#000",
     marginBottom: 4,
   },
   paymentDescription: {
-    fontSize: 14,
+    fontSize: responsive.fontSM,
     color: "#8E8E93",
   },
   addPaymentButton: {
@@ -396,14 +405,14 @@ const styles = StyleSheet.create({
     justifyContent: "center",
     backgroundColor: "#fff",
     borderRadius: 12,
-    padding: 16,
+    padding: responsive.paddingMD,
     borderWidth: 1,
     borderColor: "#E5E5EA",
     borderStyle: "dashed",
     gap: 8,
   },
   addPaymentText: {
-    fontSize: 16,
+    fontSize: responsive.fontMD,
     color: "#007AFF",
     fontWeight: "500",
   },

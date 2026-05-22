@@ -1,3 +1,4 @@
+import { useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
@@ -5,37 +6,114 @@ import { Select } from "./ui/select"
 import { Badge } from "./ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
 import { Shield, AlertTriangle, User, Activity, Download } from "lucide-react"
+import { toast } from "sonner"
+import { fetchAdminContent } from "../lib/adminContent"
 
-const loginHistory = [
-  { id: 1, user: "admin@bustracker.com", role: "Super Admin", action: "Login", ip: "192.168.1.10", location: "New York, US", timestamp: "2024-12-14 09:15:23", status: "success" },
-  { id: 2, user: "john.admin@bustracker.com", role: "Admin", action: "Login", ip: "192.168.1.45", location: "Los Angeles, US", timestamp: "2024-12-14 08:42:15", status: "success" },
-  { id: 3, user: "unknown@email.com", role: "Unknown", action: "Failed Login", ip: "45.123.67.89", location: "Unknown", timestamp: "2024-12-14 07:30:11", status: "failed" },
-  { id: 4, user: "sarah.admin@bustracker.com", role: "Admin", action: "Login", ip: "192.168.1.78", location: "Chicago, US", timestamp: "2024-12-13 16:22:45", status: "success" },
-]
-
-const adminActions = [
-  { id: 1, admin: "John Admin", action: "Suspended Driver", target: "David Brown", details: "Low rating suspension", timestamp: "2024-12-14 10:30:00", severity: "high" },
-  { id: 2, admin: "Sarah Admin", action: "Updated Payment Settings", target: "Commission Rate", details: "Changed from 4% to 5%", timestamp: "2024-12-14 09:15:00", severity: "medium" },
-  { id: 3, admin: "Admin Team", action: "Sent Notification", target: "All Parents", details: "Holiday schedule announcement", timestamp: "2024-12-13 14:20:00", severity: "low" },
-  { id: 4, admin: "John Admin", action: "Approved Driver", target: "Patricia Taylor", details: "Verified documents", timestamp: "2024-12-13 11:45:00", severity: "medium" },
-  { id: 5, admin: "Super Admin", action: "Created Admin User", target: "mike.admin@bustracker.com", details: "New admin account created", timestamp: "2024-12-12 15:30:00", severity: "high" },
-]
-
-const suspiciousActivity = [
-  { id: 1, type: "Multiple Failed Logins", description: "5 failed login attempts from IP 45.123.67.89", severity: "high", timestamp: "2024-12-14 07:30:11", status: "investigating" },
-  { id: 2, type: "Unusual Payment Pattern", description: "Large number of refund requests from same parent", severity: "medium", timestamp: "2024-12-13 18:45:00", status: "resolved" },
-  { id: 3, type: "Rapid Account Creation", description: "10 parent accounts created from same IP", severity: "high", timestamp: "2024-12-12 22:15:00", status: "blocked" },
-]
+function downloadCsv<T extends Record<string, any>>(rows: T[], filename: string) {
+  if (!rows.length) {
+    toast.message("Nothing to export", { description: "No matching log rows." })
+    return
+  }
+  const headers = Array.from(rows.reduce((acc, row) => { Object.keys(row).forEach((k) => acc.add(k)); return acc }, new Set<string>()))
+  const escape = (value: unknown) => {
+    const str = value === null || value === undefined ? "" : String(value)
+    return /[",\n]/.test(str) ? `"${str.replace(/"/g, '""')}"` : str
+  }
+  const lines = [headers.join(","), ...rows.map((row) => headers.map((h) => escape(row[h])).join(","))]
+  const blob = new Blob([lines.join("\n")], { type: "text/csv;charset=utf-8" })
+  const url = URL.createObjectURL(blob)
+  const link = document.createElement("a")
+  link.href = url
+  link.download = filename
+  document.body.appendChild(link)
+  link.click()
+  document.body.removeChild(link)
+  URL.revokeObjectURL(url)
+  toast.success("Logs exported")
+}
 
 export function AuditLogs() {
+  const [loginHistory, setLoginHistory] = useState<any[]>([])
+  const [adminActions, setAdminActions] = useState<any[]>([])
+  const [suspiciousActivity, setSuspiciousActivity] = useState<any[]>([])
+  const [loginSearch, setLoginSearch] = useState("")
+  const [loginStatusFilter, setLoginStatusFilter] = useState("")
+  const [actionSearch, setActionSearch] = useState("")
+  const [resolvedAlerts, setResolvedAlerts] = useState<Set<string>>(new Set())
+
+  useEffect(() => {
+    fetchAdminContent()
+      .then((payload) => {
+        setLoginHistory(payload.audit?.loginHistory || [])
+        setAdminActions(payload.audit?.adminActions || [])
+        setSuspiciousActivity(payload.audit?.suspiciousActivity || [])
+      })
+      .catch(() => {
+        setLoginHistory([])
+        setAdminActions([])
+        setSuspiciousActivity([])
+      })
+  }, [])
+
+  const failedAttempts = useMemo(() => loginHistory.filter((item) => item.status === "failed").length, [loginHistory])
+  const activeAlerts = useMemo(() => suspiciousActivity.filter((item) => item.status === "investigating").length, [suspiciousActivity])
+  const recentSecurityEvents = useMemo(() => {
+    const suspiciousEvents = suspiciousActivity.map((item) => ({
+      id: `s-${item.id || item.timestamp || Math.random()}`,
+      message: item.description || item.type || "Suspicious activity detected",
+      timestamp: item.timestamp || "Recently",
+      level: item.severity === "high" ? "high" : item.severity === "medium" ? "medium" : "low",
+    }))
+
+    const adminEvents = adminActions.map((item) => ({
+      id: `a-${item.id || item.timestamp || Math.random()}`,
+      message: `${item.admin || "Admin"}: ${item.action || "Action performed"}`,
+      timestamp: item.timestamp || "Recently",
+      level: item.severity === "high" ? "high" : item.severity === "medium" ? "medium" : "low",
+    }))
+
+    return [...suspiciousEvents, ...adminEvents].slice(0, 4)
+  }, [adminActions, suspiciousActivity])
+
+  const filteredLogins = useMemo(() => {
+    const term = loginSearch.trim().toLowerCase()
+    return loginHistory.filter((log) => {
+      if (loginStatusFilter && log.status !== loginStatusFilter) return false
+      if (!term) return true
+      return [log.user, log.ip, log.location].filter(Boolean).some((v) => String(v).toLowerCase().includes(term))
+    })
+  }, [loginHistory, loginSearch, loginStatusFilter])
+
+  const filteredActions = useMemo(() => {
+    const term = actionSearch.trim().toLowerCase()
+    if (!term) return adminActions
+    return adminActions.filter((action) =>
+      [action.admin, action.action, action.target, action.details]
+        .filter(Boolean)
+        .some((v) => String(v).toLowerCase().includes(term))
+    )
+  }, [adminActions, actionSearch])
+
+  const isAlertResolved = (id: any) => resolvedAlerts.has(String(id))
+
   return (
     <div className="space-y-6">
-      <div className="flex justify-between items-start">
-        <div>
-          <h2>Audit Logs & Security Monitoring</h2>
-          <p className="text-gray-500 mt-1">Monitor system activity and security events</p>
+      <div className="flex flex-wrap items-center justify-between gap-3">
+        <div className="text-sm" style={{ color: "var(--er-text-muted)" }}>
+          {loginHistory.length + adminActions.length + suspiciousActivity.length} total log entries
         </div>
-        <Button>
+        <Button
+          onClick={() =>
+            downloadCsv(
+              [
+                ...loginHistory.map((row) => ({ kind: "login", ...row })),
+                ...adminActions.map((row) => ({ kind: "admin", ...row })),
+                ...suspiciousActivity.map((row) => ({ kind: "suspicious", ...row })),
+              ],
+              "audit-logs.csv"
+            )
+          }
+        >
           <Download className="h-4 w-4 mr-2" />
           Export Logs
         </Button>
@@ -49,7 +127,7 @@ export function AuditLogs() {
             <User className="h-4 w-4 text-gray-500" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">1,842</div>
+            <div className="text-2xl font-bold">{loginHistory.length}</div>
             <p className="text-xs text-gray-500 mt-1">Last 30 days</p>
           </CardContent>
         </Card>
@@ -60,7 +138,7 @@ export function AuditLogs() {
             <AlertTriangle className="h-4 w-4 text-yellow-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-yellow-600">23</div>
+            <div className="text-2xl font-bold text-yellow-600">{failedAttempts}</div>
             <p className="text-xs text-gray-500 mt-1">Requires attention</p>
           </CardContent>
         </Card>
@@ -71,7 +149,7 @@ export function AuditLogs() {
             <Activity className="h-4 w-4 text-blue-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold">387</div>
+            <div className="text-2xl font-bold">{adminActions.length}</div>
             <p className="text-xs text-gray-500 mt-1">This month</p>
           </CardContent>
         </Card>
@@ -82,7 +160,7 @@ export function AuditLogs() {
             <Shield className="h-4 w-4 text-red-600" />
           </CardHeader>
           <CardContent>
-            <div className="text-2xl font-bold text-red-600">5</div>
+            <div className="text-2xl font-bold text-red-600">{activeAlerts}</div>
             <p className="text-xs text-gray-500 mt-1">Active investigations</p>
           </CardContent>
         </Card>
@@ -95,34 +173,65 @@ export function AuditLogs() {
         </CardHeader>
         <CardContent>
           <div className="space-y-3">
-            {suspiciousActivity.map((activity) => (
-              <div key={activity.id} className={`p-4 border rounded-lg ${
-                activity.severity === 'high' ? 'border-red-300 bg-red-50' : 'border-yellow-300 bg-yellow-50'
-              }`}>
-                <div className="flex justify-between items-start mb-2">
-                  <div>
-                    <div className="flex items-center gap-2">
-                      <p className="font-medium">{activity.type}</p>
-                      <Badge variant={activity.severity === 'high' ? 'destructive' : 'warning'}>
-                        {activity.severity}
-                      </Badge>
+            {suspiciousActivity.length === 0 ? (
+              <div className="er-empty-state">No suspicious activity in the current window. Good news!</div>
+            ) : (
+              suspiciousActivity.map((activity) => (
+                <div
+                  key={activity.id}
+                  className={`p-4 border rounded-lg ${activity.severity === 'high' ? 'border-red-300 bg-red-50' : 'border-yellow-300 bg-yellow-50'}`}
+                >
+                  <div className="flex justify-between items-start mb-2">
+                    <div>
+                      <div className="flex items-center gap-2">
+                        <p className="font-medium">{activity.type}</p>
+                        <Badge variant={activity.severity === 'high' ? 'destructive' : 'warning'}>
+                          {activity.severity}
+                        </Badge>
+                      </div>
+                      <p className="text-sm mt-1">{activity.description}</p>
+                      <p className="text-xs text-gray-500 mt-1">{activity.timestamp}</p>
                     </div>
-                    <p className="text-sm mt-1">{activity.description}</p>
-                    <p className="text-xs text-gray-500 mt-1">{activity.timestamp}</p>
+                    <Badge variant={
+                      isAlertResolved(activity.id)
+                        ? "success"
+                        : activity.status === 'blocked'
+                        ? 'destructive'
+                        : activity.status === 'resolved'
+                        ? 'success'
+                        : 'warning'
+                    }>
+                      {isAlertResolved(activity.id) ? "resolved" : activity.status}
+                    </Badge>
                   </div>
-                  <Badge variant={
-                    activity.status === 'blocked' ? 'destructive' : 
-                    activity.status === 'resolved' ? 'success' : 'warning'
-                  }>
-                    {activity.status}
-                  </Badge>
+                  <div className="flex gap-2 mt-3">
+                    <Button
+                      size="sm"
+                      variant="outline"
+                      onClick={() =>
+                        toast.message("Opened investigation", {
+                          description: activity.description || activity.type || "Reviewing event",
+                        })
+                      }
+                    >
+                      Investigate
+                    </Button>
+                    <Button
+                      size="sm"
+                      variant="ghost"
+                      onClick={() => {
+                        const next = new Set(resolvedAlerts)
+                        next.add(String(activity.id))
+                        setResolvedAlerts(next)
+                        toast.success("Alert dismissed")
+                      }}
+                    >
+                      Dismiss
+                    </Button>
+                  </div>
                 </div>
-                <div className="flex gap-2 mt-3">
-                  <Button size="sm" variant="outline">Investigate</Button>
-                  <Button size="sm" variant="ghost">Dismiss</Button>
-                </div>
-              </div>
-            ))}
+              ))
+            )}
           </div>
         </CardContent>
       </Card>
@@ -133,13 +242,26 @@ export function AuditLogs() {
           <CardTitle>Login History</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-4 flex gap-4">
-            <Input placeholder="Search by user or IP..." className="max-w-sm" />
-            <Select className="w-40">
+          <div className="mb-4 flex flex-wrap gap-3">
+            <Input
+              placeholder="Search by user or IP..."
+              className="max-w-sm"
+              value={loginSearch}
+              onChange={(event) => setLoginSearch(event.target.value)}
+            />
+            <Select
+              className="w-40"
+              value={loginStatusFilter}
+              onChange={(event) => setLoginStatusFilter(event.target.value)}
+            >
               <option value="">All Status</option>
               <option value="success">Success</option>
               <option value="failed">Failed</option>
             </Select>
+            <Button variant="outline" onClick={() => downloadCsv(filteredLogins, "login-history.csv")}>
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
           </div>
           <Table>
             <TableHeader>
@@ -154,7 +276,14 @@ export function AuditLogs() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {loginHistory.map((log) => (
+              {filteredLogins.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={7}>
+                    <div className="er-empty-state">No login attempts match.</div>
+                  </TableCell>
+                </TableRow>
+              ) : null}
+              {filteredLogins.map((log) => (
                 <TableRow key={log.id}>
                   <TableCell>{log.user}</TableCell>
                   <TableCell>
@@ -182,8 +311,17 @@ export function AuditLogs() {
           <CardTitle>Admin Actions Log</CardTitle>
         </CardHeader>
         <CardContent>
-          <div className="mb-4">
-            <Input placeholder="Search admin actions..." />
+          <div className="mb-4 flex flex-wrap gap-3">
+            <Input
+              placeholder="Search admin actions..."
+              value={actionSearch}
+              onChange={(event) => setActionSearch(event.target.value)}
+              className="flex-1 min-w-[220px]"
+            />
+            <Button variant="outline" onClick={() => downloadCsv(filteredActions, "admin-actions.csv")}>
+              <Download className="h-4 w-4 mr-2" />
+              Export
+            </Button>
           </div>
           <Table>
             <TableHeader>
@@ -197,7 +335,14 @@ export function AuditLogs() {
               </TableRow>
             </TableHeader>
             <TableBody>
-              {adminActions.map((action) => (
+              {filteredActions.length === 0 ? (
+                <TableRow>
+                  <TableCell colSpan={6}>
+                    <div className="er-empty-state">No admin actions match.</div>
+                  </TableCell>
+                </TableRow>
+              ) : null}
+              {filteredActions.map((action) => (
                 <TableRow key={action.id}>
                   <TableCell className="font-medium">{action.admin}</TableCell>
                   <TableCell>{action.action}</TableCell>
@@ -206,8 +351,8 @@ export function AuditLogs() {
                   <TableCell className="text-sm">{action.timestamp}</TableCell>
                   <TableCell>
                     <Badge variant={
-                      action.severity === 'high' ? 'destructive' : 
-                      action.severity === 'medium' ? 'warning' : 'secondary'
+                      action.severity === 'high' ? 'destructive' :
+                        action.severity === 'medium' ? 'warning' : 'secondary'
                     }>
                       {action.severity}
                     </Badge>
@@ -256,7 +401,16 @@ export function AuditLogs() {
                 <Badge variant="secondary">Disabled</Badge>
               </div>
             </div>
-            <Button className="w-full mt-4">Configure Security</Button>
+            <Button
+              className="w-full mt-4"
+              onClick={() =>
+                toast.message("Security console", {
+                  description: "Open System Settings to manage IP whitelist, 2FA and session policies.",
+                })
+              }
+            >
+              Configure Security
+            </Button>
           </CardContent>
         </Card>
 
@@ -266,34 +420,17 @@ export function AuditLogs() {
           </CardHeader>
           <CardContent>
             <div className="space-y-3">
-              <div className="flex items-start gap-3">
-                <div className="h-2 w-2 bg-red-600 rounded-full mt-2"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Multiple failed logins detected</p>
-                  <p className="text-xs text-gray-500">2 hours ago</p>
+              {recentSecurityEvents.length ? recentSecurityEvents.map((event) => (
+                <div key={event.id} className="flex items-start gap-3">
+                  <div className={`h-2 w-2 rounded-full mt-2 ${event.level === "high" ? "bg-red-600" : event.level === "medium" ? "bg-yellow-600" : "bg-green-600"}`}></div>
+                  <div className="flex-1">
+                    <p className="text-sm font-medium">{event.message}</p>
+                    <p className="text-xs text-gray-500">{event.timestamp}</p>
+                  </div>
                 </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="h-2 w-2 bg-green-600 rounded-full mt-2"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Security patch applied</p>
-                  <p className="text-xs text-gray-500">5 hours ago</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="h-2 w-2 bg-yellow-600 rounded-full mt-2"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Unusual traffic pattern detected</p>
-                  <p className="text-xs text-gray-500">1 day ago</p>
-                </div>
-              </div>
-              <div className="flex items-start gap-3">
-                <div className="h-2 w-2 bg-green-600 rounded-full mt-2"></div>
-                <div className="flex-1">
-                  <p className="text-sm font-medium">Database backup completed</p>
-                  <p className="text-xs text-gray-500">1 day ago</p>
-                </div>
-              </div>
+              )) : (
+                <p className="text-sm text-gray-500">No recent security events from backend.</p>
+              )}
             </div>
           </CardContent>
         </Card>
