@@ -1,429 +1,348 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, StatusBar, TextInput, KeyboardAvoidingView, Platform } from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { responsive, wp, hp } from "../utils/responsive";
+import React, { useEffect, useMemo, useRef, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import { useRouter, useLocalSearchParams } from 'expo-router';
+import { SafeAreaView } from 'react-native-safe-area-context';
+import {
+  ArrowLeft2,
+  AddCircle,
+  Call,
+  Flash,
+  Send2,
+  TickCircle,
+} from 'iconsax-react-native';
 
-export default function Chat() {
-    const router = useRouter();
-    const [message, setMessage] = useState("");
-    const [messages, setMessages] = useState([
-        {
-            id: 1,
-            sender: "parent",
-            text: "Good morning! Will my child be picked up on time today?",
-            time: "8:30 AM",
-            sent: true,
-        },
-        {
-            id: 2,
-            sender: "driver",
-            text: "Good morning Mrs. Perera! Yes, I'll be there at 6:45 AM as usual.",
-            time: "8:32 AM",
-            sent: true,
-        },
-        {
-            id: 3,
-            sender: "parent",
-            text: "Thank you! Also, please note that tomorrow my child will be absent due to a doctor's appointment.",
-            time: "8:35 AM",
-            sent: true,
-        },
-        {
-            id: 4,
-            sender: "driver",
-            text: "Noted! Thank you for informing me. Hope everything is okay.",
-            time: "8:36 AM",
-            sent: true,
-        },
-    ]);
+import Avatar from '../components/driver/Avatar';
+import {
+  colors,
+  spacing,
+  typography,
+  radii,
+  shadows,
+  fs,
+  hp,
+  layout,
+} from '../theme';
+import {
+  getConversation,
+  getChatThread,
+  getQuickReplies,
+} from '../../services/mock/driver';
 
-    // Quick reply templates
-    const quickReplies = [
-        "Running 10 minutes late",
-        "On my way",
-        "Thank you",
-        "Will be there soon",
-    ];
+export default function ChatScreen() {
+  const router = useRouter();
+  const { id } = useLocalSearchParams();
 
-    const sendMessage = () => {
-        if (message.trim()) {
-            const newMessage = {
-                id: messages.length + 1,
-                sender: "driver",
-                text: message,
-                time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
-                sent: false,
-            };
-            setMessages([...messages, newMessage]);
-            setMessage("");
+  const conversation = useMemo(() => getConversation(id), [id]);
+  const initialThread = useMemo(() => getChatThread(id), [id]);
+  const quickReplies = useMemo(() => getQuickReplies(), []);
 
-            // Simulate message being sent
-            setTimeout(() => {
-                setMessages(prev => prev.map(msg =>
-                    msg.id === newMessage.id ? { ...msg, sent: true } : msg
-                ));
-            }, 1000);
-        }
+  const [messages, setMessages] = useState(initialThread);
+  const [draft, setDraft] = useState('');
+  const scrollRef = useRef(null);
+
+  useEffect(() => {
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: false }), 30);
+  }, []);
+
+  const send = () => {
+    const text = draft.trim();
+    if (!text) return;
+    const newMsg = {
+      id: Date.now(),
+      sender: 'driver',
+      text,
+      time: new Date().toLocaleTimeString([], { hour: '2-digit', minute: '2-digit' }),
+      sent: false,
     };
+    setMessages((prev) => [...prev, newMsg]);
+    setDraft('');
+    setTimeout(() => scrollRef.current?.scrollToEnd({ animated: true }), 30);
+    setTimeout(() => {
+      setMessages((prev) =>
+        prev.map((m) => (m.id === newMsg.id ? { ...m, sent: true } : m))
+      );
+    }, 700);
+  };
 
-    const useQuickReply = (reply) => {
-        setMessage(reply);
-    };
+  return (
+    <View style={{ flex: 1, backgroundColor: colors.background }}>
+      <SafeAreaView edges={['top']} style={styles.headerSafe}>
+        <View style={styles.header}>
+          <TouchableOpacity
+            style={styles.backBtn}
+            onPress={() => router.back()}
+            hitSlop={6}
+          >
+            <ArrowLeft2 size={fs(20)} color={colors.textPrimary} variant="Linear" />
+          </TouchableOpacity>
+          <Avatar
+            name={conversation.parentName}
+            tone={conversation.avatarTone}
+            size={42}
+            online={conversation.online}
+          />
+          <View style={styles.headerBody}>
+            <Text style={styles.headerName}>{conversation.parentName}</Text>
+            <Text style={styles.headerSub} numberOfLines={1}>
+              Parent of {conversation.studentName} · {conversation.online ? 'Online' : 'Offline'}
+            </Text>
+          </View>
+          <TouchableOpacity style={styles.callBtn} hitSlop={6}>
+            <Call size={fs(18)} color={colors.primary} variant="Bold" />
+          </TouchableOpacity>
+        </View>
+      </SafeAreaView>
 
-    return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="dark-content" />
-
-            {/* Header */}
-            <View style={styles.header}>
-                <View style={styles.headerLeft}>
-                    <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                        <Ionicons name="arrow-back" size={24} color="#000" />
-                    </TouchableOpacity>
-                    <View style={styles.avatarContainer}>
-                        <View style={styles.avatar}>
-                            <Ionicons name="person" size={24} color="#007AFF" />
-                        </View>
-                        <View style={styles.onlineIndicator} />
-                    </View>
-                    <View style={styles.headerInfo}>
-                        <Text style={styles.headerTitle}>Mrs. Perera</Text>
-                        <Text style={styles.headerSubtitle}>Parent of Ashan Perera</Text>
-                    </View>
-                </View>
-                <TouchableOpacity style={styles.callButton}>
-                    <Ionicons name="call" size={22} color="#007AFF" />
-                </TouchableOpacity>
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : 'height'}
+        style={{ flex: 1 }}
+        keyboardVerticalOffset={Platform.OS === 'ios' ? 0 : 0}
+      >
+        <ScrollView
+          ref={scrollRef}
+          style={{ flex: 1 }}
+          contentContainerStyle={styles.thread}
+          showsVerticalScrollIndicator={false}
+          onContentSizeChange={() => scrollRef.current?.scrollToEnd({ animated: true })}
+        >
+          <View style={styles.dayHeader}>
+            <View style={styles.dayChip}>
+              <Text style={styles.dayChipText}>Today</Text>
             </View>
+          </View>
 
-            {/* Messages */}
-            <ScrollView
-                style={styles.messagesContainer}
-                contentContainerStyle={styles.messagesContent}
-                showsVerticalScrollIndicator={false}
-            >
-                <View style={styles.dateHeader}>
-                    <View style={styles.dateBadge}>
-                        <Text style={styles.dateText}>Today</Text>
-                    </View>
-                </View>
-
-                {messages.map((msg) => (
-                    <View
-                        key={msg.id}
-                        style={[
-                            styles.messageWrapper,
-                            msg.sender === "driver" ? styles.messageWrapperRight : styles.messageWrapperLeft
-                        ]}
-                    >
-                        {msg.sender === "parent" && (
-                            <View style={styles.messageAvatar}>
-                                <Ionicons name="person" size={16} color="#007AFF" />
-                            </View>
-                        )}
-
-                        <View
-                            style={[
-                                styles.messageBubble,
-                                msg.sender === "driver" ? styles.messageBubbleDriver : styles.messageBubbleParent
-                            ]}
-                        >
-                            <Text style={[
-                                styles.messageText,
-                                msg.sender === "driver" ? styles.messageTextDriver : styles.messageTextParent
-                            ]}>
-                                {msg.text}
-                            </Text>
-                            <View style={styles.messageFooter}>
-                                <Text style={[
-                                    styles.messageTime,
-                                    msg.sender === "driver" ? styles.messageTimeDriver : styles.messageTimeParent
-                                ]}>
-                                    {msg.time}
-                                </Text>
-                                {msg.sender === "driver" && (
-                                    <Ionicons
-                                        name={msg.sent ? "checkmark-done" : "checkmark"}
-                                        size={14}
-                                        color={msg.sent ? "#34C759" : "#fff"}
-                                    />
-                                )}
-                            </View>
-                        </View>
-                    </View>
-                ))}
-
-                <View style={{ height: 20 }} />
-            </ScrollView>
-
-            {/* Quick Replies */}
-            <View style={styles.quickRepliesContainer}>
-                <ScrollView
-                    horizontal
-                    showsHorizontalScrollIndicator={false}
-                    contentContainerStyle={styles.quickRepliesContent}
+          {messages.map((msg) => {
+            const mine = msg.sender === 'driver';
+            return (
+              <View
+                key={msg.id}
+                style={[
+                  styles.bubbleRow,
+                  mine ? styles.bubbleRowRight : styles.bubbleRowLeft,
+                ]}
+              >
+                {!mine ? (
+                  <Avatar
+                    name={conversation.parentName}
+                    tone={conversation.avatarTone}
+                    size={28}
+                  />
+                ) : null}
+                <View
+                  style={[
+                    styles.bubble,
+                    mine ? styles.bubbleMine : styles.bubbleThem,
+                  ]}
                 >
-                    {quickReplies.map((reply, index) => (
-                        <TouchableOpacity
-                            key={index}
-                            style={styles.quickReplyButton}
-                            onPress={() => useQuickReply(reply)}
-                        >
-                            <Ionicons name="flash" size={14} color="#007AFF" />
-                            <Text style={styles.quickReplyText}>{reply}</Text>
-                        </TouchableOpacity>
-                    ))}
-                </ScrollView>
-            </View>
-
-            {/* Input Area */}
-            <KeyboardAvoidingView
-                behavior={Platform.OS === "ios" ? "padding" : "height"}
-                keyboardVerticalOffset={0}
-            >
-                <View style={styles.inputContainer}>
-                    <TouchableOpacity style={styles.attachButton}>
-                        <Ionicons name="add-circle" size={28} color="#8E8E93" />
-                    </TouchableOpacity>
-
-                    <View style={styles.inputWrapper}>
-                        <TextInput
-                            style={styles.input}
-                            placeholder="Type a message..."
-                            value={message}
-                            onChangeText={setMessage}
-                            multiline
-                            maxLength={500}
-                            placeholderTextColor="#8E8E93"
-                        />
-                    </View>
-
-                    <TouchableOpacity
-                        style={[styles.sendButton, message.trim() && styles.sendButtonActive]}
-                        onPress={sendMessage}
-                        disabled={!message.trim()}
+                  <Text
+                    style={[
+                      styles.bubbleText,
+                      mine ? styles.bubbleTextMine : styles.bubbleTextThem,
+                    ]}
+                  >
+                    {msg.text}
+                  </Text>
+                  <View style={styles.bubbleMetaRow}>
+                    <Text
+                      style={[
+                        styles.bubbleTime,
+                        mine ? styles.bubbleTimeMine : styles.bubbleTimeThem,
+                      ]}
                     >
-                        <Ionicons
-                            name="send"
-                            size={20}
-                            color={message.trim() ? "#fff" : "#8E8E93"}
-                        />
-                    </TouchableOpacity>
+                      {msg.time}
+                    </Text>
+                    {mine ? (
+                      <TickCircle
+                        size={12}
+                        color={msg.sent ? 'rgba(255,255,255,0.95)' : 'rgba(255,255,255,0.55)'}
+                        variant={msg.sent ? 'Bold' : 'Linear'}
+                      />
+                    ) : null}
+                  </View>
                 </View>
-            </KeyboardAvoidingView>
+              </View>
+            );
+          })}
+        </ScrollView>
+
+        {/* Quick replies */}
+        <View style={styles.quickWrap}>
+          <ScrollView
+            horizontal
+            showsHorizontalScrollIndicator={false}
+            contentContainerStyle={styles.quickRow}
+          >
+            {quickReplies.map((reply, i) => (
+              <TouchableOpacity
+                key={i}
+                style={styles.quickChip}
+                onPress={() => setDraft(reply)}
+                activeOpacity={0.85}
+              >
+                <Flash size={fs(13)} color={colors.primary} variant="Bold" />
+                <Text style={styles.quickChipText}>{reply}</Text>
+              </TouchableOpacity>
+            ))}
+          </ScrollView>
+        </View>
+
+        {/* Input bar */}
+        <SafeAreaView edges={['bottom']} style={styles.inputSafe}>
+          <View style={styles.inputBar}>
+            <TouchableOpacity style={styles.attachBtn} hitSlop={6}>
+              <AddCircle size={fs(24)} color={colors.textSecondary} variant="Linear" />
+            </TouchableOpacity>
+            <View style={styles.inputWrap}>
+              <TextInput
+                style={styles.input}
+                placeholder="Message..."
+                placeholderTextColor={colors.textTertiary}
+                value={draft}
+                onChangeText={setDraft}
+                multiline
+                maxLength={500}
+              />
+            </View>
+            <TouchableOpacity
+              style={[styles.sendBtn, draft.trim() && styles.sendBtnActive]}
+              onPress={send}
+              disabled={!draft.trim()}
+              activeOpacity={0.85}
+            >
+              <Send2
+                size={fs(18)}
+                color={draft.trim() ? '#fff' : colors.textTertiary}
+                variant="Bold"
+              />
+            </TouchableOpacity>
+          </View>
         </SafeAreaView>
-    );
+      </KeyboardAvoidingView>
+    </View>
+  );
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: "#F2F2F7",
-    },
-    header: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: responsive.paddingLG,
-        backgroundColor: "#fff",
-        borderBottomWidth: 1,
-        borderBottomColor: "#E5E5EA",
-    },
-    headerLeft: {
-        flexDirection: "row",
-        alignItems: "center",
-        flex: 1,
-    },
-    backButton: {
-        marginRight: responsive.paddingMD,
-    },
-    avatarContainer: {
-        position: "relative",
-        marginRight: responsive.paddingMD,
-    },
-    avatar: {
-        width: wp(40),
-        height: wp(40),
-        borderRadius: wp(20),
-        backgroundColor: "#E3F2FD",
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    onlineIndicator: {
-        position: "absolute",
-        bottom: 0,
-        right: 0,
-        width: wp(12),
-        height: wp(12),
-        borderRadius: wp(6),
-        backgroundColor: "#34C759",
-        borderWidth: 2,
-        borderColor: "#fff",
-    },
-    headerInfo: {
-        flex: 1,
-    },
-    headerTitle: {
-        fontSize: responsive.fontLG,
-        fontWeight: "600",
-        color: "#000",
-    },
-    headerSubtitle: {
-        fontSize: responsive.fontSM,
-        color: "#8E8E93",
-        marginTop: 2,
-    },
-    callButton: {
-        width: wp(40),
-        height: wp(40),
-        borderRadius: wp(20),
-        backgroundColor: "#E3F2FD",
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    messagesContainer: {
-        flex: 1,
-    },
-    messagesContent: {
-        padding: responsive.paddingLG,
-    },
-    dateHeader: {
-        alignItems: "center",
-        marginVertical: responsive.paddingLG,
-    },
-    dateBadge: {
-        backgroundColor: "#E5E5EA",
-        paddingHorizontal: responsive.paddingLG,
-        paddingVertical: responsive.paddingSM,
-        borderRadius: responsive.radiusFull,
-    },
-    dateText: {
-        fontSize: responsive.fontSM,
-        color: "#8E8E93",
-        fontWeight: "500",
-    },
-    messageWrapper: {
-        flexDirection: "row",
-        marginBottom: responsive.paddingMD,
-        alignItems: "flex-end",
-    },
-    messageWrapperLeft: {
-        justifyContent: "flex-start",
-    },
-    messageWrapperRight: {
-        justifyContent: "flex-end",
-    },
-    messageAvatar: {
-        width: wp(28),
-        height: wp(28),
-        borderRadius: wp(14),
-        backgroundColor: "#E3F2FD",
-        justifyContent: "center",
-        alignItems: "center",
-        marginRight: responsive.paddingSM,
-    },
-    messageBubble: {
-        maxWidth: "75%",
-        borderRadius: responsive.radiusLG,
-        padding: responsive.paddingMD,
-    },
-    messageBubbleDriver: {
-        backgroundColor: "#007AFF",
-        borderBottomRightRadius: 4,
-    },
-    messageBubbleParent: {
-        backgroundColor: "#fff",
-        borderBottomLeftRadius: 4,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 1 },
-        shadowOpacity: 0.05,
-        shadowRadius: 2,
-        elevation: 1,
-    },
-    messageText: {
-        fontSize: responsive.fontLG,
-        lineHeight: responsive.fontXL,
-    },
-    messageTextDriver: {
-        color: "#fff",
-    },
-    messageTextParent: {
-        color: "#000",
-    },
-    messageFooter: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginTop: 4,
-        gap: 4,
-    },
-    messageTime: {
-        fontSize: responsive.fontXS,
-    },
-    messageTimeDriver: {
-        color: "rgba(255,255,255,0.7)",
-    },
-    messageTimeParent: {
-        color: "#8E8E93",
-    },
-    quickRepliesContainer: {
-        backgroundColor: "#fff",
-        borderTopWidth: 1,
-        borderTopColor: "#E5E5EA",
-        paddingVertical: responsive.paddingSM,
-    },
-    quickRepliesContent: {
-        paddingHorizontal: responsive.paddingLG,
-        gap: responsive.paddingSM,
-    },
-    quickReplyButton: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "#F2F2F7",
-        paddingHorizontal: responsive.paddingMD,
-        paddingVertical: responsive.paddingSM,
-        borderRadius: responsive.radiusFull,
-        gap: 4,
-    },
-    quickReplyText: {
-        fontSize: responsive.fontSM,
-        color: "#007AFF",
-        fontWeight: "500",
-    },
-    inputContainer: {
-        flexDirection: "row",
-        alignItems: "flex-end",
-        padding: responsive.paddingLG,
-        backgroundColor: "#fff",
-        borderTopWidth: 1,
-        borderTopColor: "#E5E5EA",
-        gap: responsive.paddingSM,
-    },
-    attachButton: {
-        padding: 4,
-    },
-    inputWrapper: {
-        flex: 1,
-        backgroundColor: "#F2F2F7",
-        borderRadius: responsive.radiusXL,
-        paddingHorizontal: responsive.paddingLG,
-        paddingVertical: responsive.paddingSM,
-        maxHeight: hp(100),
-    },
-    input: {
-        fontSize: responsive.fontLG,
-        color: "#000",
-        minHeight: hp(36),
-    },
-    sendButton: {
-        width: wp(40),
-        height: wp(40),
-        borderRadius: wp(20),
-        backgroundColor: "#E5E5EA",
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    sendButtonActive: {
-        backgroundColor: "#007AFF",
-    },
+  headerSafe: { backgroundColor: colors.surface, ...shadows.sm },
+  header: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.md,
+    gap: spacing.md,
+  },
+  backBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  headerBody: { flex: 1 },
+  headerName: { fontSize: typography.size.md, color: colors.textPrimary, fontFamily: typography.fontFamily.bold },
+  headerSub: { fontSize: typography.size.xs, color: colors.textSecondary, marginTop: 2 },
+  callBtn: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: colors.primarySurface,
+    alignItems: 'center', justifyContent: 'center',
+  },
+
+  thread: { padding: spacing.lg, paddingBottom: spacing.md },
+  dayHeader: { alignItems: 'center', marginBottom: spacing.lg },
+  dayChip: {
+    backgroundColor: colors.surfaceMuted,
+    paddingHorizontal: spacing.md,
+    paddingVertical: 4,
+    borderRadius: radii.full,
+  },
+  dayChipText: { fontSize: typography.size.xs, color: colors.textSecondary, fontFamily: typography.fontFamily.medium },
+
+  bubbleRow: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: spacing.sm,
+    marginBottom: spacing.md,
+  },
+  bubbleRowLeft: { justifyContent: 'flex-start' },
+  bubbleRowRight: { justifyContent: 'flex-end' },
+  bubble: {
+    maxWidth: '78%',
+    padding: spacing.md,
+    borderRadius: radii.lg,
+  },
+  bubbleMine: {
+    backgroundColor: colors.primary,
+    borderBottomRightRadius: 4,
+  },
+  bubbleThem: {
+    backgroundColor: colors.surface,
+    borderBottomLeftRadius: 4,
+    ...shadows.xs,
+  },
+  bubbleText: { fontSize: typography.size.md, lineHeight: typography.size.md * 1.35 },
+  bubbleTextMine: { color: '#fff' },
+  bubbleTextThem: { color: colors.textPrimary },
+  bubbleMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4, alignSelf: 'flex-end' },
+  bubbleTime: { fontSize: 10 },
+  bubbleTimeMine: { color: 'rgba(255,255,255,0.8)' },
+  bubbleTimeThem: { color: colors.textTertiary },
+
+  quickWrap: {
+    backgroundColor: colors.surface,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.divider,
+    paddingVertical: spacing.sm,
+  },
+  quickRow: { paddingHorizontal: spacing.lg, gap: spacing.sm },
+  quickChip: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm,
+    borderRadius: radii.full,
+    backgroundColor: colors.primarySurface,
+  },
+  quickChipText: { color: colors.primary, fontSize: typography.size.sm, fontFamily: typography.fontFamily.semibold },
+
+  inputSafe: { backgroundColor: colors.surface },
+  inputBar: {
+    flexDirection: 'row',
+    alignItems: 'flex-end',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.divider,
+  },
+  attachBtn: { padding: 4 },
+  inputWrap: {
+    flex: 1,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.xl,
+    paddingHorizontal: spacing.md,
+    paddingVertical: Platform.OS === 'ios' ? spacing.sm + 2 : spacing.sm,
+    maxHeight: hp(100),
+  },
+  input: {
+    fontSize: typography.size.md,
+    color: colors.textPrimary,
+    padding: 0,
+    minHeight: 24,
+  },
+  sendBtn: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: colors.surfaceMuted,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  sendBtnActive: {
+    backgroundColor: colors.primary,
+  },
 });

@@ -1,517 +1,210 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, StatusBar, Alert } from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import React, { useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import {
+  ArrowRight2,
+  Calendar,
+  Camera,
+  Card as CardIcon,
+  CloseCircle,
+  DocumentText,
+  DocumentUpload,
+  ShieldTick,
+  TickCircle,
+  Warning2,
+  SecuritySafe,
+  TaskSquare,
+} from 'iconsax-react-native';
 
-export default function DriverDocuments() {
+import ScreenContainer from '../../components/driver/ScreenContainer';
+import PageHeader from '../../components/driver/PageHeader';
+import Card from '../../components/driver/Card';
+import Badge from '../../components/driver/Badge';
+import PrimaryButton from '../../components/driver/PrimaryButton';
+import {
+  colors,
+  spacing,
+  typography,
+  radii,
+  shadows,
+  fs,
+} from '../../theme';
+import { getDocuments } from '../../../services/mock/driver';
+
+const STATUS_META = {
+  verified: { tone: 'success', label: 'Verified', icon: TickCircle, color: colors.success, surface: colors.successSurface },
+  expiring: { tone: 'warning', label: 'Expiring soon', icon: Warning2, color: colors.warning, surface: colors.warningSurface },
+  expired: { tone: 'danger', label: 'Expired', icon: CloseCircle, color: colors.danger, surface: colors.dangerSurface },
+  pending: { tone: 'neutral', label: 'Upload required', icon: DocumentUpload, color: colors.textSecondary, surface: colors.surfaceMuted },
+};
+
+const ICON_FOR_TYPE = {
+  card: CardIcon,
+  document: DocumentText,
+  shield: ShieldTick,
+  security: SecuritySafe,
+  task: TaskSquare,
+};
+
+export default function Documents() {
   const router = useRouter();
+  const [docs] = useState(() => getDocuments());
 
-  const [documents, setDocuments] = useState([
-    {
-      id: 1,
-      name: "Driver's License",
-      status: "verified",
-      expiryDate: "2026-08-15",
-      uploadedDate: "2024-01-10",
-      icon: "card-outline",
-      color: "#34C759",
-    },
-    {
-      id: 2,
-      name: "Vehicle Registration",
-      status: "verified",
-      expiryDate: "2025-12-31",
-      uploadedDate: "2024-01-10",
-      icon: "document-text-outline",
-      color: "#34C759",
-    },
-    {
-      id: 3,
-      name: "Insurance Certificate",
-      status: "pending",
-      expiryDate: "2025-06-30",
-      uploadedDate: "2024-12-10",
-      icon: "shield-checkmark-outline",
-      color: "#FF9500",
-    },
-    {
-      id: 4,
-      name: "Vehicle Inspection",
-      status: "expired",
-      expiryDate: "2024-11-20",
-      uploadedDate: "2023-11-15",
-      icon: "checkmark-done-outline",
-      color: "#FF3B30",
-    },
-    {
-      id: 5,
-      name: "Background Check",
-      status: "verified",
-      expiryDate: "2026-03-01",
-      uploadedDate: "2024-03-01",
-      icon: "finger-print-outline",
-      color: "#34C759",
-    },
-    {
-      id: 6,
-      name: "Profile Photo",
-      status: "verified",
-      expiryDate: "N/A",
-      uploadedDate: "2024-01-10",
-      icon: "camera-outline",
-      color: "#34C759",
-    },
-  ]);
+  const verifiedCount = docs.filter((d) => d.status === 'verified').length;
+  const issuesCount = docs.filter((d) => d.status !== 'verified').length;
 
-  const getStatusColor = (status) => {
-    switch (status) {
-      case "verified":
-        return "#34C759";
-      case "pending":
-        return "#FF9500";
-      case "expired":
-        return "#FF3B30";
-      default:
-        return "#8E8E93";
-    }
-  };
-
-  const getStatusText = (status) => {
-    switch (status) {
-      case "verified":
-        return "Verified";
-      case "pending":
-        return "Pending Review";
-      case "expired":
-        return "Expired";
-      default:
-        return "Not Uploaded";
-    }
-  };
-
-  const handleUpload = (documentName) => {
-    Alert.alert(
-      "Upload Document",
-      `Select how you want to upload ${documentName}`,
-      [
-        { text: "Take Photo", onPress: () => console.log("Camera opened") },
-        { text: "Choose from Gallery", onPress: () => console.log("Gallery opened") },
-        { text: "Cancel", style: "cancel" },
-      ]
-    );
-  };
-
-  const handleView = (documentName) => {
-    Alert.alert("View Document", `Opening ${documentName}...`);
-  };
-
-  const formatDate = (dateString) => {
-    if (dateString === "N/A") return "N/A";
-    const date = new Date(dateString);
-    return date.toLocaleDateString("en-US", { 
-      year: "numeric", 
-      month: "short", 
-      day: "numeric" 
-    });
-  };
-
-  const isExpiringSoon = (expiryDate) => {
-    if (expiryDate === "N/A") return false;
-    const today = new Date();
-    const expiry = new Date(expiryDate);
-    const daysUntilExpiry = Math.floor((expiry - today) / (1000 * 60 * 60 * 24));
-    return daysUntilExpiry <= 30 && daysUntilExpiry > 0;
+  const handleUpload = (docName) => {
+    Alert.alert('Upload Document', `How would you like to upload ${docName}?`, [
+      { text: 'Take Photo', onPress: () => {} },
+      { text: 'Choose from Gallery', onPress: () => {} },
+      { text: 'Cancel', style: 'cancel' },
+    ]);
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#007AFF" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Documents</Text>
-        <View style={styles.placeholder} />
-      </View>
+    <ScreenContainer>
+      <PageHeader
+        title="Documents"
+        subtitle="Keep your paperwork current to stay active"
+        onBack={() => router.back()}
+      />
 
-      <ScrollView style={styles.scrollView}>
-        {/* Info Banner */}
-        <View style={styles.infoBanner}>
-          <Ionicons name="information-circle" size={24} color="#007AFF" />
-          <Text style={styles.infoText}>
-            Keep your documents up to date to continue driving
-          </Text>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing['3xl'] }}
+      >
+        {/* Summary */}
+        <View style={styles.summaryRow}>
+          <Card padding="md" style={[styles.summaryCard, { backgroundColor: colors.successSurface }]}>
+            <TickCircle size={fs(24)} color={colors.success} variant="Bold" />
+            <Text style={styles.summaryValue}>{verifiedCount}</Text>
+            <Text style={styles.summaryLabel}>Verified</Text>
+          </Card>
+          <Card padding="md" style={[styles.summaryCard, { backgroundColor: issuesCount > 0 ? colors.warningSurface : colors.surfaceMuted }]}>
+            <Warning2 size={fs(24)} color={issuesCount > 0 ? colors.warning : colors.textSecondary} variant="Bold" />
+            <Text style={styles.summaryValue}>{issuesCount}</Text>
+            <Text style={styles.summaryLabel}>Need attention</Text>
+          </Card>
         </View>
 
-        {/* Documents Stats */}
-        <View style={styles.statsCard}>
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>
-              {documents.filter(d => d.status === "verified").length}
-            </Text>
-            <Text style={styles.statLabel}>Verified</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>
-              {documents.filter(d => d.status === "pending").length}
-            </Text>
-            <Text style={styles.statLabel}>Pending</Text>
-          </View>
-          <View style={styles.statDivider} />
-          <View style={styles.statItem}>
-            <Text style={styles.statValue}>
-              {documents.filter(d => d.status === "expired").length}
-            </Text>
-            <Text style={styles.statLabel}>Expired</Text>
-          </View>
-        </View>
-
-        {/* Documents List */}
+        {/* Documents list */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>All Documents</Text>
-          
-          {documents.map((doc) => (
-            <View key={doc.id} style={styles.documentCard}>
-              <View style={styles.documentHeader}>
-                <View style={styles.documentLeft}>
-                  <View style={[styles.documentIcon, { backgroundColor: `${doc.color}15` }]}>
-                    <Ionicons name={doc.icon} size={24} color={doc.color} />
+          {docs.map((doc) => {
+            const meta = STATUS_META[doc.status] ?? STATUS_META.pending;
+            const Icon = meta.icon;
+            const TypeIcon = ICON_FOR_TYPE[doc.icon] ?? DocumentText;
+            return (
+              <Card key={doc.id} padding="lg" style={{ marginBottom: spacing.sm }}>
+                <View style={styles.docRow}>
+                  <View style={[styles.docIcon, { backgroundColor: meta.surface }]}>
+                    <TypeIcon size={fs(22)} color={meta.color} variant="Bold" />
                   </View>
-                  <View style={styles.documentInfo}>
-                    <Text style={styles.documentName}>{doc.name}</Text>
-                    <View style={styles.statusContainer}>
-                      <View style={[styles.statusDot, { backgroundColor: getStatusColor(doc.status) }]} />
-                      <Text style={[styles.statusText, { color: getStatusColor(doc.status) }]}>
-                        {getStatusText(doc.status)}
-                      </Text>
+                  <View style={{ flex: 1 }}>
+                    <Text style={styles.docName}>{doc.name}</Text>
+                    {doc.expiresOn ? (
+                      <View style={styles.docMeta}>
+                        <Calendar size={fs(12)} color={colors.textSecondary} variant="Bold" />
+                        <Text style={styles.docMetaText}>Expires {doc.expiresOn}</Text>
+                      </View>
+                    ) : (
+                      <Text style={styles.docMetaText}>Not uploaded yet</Text>
+                    )}
+                    <View style={styles.docStatusRow}>
+                      <Icon size={fs(13)} color={meta.color} variant="Bold" />
+                      <Text style={[styles.docStatusText, { color: meta.color }]}>{meta.label}</Text>
                     </View>
                   </View>
-                </View>
-              </View>
-
-              <View style={styles.documentDetails}>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Uploaded:</Text>
-                  <Text style={styles.detailValue}>{formatDate(doc.uploadedDate)}</Text>
-                </View>
-                <View style={styles.detailRow}>
-                  <Text style={styles.detailLabel}>Expires:</Text>
-                  <Text style={[
-                    styles.detailValue,
-                    isExpiringSoon(doc.expiryDate) && styles.expiringText
-                  ]}>
-                    {formatDate(doc.expiryDate)}
-                    {isExpiringSoon(doc.expiryDate) && " (Expiring Soon)"}
-                  </Text>
-                </View>
-              </View>
-
-              <View style={styles.documentActions}>
-                {doc.status === "expired" ? (
-                  <TouchableOpacity 
-                    style={[styles.actionButton, styles.uploadButton]}
+                  <TouchableOpacity
+                    style={styles.docAction}
+                    activeOpacity={0.85}
                     onPress={() => handleUpload(doc.name)}
                   >
-                    <Ionicons name="cloud-upload-outline" size={18} color="#fff" />
-                    <Text style={styles.uploadButtonText}>Re-upload</Text>
+                    {doc.status === 'pending' || doc.status === 'expired' ? (
+                      <DocumentUpload size={fs(18)} color={colors.primary} variant="Bold" />
+                    ) : (
+                      <ArrowRight2 size={fs(18)} color={colors.textSecondary} variant="Linear" />
+                    )}
                   </TouchableOpacity>
-                ) : (
-                  <>
-                    <TouchableOpacity 
-                      style={styles.actionButton}
-                      onPress={() => handleView(doc.name)}
-                    >
-                      <Ionicons name="eye-outline" size={18} color="#007AFF" />
-                      <Text style={styles.actionButtonText}>View</Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity 
-                      style={styles.actionButton}
-                      onPress={() => handleUpload(doc.name)}
-                    >
-                      <Ionicons name="cloud-upload-outline" size={18} color="#007AFF" />
-                      <Text style={styles.actionButtonText}>Update</Text>
-                    </TouchableOpacity>
-                  </>
-                )}
-              </View>
-            </View>
-          ))}
+                </View>
+              </Card>
+            );
+          })}
         </View>
 
-        {/* Requirements Info */}
-        <View style={styles.requirementsCard}>
-          <Text style={styles.requirementsTitle}>Document Requirements</Text>
-          <View style={styles.requirementItem}>
-            <Ionicons name="checkmark-circle" size={20} color="#34C759" />
-            <Text style={styles.requirementText}>All documents must be clear and readable</Text>
+        <Card padding="lg" tone="muted" style={styles.tipCard}>
+          <View style={styles.tipIcon}>
+            <ShieldTick size={fs(20)} color={colors.primary} variant="Bold" />
           </View>
-          <View style={styles.requirementItem}>
-            <Ionicons name="checkmark-circle" size={20} color="#34C759" />
-            <Text style={styles.requirementText}>Documents should not be expired</Text>
+          <View style={{ flex: 1 }}>
+            <Text style={styles.tipTitle}>Why we ask for documents</Text>
+            <Text style={styles.tipDescription}>
+              Verified documents keep your driver profile active and help parents trust the service.
+              We renew automatically when you upload a refreshed copy.
+            </Text>
           </View>
-          <View style={styles.requirementItem}>
-            <Ionicons name="checkmark-circle" size={20} color="#34C759" />
-            <Text style={styles.requirementText}>Update documents 30 days before expiry</Text>
-          </View>
-          <View style={styles.requirementItem}>
-            <Ionicons name="checkmark-circle" size={20} color="#34C759" />
-            <Text style={styles.requirementText}>Verification usually takes 24-48 hours</Text>
-          </View>
-        </View>
+        </Card>
 
-        {/* Help Button */}
-        <TouchableOpacity style={styles.helpButton}>
-          <Ionicons name="help-circle-outline" size={20} color="#007AFF" />
-          <Text style={styles.helpButtonText}>Need help with documents?</Text>
-        </TouchableOpacity>
+        <PrimaryButton
+          title="Upload New Document"
+          variant="gradient"
+          size="lg"
+          fullWidth
+          iconLeft={<Camera size={fs(20)} color="#fff" variant="Bold" />}
+          onPress={() => handleUpload('New Document')}
+          style={{ marginTop: spacing.lg }}
+        />
       </ScrollView>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F2F2F7",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    backgroundColor: "#fff",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5EA",
-  },
-  backButton: {
-    padding: 4,
-  },
-  headerTitle: {
-    fontSize: 20,
-    fontWeight: "600",
-    color: "#000",
-  },
-  placeholder: {
-    width: 32,
-  },
-  scrollView: {
-    flex: 1,
-  },
-  infoBanner: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#E3F2FD",
-    marginHorizontal: 20,
-    marginTop: 20,
-    padding: 16,
-    borderRadius: 12,
-    gap: 12,
-  },
-  infoText: {
-    flex: 1,
-    fontSize: 14,
-    color: "#007AFF",
-    lineHeight: 20,
-  },
-  statsCard: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    marginHorizontal: 20,
-    marginTop: 16,
-    padding: 20,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  statItem: {
-    flex: 1,
-    alignItems: "center",
-  },
-  statValue: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#000",
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: "#8E8E93",
-  },
-  statDivider: {
-    width: 1,
-    height: 40,
-    backgroundColor: "#E5E5EA",
-  },
-  section: {
-    paddingHorizontal: 20,
-    marginTop: 24,
-  },
+  summaryRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
+  summaryCard: { flex: 1, alignItems: 'flex-start' },
+  summaryValue: { fontSize: typography.size.xl, color: colors.textPrimary, fontFamily: typography.fontFamily.bold, marginTop: spacing.sm },
+  summaryLabel: { fontSize: typography.size.xs, color: colors.textSecondary, marginTop: 2 },
+
+  section: { marginTop: spacing.sm },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#000",
-    marginBottom: 12,
+    fontSize: typography.size.xs,
+    color: colors.textTertiary,
+    fontFamily: typography.fontFamily.bold,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: spacing.sm,
+    marginLeft: spacing.sm,
   },
-  documentCard: {
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+
+  docRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  docIcon: {
+    width: 48, height: 48, borderRadius: 24,
+    alignItems: 'center', justifyContent: 'center',
   },
-  documentHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
+  docName: { fontSize: typography.size.md, color: colors.textPrimary, fontFamily: typography.fontFamily.semibold },
+  docMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  docMetaText: { fontSize: typography.size.xs, color: colors.textSecondary },
+  docStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  docStatusText: { fontSize: typography.size.xs, fontFamily: typography.fontFamily.semibold },
+  docAction: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: colors.primarySurface,
+    alignItems: 'center', justifyContent: 'center',
   },
-  documentLeft: {
-    flexDirection: "row",
-    alignItems: "center",
-    flex: 1,
+
+  tipCard: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md, marginTop: spacing.lg },
+  tipIcon: {
+    width: 40, height: 40, borderRadius: 20,
+    backgroundColor: colors.primarySurface,
+    alignItems: 'center', justifyContent: 'center',
   },
-  documentIcon: {
-    width: 48,
-    height: 48,
-    borderRadius: 12,
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  documentInfo: {
-    flex: 1,
-  },
-  documentName: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#000",
-    marginBottom: 4,
-  },
-  statusContainer: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 6,
-  },
-  statusDot: {
-    width: 8,
-    height: 8,
-    borderRadius: 4,
-  },
-  statusText: {
-    fontSize: 13,
-    fontWeight: "500",
-  },
-  documentDetails: {
-    paddingVertical: 12,
-    borderTopWidth: 1,
-    borderTopColor: "#F2F2F7",
-    gap: 8,
-  },
-  detailRow: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-  },
-  detailLabel: {
-    fontSize: 14,
-    color: "#8E8E93",
-  },
-  detailValue: {
-    fontSize: 14,
-    color: "#000",
-    fontWeight: "500",
-  },
-  expiringText: {
-    color: "#FF9500",
-  },
-  documentActions: {
-    flexDirection: "row",
-    gap: 8,
-    marginTop: 12,
-  },
-  actionButton: {
-    flex: 1,
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 10,
-    borderRadius: 8,
-    borderWidth: 1,
-    borderColor: "#007AFF",
-    gap: 6,
-  },
-  actionButtonText: {
-    fontSize: 14,
-    color: "#007AFF",
-    fontWeight: "500",
-  },
-  uploadButton: {
-    backgroundColor: "#FF3B30",
-    borderColor: "#FF3B30",
-  },
-  uploadButtonText: {
-    color: "#fff",
-    fontSize: 14,
-    fontWeight: "500",
-  },
-  requirementsCard: {
-    backgroundColor: "#fff",
-    marginHorizontal: 20,
-    marginTop: 24,
-    padding: 16,
-    borderRadius: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  requirementsTitle: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#000",
-    marginBottom: 12,
-  },
-  requirementItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 10,
-    marginBottom: 10,
-  },
-  requirementText: {
-    flex: 1,
-    fontSize: 14,
-    color: "#3C3C43",
-    lineHeight: 20,
-  },
-  helpButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
-    marginHorizontal: 20,
-    marginTop: 16,
-    marginBottom: 32,
-    paddingVertical: 14,
-    borderRadius: 12,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: "#007AFF",
-  },
-  helpButtonText: {
-    fontSize: 15,
-    color: "#007AFF",
-    fontWeight: "500",
-  },
+  tipTitle: { fontSize: typography.size.md, color: colors.textPrimary, fontFamily: typography.fontFamily.bold },
+  tipDescription: { fontSize: typography.size.sm, color: colors.textSecondary, marginTop: 4, lineHeight: typography.size.sm * 1.4 },
 });

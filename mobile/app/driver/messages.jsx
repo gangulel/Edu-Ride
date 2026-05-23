@@ -1,305 +1,200 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   FlatList,
   TouchableOpacity,
-  SafeAreaView,
-  StatusBar,
-  TextInput,
-} from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { responsive, fs } from "../utils/responsive";
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import {
+  MessageQuestion,
+  MessageText1,
+} from 'iconsax-react-native';
 
-// Mock data for conversations
-const MOCK_CONVERSATIONS = [
-  {
-    id: "1",
-    studentName: "Nimalka Perera",
-    lastMessage: "Thanks for the ride!",
-    timestamp: "2m ago",
-    unread: 2,
-    avatar: "👩",
-    online: true,
-  },
-  {
-    id: "2",
-    studentName: "Chaminda Silva",
-    lastMessage: "I'm running 5 minutes late",
-    timestamp: "15m ago",
-    unread: 0,
-    avatar: "👨",
-    online: true,
-  },
-  {
-    id: "3",
-    studentName: "Dilini Fernando",
-    lastMessage: "See you at the pickup point",
-    timestamp: "1h ago",
-    unread: 1,
-    avatar: "👧",
-    online: false,
-  },
-  {
-    id: "4",
-    studentName: "Roshan Jayawardena",
-    lastMessage: "Can you pick me up from the library?",
-    timestamp: "3h ago",
-    unread: 0,
-    avatar: "🧑",
-    online: false,
-  },
-  {
-    id: "5",
-    studentName: "Malini Dissanayake",
-    lastMessage: "Great ride, thanks!",
-    timestamp: "Yesterday",
-    unread: 0,
-    avatar: "👩‍🎓",
-    online: false,
-  },
-];
+import ScreenContainer from '../components/driver/ScreenContainer';
+import HeroHeader from '../components/driver/HeroHeader';
+import SearchField from '../components/driver/SearchField';
+import Avatar from '../components/driver/Avatar';
+import EmptyState from '../components/driver/EmptyState';
+import {
+  colors,
+  spacing,
+  typography,
+  radii,
+  fs,
+  layout,
+} from '../theme';
+import { getConversations } from '../../services/mock/driver';
 
 export default function DriverMessages() {
   const router = useRouter();
-  const [searchQuery, setSearchQuery] = useState("");
-  const [conversations, setConversations] = useState(MOCK_CONVERSATIONS);
+  const [search, setSearch] = useState('');
+  const conversations = useMemo(() => getConversations(), []);
 
-  const filteredConversations = conversations.filter((conv) =>
-    conv.studentName.toLowerCase().includes(searchQuery.toLowerCase())
+  const filtered = conversations.filter((c) =>
+    c.parentName.toLowerCase().includes(search.toLowerCase()) ||
+    c.studentName.toLowerCase().includes(search.toLowerCase())
   );
 
-  const renderConversationItem = ({ item }) => (
-    <TouchableOpacity
-      style={styles.conversationItem}
-      onPress={() => router.push(`/driver/chat/${item.id}`)}
-    >
-      <View style={styles.avatarContainer}>
-        <View style={styles.avatar}>
-          <Text style={styles.avatarEmoji}>{item.avatar}</Text>
-        </View>
-        {item.online && <View style={styles.onlineIndicator} />}
-      </View>
+  const totalUnread = conversations.reduce((acc, c) => acc + c.unread, 0);
 
-      <View style={styles.conversationContent}>
-        <View style={styles.conversationHeader}>
-          <Text style={styles.studentName}>{item.studentName}</Text>
+  const renderItem = ({ item, index }) => (
+    <TouchableOpacity
+      activeOpacity={0.85}
+      style={[
+        styles.row,
+        index < filtered.length - 1 && styles.divider,
+      ]}
+      onPress={() => router.push(`/driver/chat?id=${item.id}`)}
+    >
+      <Avatar
+        name={item.parentName}
+        tone={item.avatarTone}
+        size={52}
+        online={item.online}
+      />
+      <View style={styles.body}>
+        <View style={styles.bodyTop}>
+          <Text style={styles.name} numberOfLines={1}>{item.parentName}</Text>
           <Text style={styles.timestamp}>{item.timestamp}</Text>
         </View>
+        <Text style={styles.studentLabel} numberOfLines={1}>
+          Parent of {item.studentName}
+        </Text>
         <View style={styles.messageRow}>
           <Text
             style={[
               styles.lastMessage,
-              item.unread > 0 && styles.unreadMessage,
+              item.unread > 0 && styles.lastMessageUnread,
             ]}
             numberOfLines={1}
           >
             {item.lastMessage}
           </Text>
-          {item.unread > 0 && (
+          {item.unread > 0 ? (
             <View style={styles.unreadBadge}>
-              <Text style={styles.unreadCount}>{item.unread}</Text>
+              <Text style={styles.unreadText}>{item.unread}</Text>
             </View>
-          )}
+          ) : null}
         </View>
       </View>
     </TouchableOpacity>
   );
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Messages</Text>
-      </View>
-
-      {/* Search Bar */}
-      <View style={styles.searchContainer}>
-        <View style={styles.searchBar}>
-          <Ionicons name="search" size={20} color="#8E8E93" />
-          <TextInput
-            style={styles.searchInput}
-            placeholder="Search conversations..."
-            placeholderTextColor="#8E8E93"
-            value={searchQuery}
-            onChangeText={setSearchQuery}
+    <ScreenContainer edges={['left', 'right']} statusBarStyle="light-content">
+      <HeroHeader
+        greeting="Conversations"
+        title="Messages"
+        subtitle={totalUnread > 0 ? `${totalUnread} unread message${totalUnread === 1 ? '' : 's'}` : 'All caught up'}
+        notificationCount={totalUnread}
+        onAvatarPress={() => router.push('/driver/Profile/profile')}
+        initials="KP"
+      >
+        <View style={{ paddingHorizontal: spacing.lg }}>
+          <SearchField
+            value={search}
+            onChangeText={setSearch}
+            placeholder="Search parents or students..."
           />
-          {searchQuery.length > 0 && (
-            <TouchableOpacity onPress={() => setSearchQuery("")}>
-              <Ionicons name="close-circle" size={20} color="#8E8E93" />
-            </TouchableOpacity>
-          )}
         </View>
-      </View>
+      </HeroHeader>
 
-      {/* Conversations List */}
-      {filteredConversations.length > 0 ? (
+      {filtered.length === 0 ? (
+        <View style={{ flex: 1, justifyContent: 'center' }}>
+          <EmptyState
+            icon={MessageQuestion}
+            title={search ? 'No matching messages' : 'No messages yet'}
+            description={
+              search
+                ? 'Try searching for a different parent or student.'
+                : 'When a parent reaches out, you can chat with them here.'
+            }
+          />
+        </View>
+      ) : (
         <FlatList
-          data={filteredConversations}
-          renderItem={renderConversationItem}
+          data={filtered}
+          renderItem={renderItem}
           keyExtractor={(item) => item.id}
-          contentContainerStyle={styles.listContainer}
+          contentContainerStyle={styles.list}
           showsVerticalScrollIndicator={false}
         />
-      ) : (
-        <View style={styles.emptyContainer}>
-          <Ionicons name="chatbubbles-outline" size={64} color="#C7C7CC" />
-          <Text style={styles.emptyText}>No conversations found</Text>
-          <Text style={styles.emptySubtext}>
-            {searchQuery
-              ? "Try a different search term"
-              : "Your messages will appear here"}
-          </Text>
-        </View>
       )}
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
+  list: {
+    backgroundColor: colors.surface,
+    marginTop: spacing.lg,
+    marginHorizontal: spacing.lg,
+    borderRadius: radii.lg,
+    paddingVertical: spacing.sm,
+    paddingBottom: spacing.lg,
+  },
+  row: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+  },
+  divider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.divider,
+  },
+  body: { flex: 1 },
+  bodyTop: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  name: {
+    fontSize: typography.size.md,
+    color: colors.textPrimary,
+    fontFamily: typography.fontFamily.semibold,
     flex: 1,
-    backgroundColor: "#F2F2F7",
-  },
-  header: {
-    backgroundColor: "#fff",
-    paddingHorizontal: responsive.paddingLG,
-    paddingVertical: responsive.paddingMD,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5EA",
-  },
-  headerTitle: {
-    fontSize: fs(28),
-    fontWeight: "bold",
-    color: "#000",
-  },
-  searchContainer: {
-    backgroundColor: "#fff",
-    paddingHorizontal: responsive.paddingLG,
-    paddingVertical: responsive.paddingMD,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5EA",
-  },
-  searchBar: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#F2F2F7",
-    borderRadius: responsive.radiusMD,
-    paddingHorizontal: responsive.paddingMD,
-    paddingVertical: responsive.paddingSM,
-    gap: 8,
-  },
-  searchInput: {
-    flex: 1,
-    fontSize: responsive.fontMD,
-    color: "#000",
-  },
-  listContainer: {
-    paddingTop: responsive.paddingSM,
-    paddingBottom: responsive.tabBarHeight + responsive.paddingLG,
-  },
-  conversationItem: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    paddingVertical: responsive.paddingMD,
-    paddingHorizontal: responsive.paddingLG,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5EA",
-  },
-  avatarContainer: {
-    position: "relative",
-    marginRight: 12,
-  },
-  avatar: {
-    width: fs(52),
-    height: fs(52),
-    borderRadius: fs(26),
-    backgroundColor: "#E3F2FD",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  avatarEmoji: {
-    fontSize: fs(28),
-  },
-  onlineIndicator: {
-    position: "absolute",
-    bottom: 2,
-    right: 2,
-    width: 14,
-    height: 14,
-    borderRadius: 7,
-    backgroundColor: "#34C759",
-    borderWidth: 2,
-    borderColor: "#fff",
-  },
-  conversationContent: {
-    flex: 1,
-    justifyContent: "center",
-  },
-  conversationHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 4,
-  },
-  studentName: {
-    fontSize: responsive.fontMD,
-    fontWeight: "600",
-    color: "#000",
   },
   timestamp: {
-    fontSize: responsive.fontXS,
-    color: "#8E8E93",
+    fontSize: typography.size.xs,
+    color: colors.textTertiary,
+  },
+  studentLabel: {
+    fontSize: typography.size.xs,
+    color: colors.textTertiary,
+    marginTop: 2,
   },
   messageRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'space-between',
+    marginTop: 6,
+    gap: spacing.sm,
   },
   lastMessage: {
     flex: 1,
-    fontSize: responsive.fontSM,
-    color: "#8E8E93",
-    marginRight: 8,
+    fontSize: typography.size.sm,
+    color: colors.textSecondary,
   },
-  unreadMessage: {
-    fontWeight: "600",
-    color: "#000",
+  lastMessageUnread: {
+    color: colors.textPrimary,
+    fontFamily: typography.fontFamily.semibold,
   },
   unreadBadge: {
-    backgroundColor: "#007AFF",
-    borderRadius: 10,
     minWidth: 20,
     height: 20,
-    justifyContent: "center",
-    alignItems: "center",
+    borderRadius: 10,
     paddingHorizontal: 6,
+    backgroundColor: colors.primary,
+    alignItems: 'center',
+    justifyContent: 'center',
   },
-  unreadCount: {
-    color: "#fff",
-    fontSize: responsive.fontXS,
-    fontWeight: "bold",
-  },
-  emptyContainer: {
-    flex: 1,
-    justifyContent: "center",
-    alignItems: "center",
-    paddingHorizontal: responsive.padding2XL,
-  },
-  emptyText: {
-    fontSize: responsive.fontXL,
-    fontWeight: "600",
-    color: "#8E8E93",
-    marginTop: responsive.paddingLG,
-  },
-  emptySubtext: {
-    fontSize: responsive.fontSM,
-    color: "#C7C7CC",
-    marginTop: responsive.paddingSM,
-    textAlign: "center",
+  unreadText: {
+    color: '#fff',
+    fontSize: typography.size.xs,
+    fontFamily: typography.fontFamily.bold,
   },
 });

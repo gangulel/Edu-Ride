@@ -1,379 +1,337 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, StatusBar, Switch } from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+import React, { useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  Switch,
+  TouchableOpacity,
+  Alert,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import {
+  Car,
+  Card as CardIcon,
+  DocumentText,
+  Global,
+  Information,
+  Location,
+  Lock1,
+  LogoutCurve,
+  Logout,
+  Message,
+  Notification as NotificationIcon,
+  Profile as ProfileIcon,
+  SecurityUser,
+  Star1,
+  Routing2,
+  Sms,
+  TickCircle,
+  Award,
+  Edit,
+} from 'iconsax-react-native';
+
+import ScreenContainer from '../../components/driver/ScreenContainer';
+import Card from '../../components/driver/Card';
+import MenuListItem from '../../components/driver/MenuListItem';
+import Badge from '../../components/driver/Badge';
+import {
+  colors,
+  gradients,
+  spacing,
+  typography,
+  radii,
+  shadows,
+  wp,
+  fs,
+} from '../../theme';
+import { getDriverProfile } from '../../../services/mock/driver';
 
 export default function DriverProfile() {
   const router = useRouter();
-  const [notificationsEnabled, setNotificationsEnabled] = useState(true);
-  const [locationEnabled, setLocationEnabled] = useState(true);
+  const profile = useMemo(() => getDriverProfile(), []);
+  const [notifEnabled, setNotifEnabled] = useState(true);
+  const [locEnabled, setLocEnabled] = useState(true);
 
   const handleLogout = () => {
-    // In a real app, clear auth tokens/session here
-    router.replace("/onboarding");
+    Alert.alert('Log out?', 'You will need to sign in again to access your trips.', [
+      { text: 'Cancel', style: 'cancel' },
+      {
+        text: 'Log Out',
+        style: 'destructive',
+        onPress: () => router.replace('/onboarding'),
+      },
+    ]);
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Profile</Text>
-      </View>
-
-      <ScrollView style={styles.scrollView}>
-        {/* Profile Card */}
-        <View style={styles.profileCard}>
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
-              <Ionicons name="person" size={48} color="#007AFF" />
-            </View>
-            <TouchableOpacity style={styles.editAvatarButton}>
-              <Ionicons name="camera" size={16} color="#fff" />
+    <ScreenContainer edges={['left', 'right']} statusBarStyle="light-content">
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: spacing['3xl'] }}
+      >
+        {/* Hero */}
+        <LinearGradient
+          colors={gradients.headerHero}
+          start={{ x: 0, y: 0 }}
+          end={{ x: 1, y: 1 }}
+          style={styles.hero}
+        >
+          <View style={styles.heroAvatarWrap}>
+            <LinearGradient
+              colors={['#fff', '#E0E7FF']}
+              style={styles.heroAvatar}
+            >
+              <Text style={styles.heroAvatarText}>{profile.initials}</Text>
+            </LinearGradient>
+            <TouchableOpacity
+              style={styles.editAvatar}
+              activeOpacity={0.85}
+              onPress={() => router.push('/driver/Profile/edit-profile')}
+            >
+              <Edit size={fs(14)} color="#fff" variant="Bold" />
             </TouchableOpacity>
+            {profile.isVerified ? (
+              <View style={styles.verifiedBadge}>
+                <TickCircle size={fs(14)} color="#fff" variant="Bold" />
+              </View>
+            ) : null}
           </View>
-          <Text style={styles.profileName}>Kasun Perera</Text>
-          <Text style={styles.profileEmail}>kasun.perera@eduride.lk</Text>
-
-          <View style={styles.statsRow}>
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>4.8</Text>
-              <Text style={styles.statLabel}>Rating</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>342</Text>
-              <Text style={styles.statLabel}>Total Trips</Text>
-            </View>
-            <View style={styles.statDivider} />
-            <View style={styles.statItem}>
-              <Text style={styles.statValue}>98%</Text>
-              <Text style={styles.statLabel}>Acceptance</Text>
-            </View>
-          </View>
-        </View>
-
-        {/* Account Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Account</Text>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => router.push("/driver/Profile/edit-profile")}
-          >
-            <View style={styles.menuIconContainer}>
-              <Ionicons name="person-outline" size={22} color="#007AFF" />
-            </View>
-            <Text style={styles.menuText}>Edit Profile</Text>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => router.push("/driver/Profile/vehicle-info")}
-          >
-            <View style={styles.menuIconContainer}>
-              <Ionicons name="car-sport-outline" size={22} color="#34C759" />
-            </View>
-            <Text style={styles.menuText}>Vehicle Information</Text>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => router.push("/driver/Profile/documents")}
-          >
-            <View style={styles.menuIconContainer}>
-              <Ionicons name="document-text-outline" size={22} color="#FF9500" />
-            </View>
-            <Text style={styles.menuText}>Documents</Text>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-          </TouchableOpacity>
-
-          <TouchableOpacity
-            style={styles.menuItem}
-            onPress={() => router.push("/driver/Profile/payment-methods")}
-          >
-            <View style={styles.menuIconContainer}>
-              <Ionicons name="card-outline" size={22} color="#5856D6" />
-            </View>
-            <Text style={styles.menuText}>Payment Methods</Text>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Preferences Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Preferences</Text>
-
-          <View style={styles.menuItem}>
-            <View style={styles.menuIconContainer}>
-              <Ionicons name="notifications-outline" size={22} color="#FF3B30" />
-            </View>
-            <Text style={styles.menuText}>Notifications</Text>
-            <Switch
-              value={notificationsEnabled}
-              onValueChange={setNotificationsEnabled}
-              trackColor={{ false: "#E5E5EA", true: "#34C759" }}
-              thumbColor="#fff"
-            />
+          <Text style={styles.heroName}>{profile.fullName}</Text>
+          <Text style={styles.heroEmail}>{profile.email}</Text>
+          <View style={styles.heroBadges}>
+            <Badge label={`${profile.yearsActive} yrs active`} tone="primary" variant="soft" style={{ backgroundColor: colors.onDark.surface }} />
+            <Badge label="Verified driver" tone="success" variant="soft" style={{ backgroundColor: 'rgba(16,185,129,0.22)' }} />
           </View>
 
-          <View style={styles.menuItem}>
-            <View style={styles.menuIconContainer}>
-              <Ionicons name="location-outline" size={22} color="#007AFF" />
-            </View>
-            <Text style={styles.menuText}>Location Services</Text>
-            <Switch
-              value={locationEnabled}
-              onValueChange={setLocationEnabled}
-              trackColor={{ false: "#E5E5EA", true: "#34C759" }}
-              thumbColor="#fff"
-            />
-          </View>
+          <Card padding="lg" style={styles.statsCard} tone="elevated">
+            <ProfileStat icon={Star1} label="Rating" value={String(profile.rating)} color={colors.warning} />
+            <View style={styles.statsDivider} />
+            <ProfileStat icon={Routing2} label="Trips" value={String(profile.totalTrips)} color={colors.primary} />
+            <View style={styles.statsDivider} />
+            <ProfileStat icon={Award} label="Acceptance" value={`${profile.acceptanceRate}%`} color={colors.success} />
+          </Card>
+        </LinearGradient>
 
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuIconContainer}>
-              <Ionicons name="language-outline" size={22} color="#8E8E93" />
-            </View>
-            <Text style={styles.menuText}>Language</Text>
-            <View style={styles.menuRight}>
-              <Text style={styles.menuRightText}>English</Text>
-              <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-            </View>
+        {/* Account */}
+        <SectionGroup title="Account">
+          <MenuListItem
+            icon={ProfileIcon}
+            iconColor={colors.primary}
+            label="Edit Profile"
+            description="Name, contact details, address"
+            onPress={() => router.push('/driver/Profile/edit-profile')}
+          />
+          <MenuListItem
+            icon={Car}
+            iconColor={colors.success}
+            label="Vehicle Information"
+            description={`${profile.fullName ? '' : ''}Toyota HiAce • CAB-1234`}
+            onPress={() => router.push('/driver/Profile/vehicle-info')}
+          />
+          <MenuListItem
+            icon={DocumentText}
+            iconColor={colors.warning}
+            label="Documents"
+            description="License, insurance, certificates"
+            onPress={() => router.push('/driver/Profile/documents')}
+          />
+          <MenuListItem
+            icon={CardIcon}
+            iconColor={colors.info}
+            label="Payment Methods"
+            description="Bank, cards & wallets"
+            divider={false}
+            onPress={() => router.push('/driver/Profile/payment-methods')}
+          />
+        </SectionGroup>
+
+        {/* Preferences */}
+        <SectionGroup title="Preferences">
+          <MenuListItem
+            icon={NotificationIcon}
+            iconColor={colors.danger}
+            label="Push Notifications"
+            description="Trip reminders & messages"
+            showChevron={false}
+            rightSlot={
+              <Switch
+                value={notifEnabled}
+                onValueChange={setNotifEnabled}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor="#fff"
+              />
+            }
+          />
+          <MenuListItem
+            icon={Location}
+            iconColor={colors.primary}
+            label="Location Services"
+            description="Required to start trips"
+            showChevron={false}
+            rightSlot={
+              <Switch
+                value={locEnabled}
+                onValueChange={setLocEnabled}
+                trackColor={{ false: colors.border, true: colors.primary }}
+                thumbColor="#fff"
+              />
+            }
+          />
+          <MenuListItem
+            icon={Global}
+            iconColor={colors.textSecondary}
+            label="Language"
+            value="English"
+            divider={false}
+          />
+        </SectionGroup>
+
+        {/* Support */}
+        <SectionGroup title="Support">
+          <MenuListItem
+            icon={Message}
+            iconColor={colors.primary}
+            label="Help Center"
+            description="FAQs & contact us"
+          />
+          <MenuListItem
+            icon={SecurityUser}
+            iconColor={colors.success}
+            label="Safety Centre"
+            description="Emergency contacts & tips"
+          />
+          <MenuListItem
+            icon={Information}
+            iconColor={colors.textSecondary}
+            label="About Edu-Ride"
+            divider={false}
+          />
+        </SectionGroup>
+
+        {/* Legal */}
+        <SectionGroup title="Legal">
+          <MenuListItem
+            icon={DocumentText}
+            iconColor={colors.textSecondary}
+            label="Terms of Service"
+          />
+          <MenuListItem
+            icon={Lock1}
+            iconColor={colors.textSecondary}
+            label="Privacy Policy"
+            divider={false}
+          />
+        </SectionGroup>
+
+        {/* Logout */}
+        <View style={styles.logoutSection}>
+          <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.85} onPress={handleLogout}>
+            <Logout size={fs(20)} color={colors.danger} variant="Bold" />
+            <Text style={styles.logoutText}>Log Out</Text>
           </TouchableOpacity>
+          <Text style={styles.version}>Version 1.0.0 • Phase 1 build</Text>
         </View>
-
-        {/* Support Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Support</Text>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuIconContainer}>
-              <Ionicons name="help-circle-outline" size={22} color="#007AFF" />
-            </View>
-            <Text style={styles.menuText}>Help Center</Text>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuIconContainer}>
-              <Ionicons name="shield-checkmark-outline" size={22} color="#34C759" />
-            </View>
-            <Text style={styles.menuText}>Safety</Text>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuIconContainer}>
-              <Ionicons name="information-circle-outline" size={22} color="#8E8E93" />
-            </View>
-            <Text style={styles.menuText}>About</Text>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Legal Section */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Legal</Text>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuIconContainer}>
-              <Ionicons name="document-outline" size={22} color="#8E8E93" />
-            </View>
-            <Text style={styles.menuText}>Terms of Service</Text>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-          </TouchableOpacity>
-
-          <TouchableOpacity style={styles.menuItem}>
-            <View style={styles.menuIconContainer}>
-              <Ionicons name="lock-closed-outline" size={22} color="#8E8E93" />
-            </View>
-            <Text style={styles.menuText}>Privacy Policy</Text>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-          </TouchableOpacity>
-        </View>
-
-        {/* Logout Button */}
-        <TouchableOpacity style={styles.logoutButton} onPress={handleLogout}>
-          <Ionicons name="log-out-outline" size={20} color="#FF3B30" />
-          <Text style={styles.logoutText}>Log Out</Text>
-        </TouchableOpacity>
-
-        <Text style={styles.versionText}>Version 1.0.0</Text>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 
+const SectionGroup = ({ title, children }) => (
+  <View style={styles.section}>
+    <Text style={styles.sectionTitle}>{title}</Text>
+    <Card padding="none">{children}</Card>
+  </View>
+);
+
+const ProfileStat = ({ icon: Icon, label, value, color }) => (
+  <View style={styles.statItem}>
+    <Icon size={fs(18)} color={color} variant="Bold" />
+    <Text style={styles.statValue}>{value}</Text>
+    <Text style={styles.statLabel}>{label}</Text>
+  </View>
+);
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F2F2F7",
+  hero: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing['3xl'] + spacing.md,
+    paddingBottom: spacing['3xl'],
+    borderBottomLeftRadius: radii.xl,
+    borderBottomRightRadius: radii.xl,
+    alignItems: 'center',
+    ...shadows.brand,
   },
-  header: {
-    backgroundColor: "#fff",
-    paddingHorizontal: 20,
-    paddingVertical: 16,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5EA",
+  heroAvatarWrap: { position: 'relative', marginBottom: spacing.md },
+  heroAvatar: {
+    width: wp(96),
+    height: wp(96),
+    borderRadius: wp(48),
+    alignItems: 'center',
+    justifyContent: 'center',
+    borderWidth: 3,
+    borderColor: 'rgba(255,255,255,0.5)',
   },
-  headerTitle: {
-    fontSize: 28,
-    fontWeight: "bold",
-    color: "#000",
-  },
-  scrollView: {
-    flex: 1,
-  },
-  profileCard: {
-    backgroundColor: "#fff",
-    marginHorizontal: 20,
-    marginTop: 20,
-    marginBottom: 20,
-    padding: 24,
-    borderRadius: 16,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  avatarContainer: {
-    position: "relative",
-    marginBottom: 16,
-  },
-  avatar: {
-    width: 100,
-    height: 100,
-    borderRadius: 50,
-    backgroundColor: "#E3F2FD",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  editAvatarButton: {
-    position: "absolute",
+  heroAvatarText: { fontSize: fs(32), color: colors.primary, fontFamily: typography.fontFamily.bold },
+  editAvatar: {
+    position: 'absolute',
     bottom: 0,
     right: 0,
-    width: 32,
-    height: 32,
-    borderRadius: 16,
-    backgroundColor: "#007AFF",
-    justifyContent: "center",
-    alignItems: "center",
-    borderWidth: 3,
-    borderColor: "#fff",
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: colors.primary,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 3, borderColor: '#fff',
   },
-  profileName: {
-    fontSize: 24,
-    fontWeight: "bold",
-    color: "#000",
-    marginBottom: 4,
+  verifiedBadge: {
+    position: 'absolute',
+    top: -2,
+    left: -2,
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: colors.success,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: '#fff',
   },
-  profileEmail: {
-    fontSize: 14,
-    color: "#8E8E93",
-    marginBottom: 20,
+  heroName: { color: '#fff', fontSize: typography.size['2xl'], fontFamily: typography.fontFamily.bold },
+  heroEmail: { color: colors.onDark.textMuted, fontSize: typography.size.sm, marginTop: 4 },
+  heroBadges: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+
+  statsCard: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    width: '100%',
+    marginTop: spacing.lg,
   },
-  statsRow: {
-    flexDirection: "row",
-    alignItems: "center",
-    width: "100%",
-    paddingTop: 20,
-    borderTopWidth: 1,
-    borderTopColor: "#E5E5EA",
-  },
-  statItem: {
-    flex: 1,
-    alignItems: "center",
-  },
-  statValue: {
-    fontSize: 20,
-    fontWeight: "bold",
-    color: "#000",
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: 12,
-    color: "#8E8E93",
-  },
-  statDivider: {
-    width: 1,
-    height: 32,
-    backgroundColor: "#E5E5EA",
-  },
-  section: {
-    paddingHorizontal: 20,
-    marginBottom: 24,
-  },
+  statItem: { flex: 1, alignItems: 'center', gap: 4 },
+  statValue: { fontSize: typography.size.lg, color: colors.textPrimary, fontFamily: typography.fontFamily.bold },
+  statLabel: { fontSize: typography.size.xs, color: colors.textSecondary },
+  statsDivider: { width: 1, height: 36, backgroundColor: colors.divider },
+
+  section: { paddingHorizontal: spacing.lg, marginTop: spacing.xl },
   sectionTitle: {
-    fontSize: 18,
-    fontWeight: "600",
-    color: "#000",
-    marginBottom: 12,
-    marginLeft: 4,
+    fontSize: typography.size.xs,
+    color: colors.textTertiary,
+    fontFamily: typography.fontFamily.bold,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: spacing.sm,
+    marginLeft: spacing.sm,
   },
-  menuItem: {
-    flexDirection: "row",
-    alignItems: "center",
-    backgroundColor: "#fff",
-    paddingVertical: 16,
-    paddingHorizontal: 16,
-    borderRadius: 12,
-    marginBottom: 8,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
+
+  logoutSection: { paddingHorizontal: spacing.lg, marginTop: spacing.xl, alignItems: 'center' },
+  logoutBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    paddingHorizontal: spacing.xl,
+    backgroundColor: colors.surface,
+    borderRadius: radii.md,
+    borderWidth: 1.5,
+    borderColor: colors.danger,
+    width: '100%',
   },
-  menuIconContainer: {
-    width: 36,
-    height: 36,
-    borderRadius: 8,
-    backgroundColor: "#F2F2F7",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  menuText: {
-    flex: 1,
-    fontSize: 16,
-    color: "#000",
-  },
-  menuRight: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 4,
-  },
-  menuRightText: {
-    fontSize: 14,
-    color: "#8E8E93",
-  },
-  logoutButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
-    marginHorizontal: 20,
-    paddingVertical: 16,
-    borderRadius: 12,
-    marginBottom: 16,
-    gap: 8,
-    borderWidth: 1,
-    borderColor: "#FF3B30",
-  },
-  logoutText: {
-    fontSize: 16,
-    color: "#FF3B30",
-    fontWeight: "600",
-  },
-  versionText: {
-    textAlign: "center",
-    fontSize: 12,
-    color: "#8E8E93",
-    marginBottom: 32,
-  },
+  logoutText: { color: colors.danger, fontSize: typography.size.md, fontFamily: typography.fontFamily.bold },
+  version: { fontSize: typography.size.xs, color: colors.textTertiary, marginTop: spacing.lg },
 });

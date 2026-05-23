@@ -1,433 +1,275 @@
-import React, { useState } from "react";
+import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
-  TouchableOpacity,
-  StatusBar,
   TextInput,
+  TouchableOpacity,
   Alert,
-  Image
-} from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
+  KeyboardAvoidingView,
+  Platform,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import {
+  Call,
+  Camera,
+  Edit,
+  Location,
+  Profile as ProfileIcon,
+  SecuritySafe,
+  Sms,
+  TickCircle,
+} from 'iconsax-react-native';
+
+import ScreenContainer from '../../components/driver/ScreenContainer';
+import PageHeader from '../../components/driver/PageHeader';
+import Card from '../../components/driver/Card';
+import PrimaryButton from '../../components/driver/PrimaryButton';
+import {
+  colors,
+  gradients,
+  spacing,
+  typography,
+  radii,
+  shadows,
+  wp,
+  fs,
+} from '../../theme';
+import { LinearGradient } from 'expo-linear-gradient';
+import { getDriverProfile } from '../../../services/mock/driver';
 
 export default function EditProfile() {
   const router = useRouter();
-
-  // Form state
-  const [formData, setFormData] = useState({
-    firstName: "Kasun",
-    lastName: "Perera",
-    email: "kasun.perera@eduride.lk",
-    phone: "+94 77 123 4567",
-    address: "123 Galle Road, Colombo 03",
-    emergencyContact: "+94 77 987 6543",
-    emergencyContactName: "Nimalka Perera",
+  const profile = useMemo(() => getDriverProfile(), []);
+  const [form, setForm] = useState({
+    firstName: profile.firstName,
+    lastName: profile.lastName,
+    email: profile.email,
+    phone: profile.phone,
+    address: profile.address,
+    emergencyContactName: profile.emergencyContactName,
+    emergencyContact: profile.emergencyContact,
   });
-
   const [errors, setErrors] = useState({});
-  const [isLoading, setIsLoading] = useState(false);
+  const [saving, setSaving] = useState(false);
 
-  const handleInputChange = (field, value) => {
-    setFormData(prev => ({
-      ...prev,
-      [field]: value
-    }));
-    // Clear error when user starts typing
-    if (errors[field]) {
-      setErrors(prev => ({
-        ...prev,
-        [field]: null
-      }));
-    }
+  const set = (field, value) => {
+    setForm((f) => ({ ...f, [field]: value }));
+    if (errors[field]) setErrors((e) => ({ ...e, [field]: null }));
   };
 
-  const validateForm = () => {
-    const newErrors = {};
-
-    if (!formData.firstName.trim()) {
-      newErrors.firstName = "First name is required";
-    }
-
-    if (!formData.lastName.trim()) {
-      newErrors.lastName = "Last name is required";
-    }
-
-    if (!formData.email.trim()) {
-      newErrors.email = "Email is required";
-    } else if (!/\S+@\S+\.\S+/.test(formData.email)) {
-      newErrors.email = "Email is invalid";
-    }
-
-    if (!formData.phone.trim()) {
-      newErrors.phone = "Phone number is required";
-    }
-
-    setErrors(newErrors);
-    return Object.keys(newErrors).length === 0;
+  const validate = () => {
+    const next = {};
+    if (!form.firstName.trim()) next.firstName = 'First name is required';
+    if (!form.lastName.trim()) next.lastName = 'Last name is required';
+    if (!form.email.trim()) next.email = 'Email is required';
+    else if (!/\S+@\S+\.\S+/.test(form.email)) next.email = 'Enter a valid email';
+    if (!form.phone.trim()) next.phone = 'Phone is required';
+    setErrors(next);
+    return Object.keys(next).length === 0;
   };
 
-  const handleSave = async () => {
-    if (!validateForm()) {
-      return;
-    }
-
-    setIsLoading(true);
-
-    try {
-      // Simulate API call
-      await new Promise(resolve => setTimeout(resolve, 1000));
-
-      // In a real app, make API call to update profile
-      // await updateDriverProfile(formData);
-
-      Alert.alert(
-        "Success",
-        "Profile updated successfully",
-        [
-          {
-            text: "OK",
-            onPress: () => router.back()
-          }
-        ]
-      );
-    } catch (error) {
-      Alert.alert("Error", "Failed to update profile. Please try again.");
-    } finally {
-      setIsLoading(false);
-    }
-  };
-
-  const handleChangePhoto = () => {
-    Alert.alert(
-      "Change Photo",
-      "Choose an option",
-      [
-        {
-          text: "Take Photo",
-          onPress: () => console.log("Take photo")
-        },
-        {
-          text: "Choose from Library",
-          onPress: () => console.log("Choose from library")
-        },
-        {
-          text: "Cancel",
-          style: "cancel"
-        }
-      ]
-    );
+  const save = async () => {
+    if (!validate()) return;
+    setSaving(true);
+    setTimeout(() => {
+      setSaving(false);
+      Alert.alert('Saved', 'Profile updated successfully.', [
+        { text: 'OK', onPress: () => router.back() },
+      ]);
+    }, 600);
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <ScreenContainer>
+      <PageHeader
+        title="Edit Profile"
+        subtitle="Keep your details up to date"
+        onBack={() => router.back()}
+      />
 
-      <ScrollView style={styles.scrollView}>
-        {/* Header */}
-        <View style={styles.header}>
-          <TouchableOpacity
-            style={styles.backButton}
-            onPress={() => router.back()}
-          >
-            <Ionicons name="arrow-back" size={24} color="#000" />
-          </TouchableOpacity>
-          <Text style={styles.headerTitle}>Edit Profile</Text>
-          <TouchableOpacity
-            style={styles.saveButton}
-            onPress={handleSave}
-            disabled={isLoading}
-          >
-            <Text style={[styles.saveText, isLoading && styles.saveTextDisabled]}>
-              {isLoading ? "Saving..." : "Save"}
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Profile Photo Section */}
-        <View style={styles.photoSection}>
-          <View style={styles.avatarContainer}>
-            <View style={styles.avatar}>
-              <Ionicons name="person" size={60} color="#007AFF" />
+      <KeyboardAvoidingView
+        behavior={Platform.OS === 'ios' ? 'padding' : undefined}
+        style={{ flex: 1 }}
+      >
+        <ScrollView
+          contentContainerStyle={{ padding: spacing.lg, paddingBottom: spacing['3xl'] }}
+          showsVerticalScrollIndicator={false}
+        >
+          {/* Avatar */}
+          <View style={styles.avatarSection}>
+            <View style={styles.avatarWrap}>
+              <LinearGradient
+                colors={gradients.brand}
+                style={styles.avatar}
+              >
+                <Text style={styles.avatarText}>{profile.initials}</Text>
+              </LinearGradient>
+              <TouchableOpacity style={styles.cameraBtn} activeOpacity={0.85}>
+                <Camera size={fs(16)} color="#fff" variant="Bold" />
+              </TouchableOpacity>
             </View>
-            <TouchableOpacity
-              style={styles.editPhotoButton}
-              onPress={handleChangePhoto}
-            >
-              <Ionicons name="camera" size={20} color="#fff" />
-            </TouchableOpacity>
+            <Text style={styles.changePhoto}>Change Photo</Text>
           </View>
-          <TouchableOpacity onPress={handleChangePhoto}>
-            <Text style={styles.changePhotoText}>Change Photo</Text>
-          </TouchableOpacity>
-        </View>
 
-        {/* Personal Information */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Personal Information</Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>First Name</Text>
-            <TextInput
-              style={[styles.input, errors.firstName && styles.inputError]}
-              value={formData.firstName}
-              onChangeText={(value) => handleInputChange('firstName', value)}
-              placeholder="Enter first name"
-              placeholderTextColor="#C7C7CC"
+          <FormSection title="Personal Information">
+            <Field
+              icon={ProfileIcon}
+              label="First Name"
+              value={form.firstName}
+              onChange={(v) => set('firstName', v)}
+              error={errors.firstName}
             />
-            {errors.firstName && (
-              <Text style={styles.errorText}>{errors.firstName}</Text>
-            )}
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Last Name</Text>
-            <TextInput
-              style={[styles.input, errors.lastName && styles.inputError]}
-              value={formData.lastName}
-              onChangeText={(value) => handleInputChange('lastName', value)}
-              placeholder="Enter last name"
-              placeholderTextColor="#C7C7CC"
+            <Field
+              icon={ProfileIcon}
+              label="Last Name"
+              value={form.lastName}
+              onChange={(v) => set('lastName', v)}
+              error={errors.lastName}
             />
-            {errors.lastName && (
-              <Text style={styles.errorText}>{errors.lastName}</Text>
-            )}
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Email</Text>
-            <TextInput
-              style={[styles.input, errors.email && styles.inputError]}
-              value={formData.email}
-              onChangeText={(value) => handleInputChange('email', value)}
-              placeholder="Enter email"
-              placeholderTextColor="#C7C7CC"
+            <Field
+              icon={Sms}
+              label="Email"
+              value={form.email}
+              onChange={(v) => set('email', v)}
+              error={errors.email}
               keyboardType="email-address"
-              autoCapitalize="none"
             />
-            {errors.email && (
-              <Text style={styles.errorText}>{errors.email}</Text>
-            )}
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Phone Number</Text>
-            <TextInput
-              style={[styles.input, errors.phone && styles.inputError]}
-              value={formData.phone}
-              onChangeText={(value) => handleInputChange('phone', value)}
-              placeholder="Enter phone number"
-              placeholderTextColor="#C7C7CC"
+            <Field
+              icon={Call}
+              label="Phone"
+              value={form.phone}
+              onChange={(v) => set('phone', v)}
+              error={errors.phone}
               keyboardType="phone-pad"
             />
-            {errors.phone && (
-              <Text style={styles.errorText}>{errors.phone}</Text>
-            )}
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Address</Text>
-            <TextInput
-              style={[styles.input, styles.textArea]}
-              value={formData.address}
-              onChangeText={(value) => handleInputChange('address', value)}
-              placeholder="Enter address"
-              placeholderTextColor="#C7C7CC"
+            <Field
+              icon={Location}
+              label="Address"
+              value={form.address}
+              onChange={(v) => set('address', v)}
               multiline
-              numberOfLines={3}
+              isLast
             />
-          </View>
-        </View>
+          </FormSection>
 
-        {/* Emergency Contact */}
-        <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Emergency Contact</Text>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Contact Name</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.emergencyContactName}
-              onChangeText={(value) => handleInputChange('emergencyContactName', value)}
-              placeholder="Enter contact name"
-              placeholderTextColor="#C7C7CC"
+          <FormSection title="Emergency Contact">
+            <Field
+              icon={SecuritySafe}
+              label="Contact Name"
+              value={form.emergencyContactName}
+              onChange={(v) => set('emergencyContactName', v)}
             />
-          </View>
-
-          <View style={styles.inputGroup}>
-            <Text style={styles.label}>Contact Phone</Text>
-            <TextInput
-              style={styles.input}
-              value={formData.emergencyContact}
-              onChangeText={(value) => handleInputChange('emergencyContact', value)}
-              placeholder="Enter contact phone"
-              placeholderTextColor="#C7C7CC"
+            <Field
+              icon={Call}
+              label="Contact Phone"
+              value={form.emergencyContact}
+              onChange={(v) => set('emergencyContact', v)}
               keyboardType="phone-pad"
+              isLast
             />
-          </View>
-        </View>
+          </FormSection>
 
-        {/* Delete Account Section */}
-        <View style={styles.section}>
-          <TouchableOpacity
-            style={styles.dangerButton}
-            onPress={() => {
-              Alert.alert(
-                "Delete Account",
-                "Are you sure you want to delete your account? This action cannot be undone.",
-                [
-                  { text: "Cancel", style: "cancel" },
-                  {
-                    text: "Delete",
-                    style: "destructive",
-                    onPress: () => console.log("Delete account")
-                  }
-                ]
-              );
-            }}
-          >
-            <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-            <Text style={styles.dangerButtonText}>Delete Account</Text>
-          </TouchableOpacity>
-        </View>
-      </ScrollView>
-    </SafeAreaView>
+          <PrimaryButton
+            title="Save Changes"
+            variant="gradient"
+            size="lg"
+            fullWidth
+            loading={saving}
+            iconLeft={<TickCircle size={fs(20)} color="#fff" variant="Bold" />}
+            onPress={save}
+            style={{ marginTop: spacing.xl }}
+          />
+        </ScrollView>
+      </KeyboardAvoidingView>
+    </ScreenContainer>
   );
 }
 
+const FormSection = ({ title, children }) => (
+  <View style={styles.section}>
+    <Text style={styles.sectionTitle}>{title}</Text>
+    <Card padding="lg">{children}</Card>
+  </View>
+);
+
+const Field = ({ icon: Icon, label, value, onChange, error, keyboardType, multiline, isLast }) => (
+  <View style={[styles.field, !isLast && styles.fieldDivider]}>
+    <Text style={styles.fieldLabel}>{label}</Text>
+    <View style={[styles.inputWrap, error && styles.inputWrapError]}>
+      {Icon ? <Icon size={fs(18)} color={colors.textTertiary} variant="Bold" /> : null}
+      <TextInput
+        style={[styles.input, multiline && styles.inputMultiline]}
+        value={value}
+        onChangeText={onChange}
+        keyboardType={keyboardType ?? 'default'}
+        placeholderTextColor={colors.textTertiary}
+        multiline={multiline}
+      />
+    </View>
+    {error ? <Text style={styles.errorText}>{error}</Text> : null}
+  </View>
+);
+
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F2F2F7",
-  },
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "space-between",
-    paddingHorizontal: 16,
-    paddingVertical: 16,
-    paddingTop: 20,
-    backgroundColor: "#fff",
-    marginBottom: 0,
-  },
-  backButton: {
-    padding: 8,
-  },
-  headerTitle: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: "#000",
-  },
-  saveButton: {
-    padding: 8,
-  },
-  saveText: {
-    fontSize: 17,
-    fontWeight: "600",
-    color: "#007AFF",
-  },
-  saveTextDisabled: {
-    color: "#C7C7CC",
-  },
-  scrollView: {
-    flex: 1,
-  },
-  photoSection: {
-    alignItems: "center",
-    paddingVertical: 32,
-    paddingTop: 20,
-    backgroundColor: "#fff",
-    marginBottom: 24,
-  },
-  avatarContainer: {
-    position: "relative",
-    marginBottom: 12,
-  },
+  avatarSection: { alignItems: 'center', marginBottom: spacing.xl },
+  avatarWrap: { position: 'relative' },
   avatar: {
-    width: 120,
-    height: 120,
-    borderRadius: 60,
-    backgroundColor: "#E5E5EA",
-    alignItems: "center",
-    justifyContent: "center",
+    width: wp(96), height: wp(96), borderRadius: wp(48),
+    alignItems: 'center', justifyContent: 'center',
+    ...shadows.brand,
   },
-  editPhotoButton: {
-    position: "absolute",
-    bottom: 0,
-    right: 0,
-    width: 40,
-    height: 40,
-    borderRadius: 20,
-    backgroundColor: "#007AFF",
-    alignItems: "center",
-    justifyContent: "center",
-    borderWidth: 3,
-    borderColor: "#fff",
+  avatarText: { color: '#fff', fontSize: fs(32), fontFamily: typography.fontFamily.bold },
+  cameraBtn: {
+    position: 'absolute', bottom: 0, right: 0,
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: colors.primary,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 3, borderColor: '#fff',
   },
-  changePhotoText: {
-    fontSize: 16,
-    color: "#007AFF",
-    fontWeight: "600",
-  },
-  section: {
-    backgroundColor: "#fff",
-    paddingHorizontal: 16,
-    paddingVertical: 20,
-    marginBottom: 24,
-  },
+  changePhoto: { color: colors.primary, fontSize: typography.size.sm, fontFamily: typography.fontFamily.semibold, marginTop: spacing.md },
+
+  section: { marginBottom: spacing.lg },
   sectionTitle: {
-    fontSize: 20,
-    fontWeight: "700",
-    color: "#000",
-    marginBottom: 20,
+    fontSize: typography.size.xs,
+    color: colors.textTertiary,
+    fontFamily: typography.fontFamily.bold,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: spacing.sm,
+    marginLeft: spacing.sm,
   },
-  inputGroup: {
-    marginBottom: 20,
+
+  field: { paddingVertical: spacing.sm },
+  fieldDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.divider,
   },
-  label: {
-    fontSize: 15,
-    fontWeight: "600",
-    color: "#000",
-    marginBottom: 8,
+  fieldLabel: {
+    fontSize: typography.size.xs,
+    color: colors.textSecondary,
+    fontFamily: typography.fontFamily.semibold,
+    marginBottom: spacing.sm - 2,
   },
+  inputWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.sm,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.sm + 2,
+    borderWidth: 1,
+    borderColor: 'transparent',
+  },
+  inputWrapError: { borderColor: colors.danger },
   input: {
-    backgroundColor: "#F2F2F7",
-    borderRadius: 10,
-    paddingHorizontal: 16,
-    paddingVertical: 12,
-    fontSize: 16,
-    color: "#000",
-    borderWidth: 1,
-    borderColor: "#E5E5EA",
+    flex: 1,
+    fontSize: typography.size.md,
+    color: colors.textPrimary,
+    padding: 0,
   },
-  inputError: {
-    borderColor: "#FF3B30",
-  },
-  textArea: {
-    minHeight: 80,
-    textAlignVertical: "top",
-  },
-  errorText: {
-    fontSize: 13,
-    color: "#FF3B30",
-    marginTop: 4,
-  },
-  dangerButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    paddingVertical: 16,
-    borderRadius: 10,
-    borderWidth: 1,
-    borderColor: "#FF3B30",
-    gap: 8,
-  },
-  dangerButtonText: {
-    fontSize: 16,
-    fontWeight: "600",
-    color: "#FF3B30",
-  },
+  inputMultiline: { minHeight: 60, textAlignVertical: 'top' },
+  errorText: { color: colors.danger, fontSize: typography.size.xs, marginTop: 4 },
 });
