@@ -55,7 +55,7 @@ const requiredDate = z.preprocess((value) => new Date(value), z.date());
 const paginationQuery = z
   .object({
     page: numberFromAny(z.number().int().min(1).max(10000)).optional(),
-    limit: numberFromAny(z.number().int().min(1).max(100)).optional(),
+    limit: numberFromAny(z.number().int().min(1).max(1000)).optional(),
   })
   .partial();
 

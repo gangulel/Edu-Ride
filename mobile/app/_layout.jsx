@@ -13,9 +13,17 @@ import {
 import * as SplashScreen from 'expo-splash-screen';
 import { ThemeProvider } from './contexts/ThemeContext';
 import { AuthProvider } from './contexts/AuthContext';
+import { setAuthTokenProvider } from '../services/api/client';
+import { getIdToken } from '../services/firebase/auth';
 
 // Keep the splash screen visible while loading fonts
 SplashScreen.preventAutoHideAsync();
+
+// Every backend request now grabs a fresh Firebase ID token. Firebase
+// auto-refreshes the underlying token, so this stays valid across sessions.
+if (process.env.EXPO_PUBLIC_USE_FIREBASE !== '0') {
+  setAuthTokenProvider(() => getIdToken());
+}
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({

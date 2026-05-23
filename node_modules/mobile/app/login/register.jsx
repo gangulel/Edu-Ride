@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -36,8 +36,16 @@ export default function Register() {
   const theme = useTheme();
   const styles = useStyles(theme);
   const router = useRouter();
-  const { register } = useAuth();
+  const { register, user } = useAuth();
   const scrollRef = useRef(null);
+
+  // Mirror the login screen — once Firebase fires onAuthStateChanged with the
+  // freshly-created user, route to the appropriate home.
+  useEffect(() => {
+    if (!user) return;
+    if (user.role === 'driver') router.replace('/driver');
+    else if (user.role === 'parent') router.replace('/parent');
+  }, [user, router]);
 
   const [name, setName] = useState('');
   const [email, setEmail] = useState('');
@@ -65,8 +73,8 @@ export default function Register() {
       setError('Please enter a valid mobile number.');
       return false;
     }
-    if (password.length < 6) {
-      setError('Password should be at least 6 characters.');
+    if (password.length < 8) {
+      setError('Password must be at least 8 characters.');
       return false;
     }
     if (!termsChecked) {
@@ -81,9 +89,9 @@ export default function Register() {
     if (!validate()) return;
     setLoading(true);
     try {
-      const user = await register({ name, email, mobile, password, role: userType });
-      if (user.role === 'parent') router.replace('/parent');
-      else if (user.role === 'driver') router.replace('/driver');
+      // Firebase path: this returns a Firebase user. The auth state listener
+      // in AuthContext hydrates `user` and the useEffect above redirects.
+      await register({ name, email, mobile, password, role: userType });
     } catch (err) {
       setError(err.message || 'Registration failed. Please try again.');
     } finally {

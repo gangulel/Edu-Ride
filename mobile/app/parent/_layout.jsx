@@ -1,7 +1,13 @@
 import React from 'react';
 import { Stack } from 'expo-router';
+import { useAuthGuard } from '../hooks/useAuthGuard';
 
 export default function ParentLayout() {
+    // Bounces anonymous users to /login and drivers to /driver. Loading state
+    // is handled inside the hook — useAuthGuard waits for Firebase to settle
+    // before deciding.
+    useAuthGuard({ requireRole: 'parent' });
+
     return (
         <Stack
             screenOptions={{

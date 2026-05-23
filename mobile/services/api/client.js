@@ -1,16 +1,19 @@
-// Thin fetch wrapper with auth token plumbing. The token is held in memory
-// for the life of the JS context and can be hydrated from storage by the
-// caller (AuthContext does this on app boot).
+// Thin fetch wrapper with auth token plumbing. The token can be supplied
+// statically (mock / custom JWT path) via setAuthToken(token), or as a
+// thunk via setAuthTokenProvider(async () => token). The thunk is what the
+// Firebase path uses so every request grabs a fresh ID token straight from
+// Firebase — automatic refresh, no manual plumbing.
 
 import { Platform } from 'react-native';
 
 let authToken = null;
+let tokenProvider = null;
 
 function defaultBaseUrl() {
   const explicit = process.env.EXPO_PUBLIC_API_BASE_URL;
   if (explicit) return explicit.replace(/\/$/, '');
-  if (Platform.OS === 'android') return 'http://10.0.2.2:3000/api';
-  return 'http://localhost:3000/api';
+  if (Platform.OS === 'android') return 'http://10.0.2.2:3001/api';
+  return 'http://localhost:3001/api';
 }
 
 export const API_BASE_URL = defaultBaseUrl();
@@ -19,7 +22,23 @@ export const setAuthToken = (token) => {
   authToken = token || null;
 };
 
+export const setAuthTokenProvider = (fn) => {
+  tokenProvider = typeof fn === 'function' ? fn : null;
+};
+
 export const getAuthToken = () => authToken;
+
+async function resolveAuthHeader() {
+  if (tokenProvider) {
+    try {
+      const t = await tokenProvider();
+      if (t) return `Bearer ${t}`;
+    } catch {
+      // Fall through to the static token if the provider throws.
+    }
+  }
+  return authToken ? `Bearer ${authToken}` : null;
+}
 
 async function parseSafe(response) {
   const text = await response.text();
@@ -34,8 +53,9 @@ export async function request(path, options = {}) {
     'Content-Type': 'application/json',
     ...(options.headers || {}),
   };
-  if (authToken && !headers.Authorization) {
-    headers.Authorization = `Bearer ${authToken}`;
+  if (!headers.Authorization) {
+    const auth = await resolveAuthHeader();
+    if (auth) headers.Authorization = auth;
   }
 
   let response;

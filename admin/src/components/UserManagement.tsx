@@ -6,7 +6,7 @@ import { Badge } from "./ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
 import { Tabs, TabsContent, TabsList, TabsTrigger } from "./ui/tabs"
 import { Dialog, DialogContent, DialogHeader, DialogTitle, DialogDescription, DialogFooter } from "./ui/dialog"
-import { Search, Filter, Eye, Ban, Pencil, Trash2, AlertTriangle, Download } from "lucide-react"
+import { Search, Filter, Eye, Ban, Pencil, Trash2, AlertTriangle, Download, Loader2, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
 import { apiRequest } from "../lib/api"
 
@@ -98,8 +98,10 @@ export function UserManagement() {
   const [parents, setParents] = useState<AppUser[]>([])
   const [drivers, setDrivers] = useState<AppUser[]>([])
   const [stats, setStats] = useState<UserStatsPayload | null>(null)
+  const [isLoading, setIsLoading] = useState(true)
   const [error, setError] = useState("")
-  const shouldShowError = Boolean(error) && !/no token provided|unauthorized|forbidden/i.test(error)
+  const [refreshTick, setRefreshTick] = useState(0)
+  const shouldShowError = Boolean(error)
 
   useEffect(() => {
     let mounted = true
@@ -125,6 +127,7 @@ export function UserManagement() {
     }
 
     const loadUsers = async () => {
+      if (mounted) setIsLoading(true)
       try {
         const [parentData, driverData, statsData] = await Promise.all([
           apiRequest<{ users: AppUser[] }>("/users?role=parent&limit=100"),
@@ -137,6 +140,7 @@ export function UserManagement() {
         setDrivers(driverData.users)
         setStats(statsData)
         setError("")
+        setIsLoading(false)
         return
       } catch (err) {
         const message = err instanceof Error ? err.message : String(err)
@@ -144,6 +148,7 @@ export function UserManagement() {
         if (!authErrorPattern.test(message)) {
           if (mounted) {
             setError(message)
+            setIsLoading(false)
           }
           return
         }
@@ -160,9 +165,11 @@ export function UserManagement() {
         setDrivers(driverData.users)
         setStats(buildStatsFromUsers(parentData.users, driverData.users))
         setError("")
+        setIsLoading(false)
       } catch (err) {
         if (mounted) {
           setError(err instanceof Error ? err.message : "Failed to load users")
+          setIsLoading(false)
         }
       }
     }
@@ -172,7 +179,8 @@ export function UserManagement() {
     return () => {
       mounted = false
     }
-  }, [])
+  // eslint-disable-next-line react-hooks/exhaustive-deps
+  }, [refreshTick])
 
   const parentFiltered = useMemo(
     () =>
@@ -351,11 +359,21 @@ export function UserManagement() {
 
   return (
     <div className="space-y-6">
-      {/* <div>
-        <h2>User Management</h2>
-        <p className="text-gray-500 mt-1">Manage parents and drivers in your bus system</p>
-        {shouldShowError ? <p className="text-sm text-red-600 mt-2">{error}</p> : null}
-      </div> */}
+      {shouldShowError && (
+        <div className="flex items-center gap-3 rounded-lg border border-red-500/30 bg-red-500/10 px-4 py-3 text-sm text-red-400">
+          <AlertTriangle className="h-4 w-4 shrink-0" />
+          <span className="flex-1">{error}</span>
+          <Button
+            size="sm"
+            variant="ghost"
+            className="h-7 gap-1.5 text-red-400 hover:text-red-300"
+            onClick={() => setRefreshTick((t) => t + 1)}
+          >
+            <RefreshCw className="h-3.5 w-3.5" />
+            Retry
+          </Button>
+        </div>
+      )}
 
       <Tabs defaultValue="parents">
         <TabsList>
@@ -421,6 +439,10 @@ export function UserManagement() {
                 </div>
               ) : null}
             </div>
+            <Button variant="outline" onClick={() => setRefreshTick((t) => t + 1)} disabled={isLoading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
             <Button variant="outline" onClick={() => exportUsersToCsv(parentFiltered, "parents.csv")}>
               <Download className="h-4 w-4 mr-2" />
               Export
@@ -474,14 +496,24 @@ export function UserManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {parentFiltered.length === 0 && (
+                  {isLoading && (
+                    <TableRow>
+                      <TableCell colSpan={7} className="text-center py-10">
+                        <div className="flex items-center justify-center gap-2 text-gray-400">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Loading parents...
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {!isLoading && parentFiltered.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={7} className="text-center text-gray-400 py-8">
                         No parents found
                       </TableCell>
                     </TableRow>
                   )}
-                  {parentFiltered.map((parent) => (
+                  {!isLoading && parentFiltered.map((parent) => (
                     <TableRow key={parent._id}>
                       <TableCell>{parent.fullName}</TableCell>
                       <TableCell>{parent.email}</TableCell>
@@ -592,6 +624,10 @@ export function UserManagement() {
                 </div>
               ) : null}
             </div>
+            <Button variant="outline" onClick={() => setRefreshTick((t) => t + 1)} disabled={isLoading}>
+              <RefreshCw className={`h-4 w-4 mr-2 ${isLoading ? "animate-spin" : ""}`} />
+              Refresh
+            </Button>
             <Button variant="outline" onClick={() => exportUsersToCsv(driverFiltered, "drivers.csv")}>
               <Download className="h-4 w-4 mr-2" />
               Export
@@ -646,14 +682,24 @@ export function UserManagement() {
                   </TableRow>
                 </TableHeader>
                 <TableBody>
-                  {driverFiltered.length === 0 && (
+                  {isLoading && (
+                    <TableRow>
+                      <TableCell colSpan={8} className="text-center py-10">
+                        <div className="flex items-center justify-center gap-2 text-gray-400">
+                          <Loader2 className="h-4 w-4 animate-spin" />
+                          Loading drivers...
+                        </div>
+                      </TableCell>
+                    </TableRow>
+                  )}
+                  {!isLoading && driverFiltered.length === 0 && (
                     <TableRow>
                       <TableCell colSpan={8} className="text-center text-gray-400 py-8">
                         No drivers found
                       </TableCell>
                     </TableRow>
                   )}
-                  {driverFiltered.map((driver) => (
+                  {!isLoading && driverFiltered.map((driver) => (
                     <TableRow key={driver._id}>
                       <TableCell>{driver.fullName}</TableCell>
                       <TableCell>{driver.email}</TableCell>

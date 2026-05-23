@@ -8,7 +8,7 @@ export function escapeRegex(value) {
   return String(value).replace(/[.*+?^${}()|[\]\\]/g, "\\$&");
 }
 
-export function parsePagination(page, limit, maxLimit = 100) {
+export function parsePagination(page, limit, maxLimit = 1000) {
   const parsedPage = Math.max(parseInt(page, 10) || 1, 1);
   const parsedLimit = Math.min(Math.max(parseInt(limit, 10) || 20, 1), maxLimit);
 

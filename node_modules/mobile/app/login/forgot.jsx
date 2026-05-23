@@ -13,40 +13,43 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { ArrowLeft, Sms, InfoCircle, TickCircle } from 'iconsax-react-native';
 import { useTheme } from '../contexts/ThemeContext';
 import { wp, hp, fs } from '../utils/responsive';
+import { useAuth } from '../contexts/AuthContext';
+import { isValidEmail } from '../utils/validation';
 
 export default function Forgot() {
   const theme = useTheme();
   const styles = useStyles(theme);
   const router = useRouter();
+  const { sendPasswordReset } = useAuth();
   const [email, setEmail] = useState('');
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
 
-  const emailRe = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(([^<>()[\]\\.,;:\s@"]+\.)+[^<>()[\]\\.,;:\s@"]{2,})$/i;
-
-  const validate = () => {
-    if (!email) {
-      setError('Please enter your email address.');
-      return false;
-    }
-    if (!emailRe.test(email)) {
-      setError('Please enter a valid email address.');
-      return false;
-    }
-    return true;
-  };
-
   const onSubmit = async () => {
     setError('');
     setMessage('');
-    if (!validate()) return;
+    if (!email) {
+      setError('Please enter your email address.');
+      return;
+    }
+    if (!isValidEmail(email)) {
+      setError('Please enter a valid email address.');
+      return;
+    }
     setLoading(true);
-    // Mock: pretend to send a reset email after a short delay.
-    setTimeout(() => {
+    try {
+      await sendPasswordReset(email);
+      // Identical message whether the email exists or not — prevents account
+      // enumeration via the reset endpoint.
       setMessage('If an account with that email exists, a reset link was sent.');
+    } catch (err) {
+      // Even on failure, surface a generic message (but log the real error).
+      console.warn('Password reset failed:', err.message);
+      setMessage('If an account with that email exists, a reset link was sent.');
+    } finally {
       setLoading(false);
-    }, 700);
+    }
   };
 
   return (

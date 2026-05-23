@@ -1,4 +1,4 @@
-import React, { useState, useRef } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import {
   View,
   Text,
@@ -28,12 +28,13 @@ import GoogleLogo from '../components/icons/GoogleLogo';
 import { wp, hp, fs } from '../utils/responsive';
 import { useTheme } from '../contexts/ThemeContext';
 import { useAuth } from '../contexts/AuthContext';
+import { validateAuthForm } from '../utils/validation';
 
 export default function Login() {
   const theme = useTheme();
   const styles = useStyles(theme);
   const router = useRouter();
-  const { login } = useAuth();
+  const { login, user } = useAuth();
   const scrollRef = useRef(null);
 
   const [email, setEmail] = useState('');
@@ -42,29 +43,28 @@ export default function Login() {
   const [error, setError] = useState('');
   const [showPassword, setShowPassword] = useState(false);
 
-  const emailRe = /^(([^<>()[\]\\.,;:\s@"]+(\.[^<>()[\]\\.,;:\s@"]+)*)|(".+"))@(([^<>()[\]\\.,;:\s@"]+\.)+[^<>()[\]\\.,;:\s@"]{2,})$/i;
-
-  const validate = () => {
-    if (!email || !password) {
-      setError('Please enter email and password.');
-      return false;
-    }
-    if (!emailRe.test(email)) {
-      setError('Please enter a valid email address.');
-      return false;
-    }
-    return true;
-  };
+  // When Firebase fires onAuthStateChanged and our profile lands, route to
+  // the right home. This handles both fresh logins and an already-signed-in
+  // user landing on /login by accident.
+  useEffect(() => {
+    if (!user) return;
+    if (user.role === 'driver') router.replace('/driver');
+    else if (user.role === 'parent') router.replace('/parent');
+  }, [user, router]);
 
   const onSubmit = async () => {
     setError('');
-    if (!validate()) return;
+    const { errors, isValid } = validateAuthForm({ email, password, mode: 'login' });
+    if (!isValid) {
+      setError(errors.email || errors.password || 'Please fix the errors and try again.');
+      return;
+    }
     setLoading(true);
     try {
-      const user = await login(email, password);
-      if (user.role === 'parent') router.replace('/parent');
-      else if (user.role === 'driver') router.replace('/driver');
-      else setError('Your account role is not supported.');
+      // Firebase: login() returns a Firebase user. AuthContext picks up the
+      // role via Firestore on the next onAuthStateChanged tick and the
+      // useEffect above does the redirect.
+      await login(email, password);
     } catch (err) {
       setError(err.message || 'Login failed. Please try again.');
     } finally {
