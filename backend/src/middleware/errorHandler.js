@@ -44,7 +44,9 @@ export const errorHandler = (err, req, res, _next) => {
     err?.name === "MongoNetworkError" ||
     err?.name === "MongoServerSelectionError" ||
     err?.name === "MongoNotConnectedError" ||
-    /Client must be connected before running operations/i.test(String(err?.message))
+    err?.name === "MongooseError" ||
+    /Client must be connected before running operations/i.test(String(err?.message)) ||
+    /before initial connection is complete/i.test(String(err?.message))
   ) {
     return res.status(503).json({
       error: "Database is temporarily unavailable. Please retry shortly.",
