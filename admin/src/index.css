@@ -2150,6 +2150,26 @@ body {
 .admin-sidebar.is-collapsed .admin-nav-link-text,
 .admin-sidebar.is-collapsed .admin-nav-link-indicator { display: none; }
 
+/* Collapsed sidebar (80px wide) can't fit the brand mark + collapse button
+   side-by-side. Stack them vertically and center, hide the brand text. */
+.admin-sidebar.is-collapsed .admin-sidebar-header {
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: 10px;
+  padding: 16px 8px;
+}
+.admin-sidebar.is-collapsed .admin-brand {
+  justify-content: center;
+  gap: 0;
+}
+.admin-sidebar.is-collapsed .admin-brand-text { display: none; }
+.admin-sidebar.is-collapsed .admin-collapse-btn { margin: 0; }
+.admin-sidebar.is-collapsed .admin-sidebar-nav {
+  padding-left: 8px;
+  padding-right: 8px;
+}
+
 .admin-sidebar-footer { padding: 14px; border-top: 1px solid var(--er-border); }
 .admin-upgrade-card {
   display: flex;

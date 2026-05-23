@@ -1,0 +1,6 @@
+driverEmail,name,school,schoolArrival,schoolDeparture,status,studentCount,daysOfOperation,stop0_location,stop0_pickupTime,stop1_location,stop1_pickupTime,stop2_location,stop2_pickupTime
+kasun.bandara@eduride.test,Route A – Royal College Morning,Royal College,07:20,13:45,active,8,"Mon,Tue,Wed,Thu,Fri",Nugegoda Junction,06:25,Kirulapone Bridge,06:40,Thimbirigasyaya Rd,06:55
+sanduni.wijesinghe@eduride.test,Route B – Visakha Morning,Visakha Vidyalaya,07:30,14:00,active,12,"Mon,Tue,Wed,Thu,Fri",Maharagama Town,06:15,Nawala Junction,06:50,Rajagiriya,07:05
+nuwan.rajapaksa@eduride.test,Route C – Nalanda Morning,Nalanda College,07:30,13:45,active,5,"Mon,Tue,Wed,Thu,Fri",Borella Junction,06:50,Maradana Fly-over,07:00,Dematagoda,07:10
+chamara.silva@eduride.test,Route D – Ladies College,Ladies' College,07:30,13:00,inactive,0,"Mon,Tue,Wed,Thu,Fri",Pamankade,07:00,Bambalapitiya,07:15,
+dilshan.mendis@eduride.test,Route E – Dharmaraja,Dharmaraja College,07:30,13:30,inactive,0,"Mon,Tue,Wed,Thu,Fri",Kandy Town,07:00,Peradeniya Road,07:15,

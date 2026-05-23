@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
     View,
     Text,
@@ -26,135 +26,51 @@ import {
     Verify,
     Clock,
     CloseCircle,
-    Calendar,
-    Message,
-    Setting2,
     Car,
     Truck,
 } from 'iconsax-react-native';
 import { responsive, wp, hp, fs } from '../utils/responsive';
+import { searchDrivers } from '../../services/mock';
+import { ParentBottomNav } from '../components/organisms';
+
+// Maps mock driver shape to the legacy UI shape used by this screen.
+const driverToService = (d, idx) => ({
+    id: d.id || idx + 1,
+    name: d.name,
+    verified: !!d.verified,
+    rating: d.rating ?? 0,
+    reviewCount: d.totalReviews ?? d.reviewCount ?? 0,
+    monthlyFee: d.monthlyFee ?? 0,
+    areasServed: d.areas || d.areasServed || [],
+    school: d.school || 'Royal College',
+    availableSeats: Math.max(0, Math.floor((d.seats || 0) / 3)),
+    totalSeats: d.seats ?? 0,
+    experience: d.yearsOfExperience ? `${d.yearsOfExperience} years` : '—',
+    vehicleType: d.vehicleModel || d.vehicleType || 'Van',
+    category: (d.vehicleType || 'van').toLowerCase(),
+    isAC: !!d.hasAC,
+});
+
+const FALLBACK_SERVICES = [];
 
 export default function SearchScreen() {
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState('all');
+    const [services, setServices] = useState(FALLBACK_SERVICES);
 
-    // Mock services data
-    const services = [
-        {
-            id: 1,
-            name: 'Kasun Perera',
-            verified: true,
-            rating: 4.9,
-            reviewCount: 234,
-            monthlyFee: 8500,
-            areasServed: ['Colombo 07', 'Dehiwala', 'Mount Lavinia'],
-            school: 'Royal College',
-            availableSeats: 4,
-            totalSeats: 28,
-            experience: '8 years',
-            vehicleType: 'Toyota HiAce',
-            category: 'van',
-            isAC: true,
-        },
-        {
-            id: 2,
-            name: 'Anura Bandara',
-            verified: true,
-            rating: 4.8,
-            reviewCount: 156,
-            monthlyFee: 7500,
-            areasServed: ['Colombo 07', 'Bambalapitiya', 'Wellawatte'],
-            school: 'Royal College',
-            availableSeats: 5,
-            totalSeats: 28,
-            experience: '6 years',
-            vehicleType: 'Nissan Caravan',
-            category: 'van',
-            isAC: false,
-        },
-        {
-            id: 3,
-            name: 'Siripala Fernando',
-            verified: true,
-            rating: 4.6,
-            reviewCount: 98,
-            monthlyFee: 8000,
-            areasServed: ['Dehiwala', 'Mount Lavinia', 'Ratmalana'],
-            school: 'Royal College',
-            availableSeats: 3,
-            totalSeats: 24,
-            experience: '5 years',
-            vehicleType: 'Toyota HiAce',
-            category: 'van',
-            isAC: true,
-        },
-        {
-            id: 4,
-            name: 'Ruwan de Silva',
-            verified: false,
-            rating: 4.2,
-            reviewCount: 45,
-            monthlyFee: 6500,
-            areasServed: ['Nugegoda', 'Maharagama', 'Kottawa'],
-            school: 'Royal College',
-            availableSeats: 8,
-            totalSeats: 24,
-            experience: '3 years',
-            vehicleType: 'Nissan Caravan',
-            category: 'van',
-            isAC: false,
-        },
-        {
-            id: 5,
-            name: 'Nimal Jayawardena',
-            verified: true,
-            rating: 4.7,
-            reviewCount: 189,
-            monthlyFee: 12000,
-            areasServed: ['Colombo 03', 'Colombo 04', 'Colombo 05'],
-            school: 'Royal College',
-            availableSeats: 2,
-            totalSeats: 32,
-            experience: '10 years',
-            vehicleType: 'Toyota Coaster',
-            category: 'bus',
-            isAC: true,
-        },
-        {
-            id: 6,
-            name: 'Sunil Perera',
-            verified: true,
-            rating: 4.5,
-            reviewCount: 78,
-            monthlyFee: 5500,
-            areasServed: ['Kotte', 'Rajagiriya'],
-            school: 'Royal College',
-            availableSeats: 2,
-            totalSeats: 4,
-            experience: '12 years',
-            vehicleType: 'Suzuki Every',
-            category: 'car',
-            isAC: true,
-        },
-        {
-            id: 7,
-            name: 'Kamal Silva',
-            verified: true,
-            rating: 4.4,
-            reviewCount: 56,
-            monthlyFee: 4500,
-            areasServed: ['Malabe', 'Kaduwela'],
-            school: 'Royal College',
-            availableSeats: 1,
-            totalSeats: 3,
-            experience: '4 years',
-            vehicleType: 'Bajaj RE',
-            category: 'weel',
-            isAC: false,
-        },
-    ];
+    useEffect(() => {
+        let cancelled = false;
+        (async () => {
+            const drivers = await searchDrivers({});
+            if (!cancelled) {
+                setServices(drivers.map(driverToService));
+                setLoading(false);
+            }
+        })();
+        return () => { cancelled = true; };
+    }, []);
 
     const quickFilters = [
         { key: 'all', label: 'All', icon: Bus },
@@ -701,41 +617,7 @@ export default function SearchScreen() {
                 />
             )}
 
-            {/* Bottom Navigation */}
-            <View style={styles.bottomNav}>
-                <TouchableOpacity
-                    style={styles.navItem}
-                    onPress={() => router.push('/parent')}
-                >
-                    <Bus size={24} color="#64748B" variant="Outline" />
-                    <Text style={styles.navLabel}>Home</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.navItem}>
-                    <SearchNormal1 size={24} color="#3B82F6" variant="Bold" />
-                    <Text style={[styles.navLabel, styles.navLabelActive]}>Search</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.navItem}
-                    onPress={() => router.push('/parent/my-bookings')}
-                >
-                    <Calendar size={24} color="#64748B" variant="Outline" />
-                    <Text style={styles.navLabel}>Bookings</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.navItem}
-                    onPress={() => router.push('/parent/messages')}
-                >
-                    <Message size={24} color="#64748B" variant="Outline" />
-                    <Text style={styles.navLabel}>Messages</Text>
-                </TouchableOpacity>
-                <TouchableOpacity
-                    style={styles.navItem}
-                    onPress={() => router.push('/parent/profile')}
-                >
-                    <Setting2 size={24} color="#64748B" variant="Outline" />
-                    <Text style={styles.navLabel}>Profile</Text>
-                </TouchableOpacity>
-            </View>
+            <ParentBottomNav />
         </View>
     );
 }
@@ -1107,32 +989,5 @@ const styles = StyleSheet.create({
         fontSize: fs(14),
         fontFamily: 'Roboto-Medium',
         color: '#fff',
-    },
-    bottomNav: {
-        flexDirection: 'row',
-        backgroundColor: '#fff',
-        paddingVertical: 12,
-        paddingBottom: hp(30),
-        borderTopWidth: 1,
-        borderTopColor: '#E2E8F0',
-        shadowColor: '#000',
-        shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.05,
-        shadowRadius: 8,
-        elevation: 8,
-    },
-    navItem: {
-        flex: 1,
-        alignItems: 'center',
-        justifyContent: 'center',
-        gap: 4,
-    },
-    navLabel: {
-        fontSize: fs(11),
-        fontFamily: 'Roboto-Medium',
-        color: '#64748B',
-    },
-    navLabelActive: {
-        color: '#3B82F6',
     },
 });

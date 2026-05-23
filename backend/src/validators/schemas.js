@@ -55,7 +55,7 @@ const requiredDate = z.preprocess((value) => new Date(value), z.date());
 const paginationQuery = z
   .object({
     page: numberFromAny(z.number().int().min(1).max(10000)).optional(),
-    limit: numberFromAny(z.number().int().min(1).max(100)).optional(),
+    limit: numberFromAny(z.number().int().min(1).max(1000)).optional(),
   })
   .partial();
 
@@ -72,6 +72,13 @@ export const authRegisterSchema = z
 export const authLoginSchema = z
   .object({
     email: z.string().trim().toLowerCase().regex(EMAIL_REGEX, "Invalid email format"),
+    password: z.string().min(1, "Password is required").max(128),
+  })
+  .strict();
+
+export const switchRoleSchema = z
+  .object({
+    targetRole: z.enum(["parent", "driver"]),
   })
   .strict();
 

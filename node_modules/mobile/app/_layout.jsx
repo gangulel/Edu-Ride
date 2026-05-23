@@ -11,9 +11,19 @@ import {
   Roboto_900Black,
 } from '@expo-google-fonts/roboto';
 import * as SplashScreen from 'expo-splash-screen';
+import { ThemeProvider } from './contexts/ThemeContext';
+import { AuthProvider } from './contexts/AuthContext';
+import { setAuthTokenProvider } from '../services/api/client';
+import { getIdToken } from '../services/firebase/auth';
 
 // Keep the splash screen visible while loading fonts
 SplashScreen.preventAutoHideAsync();
+
+// Every backend request now grabs a fresh Firebase ID token. Firebase
+// auto-refreshes the underlying token, so this stays valid across sessions.
+if (process.env.EXPO_PUBLIC_USE_FIREBASE !== '0') {
+  setAuthTokenProvider(() => getIdToken());
+}
 
 export default function RootLayout() {
   const [fontsLoaded] = useFonts({
@@ -36,16 +46,20 @@ export default function RootLayout() {
   }
 
   return (
-    <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-      <Stack screenOptions={{ headerShown: false }}>
-        <Stack.Screen name="index" options={{ headerShown: false }} />
-        <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-        <Stack.Screen name="login" options={{ headerShown: false }} />
-        <Stack.Screen name="home" options={{ headerShown: false }} />
-        <Stack.Screen name="driver" options={{ headerShown: false }} />
-        <Stack.Screen name="parent" options={{ headerShown: false }} />
-        <Stack.Screen name="trips" options={{ headerShown: false }} />
-      </Stack>
-    </View>
+    <ThemeProvider>
+      <AuthProvider>
+        <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+            <Stack.Screen name="login" options={{ headerShown: false }} />
+            <Stack.Screen name="home" options={{ headerShown: false }} />
+            <Stack.Screen name="driver" options={{ headerShown: false }} />
+            <Stack.Screen name="parent" options={{ headerShown: false }} />
+            <Stack.Screen name="trips" options={{ headerShown: false }} />
+          </Stack>
+        </View>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

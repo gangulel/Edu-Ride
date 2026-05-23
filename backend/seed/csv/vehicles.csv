@@ -1,0 +1,6 @@
+driverEmail,make,model,year,color,licensePlate,vehicleType,capacity,isAC,insuranceProvider,insurancePolicy
+kasun.bandara@eduride.test,Toyota,HiAce,2021,White,WP-CAB-1001,van,14,true,Allianz Lanka,AL-2024-00001
+sanduni.wijesinghe@eduride.test,Nissan,Civilian,2020,Yellow,WP-BUS-2002,bus,25,true,AIA Insurance,AIA-2024-00002
+nuwan.rajapaksa@eduride.test,Toyota,Coaster,2019,Blue,WP-VAN-3003,mini-bus,20,false,Ceylinco Insurance,CEY-2024-00003
+chamara.silva@eduride.test,Toyota,KDH,2022,Silver,WP-CAR-4004,van,12,true,Allianz Lanka,AL-2024-00004
+dilshan.mendis@eduride.test,Mitsubishi,Rosa,2018,Orange,CP-BUS-5005,mini-bus,22,false,Ceylinco Insurance,CEY-2024-00005

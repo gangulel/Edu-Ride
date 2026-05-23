@@ -1,7 +1,8 @@
 import React from 'react';
 import { View, TouchableOpacity, StyleSheet } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
-import { responsive, wp } from '../../utils/responsive';
+import { useTheme } from '../../contexts/ThemeContext';
+import { wp } from '../../utils/responsive';
 
 const RatingStars = ({
     rating = 0,
@@ -9,48 +10,38 @@ const RatingStars = ({
     size = 'medium', // small, medium, large
     interactive = false,
     onRatingChange,
-    color = '#FF9500',
+    color,
     showEmpty = true,
     style,
 }) => {
-    const getSizeValue = () => {
-        switch (size) {
-            case 'small':
-                return wp(16);
-            case 'large':
-                return wp(32);
-            default:
-                return wp(24);
-        }
-    };
+    const theme = useTheme();
 
-    const sizeValue = getSizeValue();
+    const sizeValue = (() => {
+        switch (size) {
+            case 'small': return wp(14);
+            case 'large': return wp(28);
+            default: return wp(20);
+        }
+    })();
+
+    const filledColor = color || theme.colors.warning;
+    const emptyColor = theme.colors.borderStrong;
 
     const handlePress = (index) => {
-        if (interactive && onRatingChange) {
-            onRatingChange(index + 1);
-        }
+        if (interactive && onRatingChange) onRatingChange(index + 1);
     };
 
     const renderStar = (index) => {
         const isFilled = index < Math.floor(rating);
-        const isHalfFilled = index === Math.floor(rating) && rating % 1 >= 0.5;
-
-        const iconName = isFilled
-            ? 'star'
-            : isHalfFilled
-                ? 'star-half'
-                : showEmpty
-                    ? 'star-outline'
-                    : null;
-
+        const isHalf = index === Math.floor(rating) && rating % 1 >= 0.5;
+        const iconName = isFilled ? 'star' : isHalf ? 'star-half' : showEmpty ? 'star-outline' : null;
         if (!iconName) return null;
 
         const star = (
             <Ionicons
                 name={iconName}
                 size={sizeValue}
-                color={isFilled || isHalfFilled ? color : '#E5E5EA'}
+                color={isFilled || isHalf ? filledColor : emptyColor}
             />
         );
 

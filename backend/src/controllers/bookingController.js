@@ -2,7 +2,9 @@ import Booking from "../models/Booking.js";
 import Route from "../models/Route.js";
 import Child from "../models/Child.js";
 import User from "../models/User.js";
+import Subscription from "../models/Subscription.js";
 import { parsePagination } from "../utils/validation.js";
+import { notify } from "../services/notificationService.js";
 
 // POST /api/bookings — Parent: create booking request
 export const createBooking = async (req, res) => {
@@ -64,6 +66,14 @@ export const createBooking = async (req, res) => {
     .populate("driver", "fullName email phone")
     .populate("child", "fullName grade school")
     .populate("route", "name school");
+
+  // Fire-and-forget: ping the driver about the new request.
+  notify(driver, {
+    type: "ride",
+    title: "New booking request",
+    body: `${populated.parent.fullName} requested a ride for ${populated.child.fullName}.`,
+    data: { bookingId: booking._id },
+  }).catch(() => {});
 
   res.status(201).json({ message: "Booking request created", booking: populated });
 };
@@ -154,11 +164,36 @@ export const acceptBooking = async (req, res) => {
     await Route.findByIdAndUpdate(booking.route, { $inc: { studentCount: 1 } });
   }
 
+  // Spin up the recurring Subscription so the parent's "My Bookings" screen
+  // shows an active ride right away. Next billing = start + 30 days.
+  const start = booking.startDate || new Date();
+  const next = new Date(start);
+  next.setDate(next.getDate() + 30);
+  const subscription = await Subscription.create({
+    parent: booking.parent,
+    driver: booking.driver,
+    child: booking.child,
+    booking: booking._id,
+    route: booking.route || null,
+    monthlyFee: booking.monthlyFee,
+    pickupLocation: booking.pickupAddress,
+    dropoffLocation: booking.dropoffAddress || booking.pickupAddress,
+    startDate: start,
+    nextBillingDate: next,
+  });
+
+  notify(booking.parent, {
+    type: "ride",
+    title: "Booking accepted",
+    body: "Your ride request was accepted. Tap to view subscription details.",
+    data: { bookingId: booking._id, subscriptionId: subscription._id },
+  }).catch(() => {});
+
   const populated = await Booking.findById(booking._id)
     .populate("parent", "fullName email phone")
     .populate("child", "fullName grade school");
 
-  res.json({ message: "Booking accepted", booking: populated });
+  res.json({ message: "Booking accepted", booking: populated, subscription });
 };
 
 // PUT /api/bookings/:id/reject — Driver: reject booking
@@ -180,6 +215,15 @@ export const rejectBooking = async (req, res) => {
   booking.status = "rejected";
   booking.rejectionReason = req.body.reason || null;
   await booking.save();
+
+  notify(booking.parent, {
+    type: "ride",
+    title: "Booking declined",
+    body:
+      booking.rejectionReason ||
+      "The driver declined your booking request. Try a different driver from the search screen.",
+    data: { bookingId: booking._id },
+  }).catch(() => {});
 
   res.json({ message: "Booking rejected", booking });
 };
@@ -207,6 +251,20 @@ export const cancelBooking = async (req, res) => {
 
   booking.status = "cancelled";
   await booking.save();
+
+  // Cancel the matching subscription, if any, so the parent's dashboard
+  // doesn't keep showing it as active.
+  await Subscription.updateMany(
+    { booking: booking._id, status: "active" },
+    { status: "cancelled", cancelledAt: new Date(), endDate: new Date() }
+  );
+
+  notify(booking.driver, {
+    type: "ride",
+    title: "Booking cancelled",
+    body: "A parent has cancelled their ride. The seat is freed up.",
+    data: { bookingId: booking._id },
+  }).catch(() => {});
 
   res.json({ message: "Booking cancelled", booking });
 };
