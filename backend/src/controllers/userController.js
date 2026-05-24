@@ -1,4 +1,5 @@
 import User from "../models/User.js";
+import Child from "../models/Child.js";
 import { escapeRegex, parsePagination } from "../utils/validation.js";
 
 // GET /api/users — List users (admin)
@@ -18,7 +19,7 @@ export const listUsers = async (req, res) => {
     ];
   }
 
-  const [users, total] = await Promise.all([
+  const [rawUsers, total] = await Promise.all([
     User.find(filter)
       .select("-firebaseUid")
       .sort({ createdAt: -1 })
@@ -26,6 +27,20 @@ export const listUsers = async (req, res) => {
       .limit(pagination.limit),
     User.countDocuments(filter),
   ]);
+
+  // Attach children count for parent users
+  let users = rawUsers.map((u) => u.toObject());
+  const parentIds = users.filter((u) => u.role === "parent").map((u) => u._id);
+  if (parentIds.length > 0) {
+    const childCounts = await Child.aggregate([
+      { $match: { parent: { $in: parentIds } } },
+      { $group: { _id: "$parent", count: { $sum: 1 } } },
+    ]);
+    const countMap = new Map(childCounts.map((c) => [c._id.toString(), c.count]));
+    users = users.map((u) =>
+      u.role === "parent" ? { ...u, childrenCount: countMap.get(u._id.toString()) ?? 0 } : u
+    );
+  }
 
   res.json({
     users,

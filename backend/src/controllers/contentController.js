@@ -1,6 +1,7 @@
 import mongoose from "mongoose";
 import AdminContent from "../models/AdminContent.js";
 import User from "../models/User.js";
+import Child from "../models/Child.js";
 import { escapeRegex } from "../utils/validation.js";
 
 // GET /api/public/admin-content — Public: admin dashboard content data
@@ -80,7 +81,7 @@ export const getPublicUsers = async (req, res, next) => {
     }
 
     const skip = (parsedPage - 1) * parsedLimit;
-    const [users, total] = await Promise.all([
+    const [rawUsers, total] = await Promise.all([
       User.find(filter)
         .select("fullName email phone role status school rating reviewCount totalTrips createdAt")
         .sort({ createdAt: -1 })
@@ -88,6 +89,19 @@ export const getPublicUsers = async (req, res, next) => {
         .limit(parsedLimit),
       User.countDocuments(filter),
     ]);
+
+    let users = rawUsers.map((u) => u.toObject());
+    const parentIds = users.filter((u) => u.role === "parent").map((u) => u._id);
+    if (parentIds.length > 0) {
+      const childCounts = await Child.aggregate([
+        { $match: { parent: { $in: parentIds } } },
+        { $group: { _id: "$parent", count: { $sum: 1 } } },
+      ]);
+      const countMap = new Map(childCounts.map((c) => [c._id.toString(), c.count]));
+      users = users.map((u) =>
+        u.role === "parent" ? { ...u, childrenCount: countMap.get(u._id.toString()) ?? 0 } : u
+      );
+    }
 
     res.json({
       users,
