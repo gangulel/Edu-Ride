@@ -46,7 +46,7 @@ export default function MessagesScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <Header title="Messages" showBack />
+            <Header title="Messages" />
 
             {loading ? (
                 <View style={styles.centered}>

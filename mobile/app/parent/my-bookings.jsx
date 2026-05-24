@@ -98,7 +98,7 @@ export default function MyBookingsScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <Header title="My Bookings" showBack />
+            <Header title="My Bookings" />
 
             <View style={styles.tabsContainer}>
                 {tabs.map(tab => (

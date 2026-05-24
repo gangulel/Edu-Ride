@@ -66,7 +66,7 @@ export default function PaymentsScreen() {
 
     return (
         <SafeAreaView style={styles.container}>
-            <Header title="Payments" showBack />
+            <Header title="Payments" />
 
             {loading ? (
                 <View style={styles.centered}>

@@ -24,11 +24,11 @@ import {
     ArrowRight2,
     Shield,
     Clock,
-    Setting2,
 } from 'iconsax-react-native';
 import { responsive, wp, hp, fs } from '../utils/responsive';
 import { useAuth } from '../../contexts/AuthContext';
 import { getChildren, getBookings, getMe } from '../../services/parentApi';
+import { ParentBottomNav } from '../components/organisms';
 
 function getGreeting() {
     const h = new Date().getHours();
@@ -359,29 +359,7 @@ export default function ParentHome() {
                 <View style={{ height: hp(100) }} />
             </ScrollView>
 
-            {/* Bottom Navigation */}
-            <View style={styles.bottomNav}>
-                <TouchableOpacity style={styles.navItem}>
-                    <Bus size={24} color="#3B82F6" variant="Bold" />
-                    <Text style={[styles.navLabel, styles.navLabelActive]}>Home</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.navItem} onPress={() => router.push('/parent/search')}>
-                    <SearchNormal1 size={24} color="#64748B" variant="Outline" />
-                    <Text style={styles.navLabel}>Search</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.navItem} onPress={() => router.push('/parent/my-bookings')}>
-                    <Calendar size={24} color="#64748B" variant="Outline" />
-                    <Text style={styles.navLabel}>Bookings</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.navItem} onPress={() => router.push('/parent/messages')}>
-                    <Message size={24} color="#64748B" variant="Outline" />
-                    <Text style={styles.navLabel}>Messages</Text>
-                </TouchableOpacity>
-                <TouchableOpacity style={styles.navItem} onPress={() => router.push('/parent/profile')}>
-                    <Setting2 size={24} color="#64748B" variant="Outline" />
-                    <Text style={styles.navLabel}>Profile</Text>
-                </TouchableOpacity>
-            </View>
+            <ParentBottomNav />
         </View>
     );
 }
@@ -528,14 +506,4 @@ const styles = StyleSheet.create({
         backgroundColor: 'rgba(255,255,255,0.2)',
         alignItems: 'center', justifyContent: 'center',
     },
-    bottomNav: {
-        flexDirection: 'row', backgroundColor: '#fff',
-        paddingVertical: 12, paddingBottom: hp(30),
-        borderTopWidth: 1, borderTopColor: '#E2E8F0',
-        shadowColor: '#000', shadowOffset: { width: 0, height: -4 },
-        shadowOpacity: 0.05, shadowRadius: 8, elevation: 8,
-    },
-    navItem: { flex: 1, alignItems: 'center', justifyContent: 'center', gap: 4 },
-    navLabel: { fontSize: fs(11), fontFamily: 'Roboto-Medium', color: '#64748B' },
-    navLabelActive: { color: '#3B82F6' },
 });
