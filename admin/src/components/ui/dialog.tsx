@@ -1,16 +1,18 @@
 import * as React from "react"
+import { createPortal } from "react-dom"
 import { cn } from "./utils"
 
 const Dialog = ({ open, onOpenChange, children }: { open: boolean, onOpenChange: (open: boolean) => void, children: React.ReactNode }) => {
   if (!open) return null
 
-  return (
+  return createPortal(
     <div className="fixed inset-0 z-50 flex items-center justify-center">
       <div className="fixed inset-0 bg-black/50" onClick={() => onOpenChange(false)} />
       <div className="relative z-50">
         {children}
       </div>
-    </div>
+    </div>,
+    document.body
   )
 }
 
