@@ -32,6 +32,19 @@ import { apiFetch } from "../../services/api";
 // Required for web browser redirect
 WebBrowser.maybeCompleteAuthSession();
 
+// expo-auth-session's `invariantClientId` throws if the platform-specific
+// client ID is `undefined`, so we feed it a clearly-fake sentinel and rely on
+// `isValidClientId` to gate the actual prompt — that way we surface our own
+// helpful inline error instead of letting Google return `invalid_client`.
+const UNSET_CLIENT_ID = "unset.apps.googleusercontent.com";
+
+const isValidClientId = (id) =>
+  typeof id === "string" &&
+  id.length > 0 &&
+  id !== UNSET_CLIENT_ID &&
+  !id.startsWith("YOUR_") &&
+  id.endsWith(".apps.googleusercontent.com");
+
 export default function Login() {
   const router = useRouter();
   const scrollRef = useRef(null);
@@ -42,21 +55,38 @@ export default function Login() {
   const [error, setError] = useState("");
   const [showPassword, setShowPassword] = useState(false);
 
-  // Google Auth configuration
-  // Note: Replace these with your actual Google OAuth Client IDs from Google Cloud Console
+  // Google OAuth client IDs — read from .env (EXPO_PUBLIC_GOOGLE_*_CLIENT_ID).
+  // See GOOGLE_LOGIN_SETUP.md for how to create these in Google Cloud Console.
+  const webClientId = process.env.EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID;
+  const iosClientId = process.env.EXPO_PUBLIC_GOOGLE_IOS_CLIENT_ID;
+  const androidClientId = process.env.EXPO_PUBLIC_GOOGLE_ANDROID_CLIENT_ID;
+
+  const platformClientId =
+    Platform.OS === "ios"
+      ? iosClientId
+      : Platform.OS === "android"
+      ? androidClientId
+      : webClientId;
+  const googleConfigured = isValidClientId(platformClientId);
+
   const [request, response, promptAsync] = Google.useAuthRequest({
-    // Get these from https://console.cloud.google.com/apis/credentials
-    androidClientId: "YOUR_ANDROID_CLIENT_ID.apps.googleusercontent.com",
-    iosClientId: "YOUR_IOS_CLIENT_ID.apps.googleusercontent.com",
-    webClientId: "YOUR_WEB_CLIENT_ID.apps.googleusercontent.com",
+    webClientId: webClientId || UNSET_CLIENT_ID,
+    iosClientId: iosClientId || UNSET_CLIENT_ID,
+    androidClientId: androidClientId || UNSET_CLIENT_ID,
   });
 
   useEffect(() => {
-    if (response?.type === "success") {
-      const { authentication } = response;
-      handleGoogleAuthSuccess(authentication);
-    } else if (response?.type === "error") {
-      setError("Google sign-in failed. Please try again.");
+    if (!response) return;
+    if (response.type === "success") {
+      handleGoogleAuthSuccess(response.authentication);
+    } else if (response.type === "error") {
+      setError(
+        response.error?.message ||
+          response.params?.error_description ||
+          "Google sign-in failed. Please try again."
+      );
+      setGoogleLoading(false);
+    } else if (response.type === "dismiss" || response.type === "cancel") {
       setGoogleLoading(false);
     }
   }, [response]);
@@ -132,12 +162,22 @@ export default function Login() {
 
   const handleGoogleLogin = async () => {
     setError("");
+    if (!googleConfigured) {
+      setError(
+        "Google sign-in is not configured. Set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID in mobile/.env — see GOOGLE_LOGIN_SETUP.md."
+      );
+      return;
+    }
+    if (!request) {
+      setError("Google sign-in is still loading. Please try again in a moment.");
+      return;
+    }
     setGoogleLoading(true);
     try {
       await promptAsync();
     } catch (err) {
       console.error("Google Sign-In Error:", err);
-      setError("Google sign-in failed. Please try again.");
+      setError(err?.message || "Google sign-in failed. Please try again.");
       setGoogleLoading(false);
     }
   };
@@ -277,7 +317,7 @@ export default function Login() {
               style={[styles.socialButton, googleLoading && styles.socialButtonDisabled]}
               onPress={handleGoogleLogin}
               activeOpacity={0.7}
-              disabled={googleLoading || !request}
+              disabled={googleLoading}
             >
               {googleLoading ? (
                 <ActivityIndicator color="#3B82F6" size="small" />

@@ -1,5 +1,7 @@
 export const errorHandler = (err, req, res, _next) => {
-  console.error("Unhandled error:", err);
+  if (err?.status >= 500 || (!err?.status && !err?.statusCode)) {
+    console.error("Unhandled error:", err);
+  }
 
   if (err?.name === "ZodError") {
     const details = err.issues?.map((issue) => ({
