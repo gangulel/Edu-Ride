@@ -58,11 +58,26 @@ const areas = [
 ];
 const vehicleTypes = [
   { make: "Toyota",     model: "Hiace",    type: "van",      capacity: 14 },
-  { make: "Nissan",     model: "Civilian", type: "bus",       capacity: 25 },
-  { make: "Toyota",     model: "Coaster",  type: "mini-bus",  capacity: 30 },
-  { make: "Isuzu",      model: "Elf",      type: "mini-bus",  capacity: 20 },
-  { make: "Mitsubishi", model: "Rosa",     type: "bus",       capacity: 28 },
+  { make: "Nissan",     model: "Civilian", type: "bus",      capacity: 25 },
+  { make: "Toyota",     model: "Coaster",  type: "mini-bus", capacity: 30 },
+  { make: "Isuzu",      model: "Elf",      type: "mini-bus", capacity: 20 },
+  { make: "Mitsubishi", model: "Rosa",     type: "bus",      capacity: 28 },
 ];
+const vehicleColors = ["White", "Silver", "Blue", "Yellow", "Orange", "Beige", "Cream"];
+const insuranceProviders = [
+  "Sri Lanka Insurance",
+  "Ceylinco Insurance",
+  "AIA Insurance",
+  "Janashakthi Insurance",
+  "HNB General Insurance",
+  "Union Assurance",
+];
+// Returns a Date offset by ±months from today (negative = past)
+const monthsFromNow = (n) => {
+  const d = new Date();
+  d.setMonth(d.getMonth() + n);
+  return d;
+};
 
 const pick = (arr) => arr[Math.floor(Math.random() * arr.length)];
 const pad  = (n, len = 3) => String(n).padStart(len, "0");
@@ -270,16 +285,35 @@ const seedCoreData = async () => {
     const id = new mongoose.Types.ObjectId();
     vehicleIds.push(id);
     const vt = vehicleTypes[i % vehicleTypes.length];
+    // Spread expiry dates: some expired, some expiring soon, most valid
+    // Registration: bucket 0-9 expired, 10-19 within 30 days, rest 1-18 months ahead
+    let regExpiry;
+    if (i < 10)       regExpiry = monthsFromNow(-1 - (i % 3));        // expired
+    else if (i < 20)  regExpiry = monthsFromNow(0);                    // within 30 days (today-ish)
+    else              regExpiry = monthsFromNow(3 + (i % 18));         // valid
+    // Insurance: similar spread, offset by 7 to mix differently
+    let insExpiry;
+    const ii = (i + 7) % 100;
+    if (ii < 8)       insExpiry = monthsFromNow(-1 - (ii % 4));
+    else if (ii < 16) insExpiry = monthsFromNow(0);
+    else              insExpiry = monthsFromNow(2 + (ii % 12));
+
+    const provider = pick(insuranceProviders);
     vehicleDocs.push({
       _id: id,
       driver: driverIds[i],
       make: vt.make,
       model: vt.model,
       year: String(2018 + (i % 7)),
+      color: vehicleColors[i % vehicleColors.length],
       licensePlate: `SDB-${pad(i + 1)}`,
       capacity: vt.capacity,
       vehicleType: vt.type,
       isAC: i % 2 === 0,
+      registrationExpiry: regExpiry,
+      insuranceProvider: provider,
+      insurancePolicy: `POL-${pad(i + 1, 4)}-${2025 + (i % 3)}`,
+      insuranceExpiry: insExpiry,
     });
   }
   await Vehicle.insertMany(vehicleDocs);
