@@ -2,6 +2,7 @@ import admin from "../config/firebase.js";
 import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import { createAdminSessionToken } from "../lib/adminSessionToken.js";
+import { createMobileSessionToken } from "../lib/mobileSessionToken.js";
 
 const FIREBASE_AUTH_URL = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword";
 
@@ -173,40 +174,89 @@ export const register = async (req, res) => {
 
 // POST /api/auth/login
 export const login = async (req, res) => {
-  const { email } = req.body;
+  const { email, password } = req.body;
   const normalizedEmail = normalizeEmail(email);
 
-  if (!normalizedEmail) {
-    return res.status(400).json({ error: "Email is required" });
+  if (!normalizedEmail || !password) {
+    return res.status(400).json({ error: "Email and password are required" });
   }
 
-  // Verify user exists in Firebase
-  const firebaseUser = await admin.auth().getUserByEmail(normalizedEmail);
+  const webApiKey = process.env.FIREBASE_WEB_API_KEY;
 
-  // Find user in MongoDB
-  const user = await User.findOne({ firebaseUid: firebaseUser.uid });
+  let idToken = null;
+
+  if (webApiKey) {
+    // Validate password via Firebase REST API and obtain an ID token the client
+    // can use as a Bearer token for subsequent authenticated requests.
+    let firebaseResponse;
+    try {
+      firebaseResponse = await fetch(`${FIREBASE_AUTH_URL}?key=${webApiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: normalizedEmail, password, returnSecureToken: true }),
+      });
+    } catch (err) {
+      console.error("Firebase sign-in network error:", err.message);
+      return res.status(502).json({ error: "Could not reach the authentication provider. Please try again." });
+    }
+
+    let firebasePayload;
+    try { firebasePayload = await firebaseResponse.json(); } catch { firebasePayload = null; }
+
+    if (!firebaseResponse.ok) {
+      const errorCode = extractFirebaseErrorCode(firebasePayload);
+      const errorMessage = (errorCode && FIREBASE_LOGIN_ERROR_MESSAGES[errorCode]) || "Invalid email or password";
+      return res.status(401).json({ error: errorMessage });
+    }
+
+    idToken = firebasePayload?.idToken || null;
+  } else {
+    // FIREBASE_WEB_API_KEY not configured — fall back to email-only lookup.
+    // Password is not validated in this path; configure the key for production.
+    console.warn("FIREBASE_WEB_API_KEY not set — skipping password validation");
+  }
+
+  // Resolve the Firebase UID either from the verified ID token or by email lookup
+  let firebaseUid;
+  if (idToken) {
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    firebaseUid = decoded.uid;
+  } else {
+    const firebaseUser = await admin.auth().getUserByEmail(normalizedEmail);
+    firebaseUid = firebaseUser.uid;
+  }
+
+  const user = await User.findOne({ firebaseUid });
   if (!user) {
     return res.status(404).json({ error: "User not found in database" });
   }
 
+  const userPayload = {
+    id: user._id,
+    firebaseUid: user.firebaseUid,
+    email: user.email,
+    fullName: user.fullName,
+    phone: user.phone,
+    role: user.role,
+    status: user.status,
+    profilePhoto: user.profilePhoto,
+    ...(user.role === "driver" && {
+      rating: user.rating,
+      reviewCount: user.reviewCount,
+      totalTrips: user.totalTrips,
+      isVerified: user.isVerified,
+    }),
+  };
+
+  // Prefer Firebase ID token; fall back to a signed mobile session token so
+  // the client always receives a usable Bearer token regardless of whether
+  // FIREBASE_WEB_API_KEY is configured on this server.
+  const sessionToken = idToken || createMobileSessionToken(user);
+
   res.json({
     message: "Login successful",
-    user: {
-      id: user._id,
-      firebaseUid: user.firebaseUid,
-      email: user.email,
-      fullName: user.fullName,
-      phone: user.phone,
-      role: user.role,
-      status: user.status,
-      profilePhoto: user.profilePhoto,
-      ...(user.role === "driver" && {
-        rating: user.rating,
-        reviewCount: user.reviewCount,
-        totalTrips: user.totalTrips,
-        isVerified: user.isVerified,
-      }),
-    },
+    token: sessionToken,
+    user: userPayload,
   });
 };
 
@@ -373,8 +423,11 @@ export const googleAuth = async (req, res) => {
     });
   }
 
+  const googleSessionToken = idToken || createMobileSessionToken(user);
+
   res.json({
     message: "Google authentication successful",
+    token: googleSessionToken,
     user: {
       id: user._id,
       firebaseUid: user.firebaseUid,

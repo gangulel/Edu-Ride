@@ -1,4 +1,4 @@
-import React, { useState, useCallback } from 'react';
+import React, { useState, useCallback, useEffect } from 'react';
 import {
     View,
     Text,
@@ -10,7 +10,6 @@ import {
     FlatList,
     ActivityIndicator,
     StatusBar,
-    Modal,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
@@ -33,128 +32,68 @@ import {
     Truck,
 } from 'iconsax-react-native';
 import { responsive, wp, hp, fs } from '../utils/responsive';
+import { searchRoutes } from '../../services/parentApi';
+
+const VEHICLE_TYPE_MAP = { 'van': 'van', 'bus': 'bus', 'mini-bus': 'bus', 'sedan': 'car' };
+
+function mapRouteToService(route) {
+    const driver = route.driver || {};
+    const vehicle = route.vehicle || {};
+    const capacity = vehicle.capacity || 0;
+    const occupied = route.studentCount || 0;
+    const available = Math.max(0, capacity - occupied);
+    const category = VEHICLE_TYPE_MAP[vehicle.vehicleType] || 'van';
+    const stopLocations = (route.stops || []).slice(0, 3).map(s => s.location).filter(Boolean);
+    const areasServed = stopLocations.length ? stopLocations : (driver.areasServed || []);
+    const vehicleLabel = vehicle.make
+        ? `${vehicle.make} ${vehicle.model || ''}`.trim()
+        : (vehicle.vehicleType || 'Vehicle');
+
+    return {
+        id: driver._id || route._id,
+        driverId: driver._id || null,
+        routeId: route._id,
+        name: driver.fullName || 'Driver',
+        verified: driver.isVerified || false,
+        rating: driver.rating || 0,
+        reviewCount: driver.reviewCount || 0,
+        monthlyFee: driver.monthlyFee || 0,
+        areasServed,
+        school: route.school || driver.school || '',
+        availableSeats: available,
+        totalSeats: capacity,
+        experience: driver.experience || '',
+        vehicleType: vehicleLabel,
+        category,
+        isAC: vehicle.isAC || false,
+    };
+}
 
 export default function SearchScreen() {
     const router = useRouter();
     const [searchQuery, setSearchQuery] = useState('');
-    const [loading, setLoading] = useState(false);
+    const [loading, setLoading] = useState(true);
     const [activeFilter, setActiveFilter] = useState('all');
+    const [allRoutes, setAllRoutes] = useState([]);
+    const [error, setError] = useState(null);
 
-    // Mock services data
-    const services = [
-        {
-            id: 1,
-            name: 'Kasun Perera',
-            verified: true,
-            rating: 4.9,
-            reviewCount: 234,
-            monthlyFee: 8500,
-            areasServed: ['Colombo 07', 'Dehiwala', 'Mount Lavinia'],
-            school: 'Royal College',
-            availableSeats: 4,
-            totalSeats: 28,
-            experience: '8 years',
-            vehicleType: 'Toyota HiAce',
-            category: 'van',
-            isAC: true,
-        },
-        {
-            id: 2,
-            name: 'Anura Bandara',
-            verified: true,
-            rating: 4.8,
-            reviewCount: 156,
-            monthlyFee: 7500,
-            areasServed: ['Colombo 07', 'Bambalapitiya', 'Wellawatte'],
-            school: 'Royal College',
-            availableSeats: 5,
-            totalSeats: 28,
-            experience: '6 years',
-            vehicleType: 'Nissan Caravan',
-            category: 'van',
-            isAC: false,
-        },
-        {
-            id: 3,
-            name: 'Siripala Fernando',
-            verified: true,
-            rating: 4.6,
-            reviewCount: 98,
-            monthlyFee: 8000,
-            areasServed: ['Dehiwala', 'Mount Lavinia', 'Ratmalana'],
-            school: 'Royal College',
-            availableSeats: 3,
-            totalSeats: 24,
-            experience: '5 years',
-            vehicleType: 'Toyota HiAce',
-            category: 'van',
-            isAC: true,
-        },
-        {
-            id: 4,
-            name: 'Ruwan de Silva',
-            verified: false,
-            rating: 4.2,
-            reviewCount: 45,
-            monthlyFee: 6500,
-            areasServed: ['Nugegoda', 'Maharagama', 'Kottawa'],
-            school: 'Royal College',
-            availableSeats: 8,
-            totalSeats: 24,
-            experience: '3 years',
-            vehicleType: 'Nissan Caravan',
-            category: 'van',
-            isAC: false,
-        },
-        {
-            id: 5,
-            name: 'Nimal Jayawardena',
-            verified: true,
-            rating: 4.7,
-            reviewCount: 189,
-            monthlyFee: 12000,
-            areasServed: ['Colombo 03', 'Colombo 04', 'Colombo 05'],
-            school: 'Royal College',
-            availableSeats: 2,
-            totalSeats: 32,
-            experience: '10 years',
-            vehicleType: 'Toyota Coaster',
-            category: 'bus',
-            isAC: true,
-        },
-        {
-            id: 6,
-            name: 'Sunil Perera',
-            verified: true,
-            rating: 4.5,
-            reviewCount: 78,
-            monthlyFee: 5500,
-            areasServed: ['Kotte', 'Rajagiriya'],
-            school: 'Royal College',
-            availableSeats: 2,
-            totalSeats: 4,
-            experience: '12 years',
-            vehicleType: 'Suzuki Every',
-            category: 'car',
-            isAC: true,
-        },
-        {
-            id: 7,
-            name: 'Kamal Silva',
-            verified: true,
-            rating: 4.4,
-            reviewCount: 56,
-            monthlyFee: 4500,
-            areasServed: ['Malabe', 'Kaduwela'],
-            school: 'Royal College',
-            availableSeats: 1,
-            totalSeats: 3,
-            experience: '4 years',
-            vehicleType: 'Bajaj RE',
-            category: 'weel',
-            isAC: false,
-        },
-    ];
+    const loadRoutes = useCallback(async (query = '') => {
+        try {
+            setLoading(true);
+            setError(null);
+            const params = { status: 'active' };
+            if (query) params.search = query;
+            const res = await searchRoutes(params);
+            const routes = (res?.routes || []).map(mapRouteToService);
+            setAllRoutes(routes);
+        } catch (err) {
+            setError(err.message || 'Failed to load services');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => { loadRoutes(); }, [loadRoutes]);
 
     const quickFilters = [
         { key: 'all', label: 'All', icon: Bus },
@@ -345,58 +284,29 @@ export default function SearchScreen() {
     const handleSuggestionPress = (suggestion) => {
         setSearchQuery(suggestion.name);
         setShowSuggestions(false);
-        handleSearch();
+        loadRoutes(suggestion.name);
     };
 
     const handleSearch = useCallback(() => {
-        setLoading(true);
         setShowSuggestions(false);
-        setTimeout(() => setLoading(false), 1000);
-    }, [searchQuery]);
+        loadRoutes(searchQuery);
+    }, [searchQuery, loadRoutes]);
 
     const handleServicePress = (service) => {
-        router.push(`/parent/service-detail?id=${service.id}`);
+        router.push(`/parent/service-detail?id=${service.driverId || service.id}&routeId=${service.routeId}`);
     };
 
-    const sortBy = 'rating';
-
-    const filteredServices = services
+    const filteredServices = allRoutes
         .filter(service => {
             if (activeFilter === 'verified' && !service.verified) return false;
             if (activeFilter === 'top_rated' && service.rating < 4.5) return false;
             if (activeFilter === 'available' && service.availableSeats === 0) return false;
-
-            // Vehicle Type Filter
             if (selectedVehicleType !== 'all' && service.category !== selectedVehicleType) return false;
-
-            // AC Filter
             if (selectedACType === 'ac' && !service.isAC) return false;
             if (selectedACType === 'non-ac' && service.isAC) return false;
-
-            if (searchQuery) {
-                const query = searchQuery.toLowerCase();
-                return (
-                    service.name.toLowerCase().includes(query) ||
-                    service.areasServed.some(area => area.toLowerCase().includes(query)) ||
-                    service.school.toLowerCase().includes(query)
-                );
-            }
             return true;
         })
-        .sort((a, b) => {
-            switch (sortBy) {
-                case 'rating':
-                    return b.rating - a.rating;
-                case 'price_low':
-                    return a.monthlyFee - b.monthlyFee;
-                case 'price_high':
-                    return b.monthlyFee - a.monthlyFee;
-                case 'seats':
-                    return b.availableSeats - a.availableSeats;
-                default:
-                    return 0;
-            }
-        });
+        .sort((a, b) => b.rating - a.rating);
 
     const getInitials = (name) => {
         return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -668,6 +578,13 @@ export default function SearchScreen() {
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#3B82F6" />
                     <Text style={styles.loadingText}>Finding services...</Text>
+                </View>
+            ) : error ? (
+                <View style={styles.loadingContainer}>
+                    <Text style={[styles.loadingText, { color: '#EF4444' }]}>{error}</Text>
+                    <TouchableOpacity style={styles.clearBtn} onPress={() => loadRoutes(searchQuery)}>
+                        <Text style={styles.clearBtnText}>Retry</Text>
+                    </TouchableOpacity>
                 </View>
             ) : filteredServices.length === 0 ? (
                 <View style={styles.emptyContainer}>

@@ -6,11 +6,20 @@ function getDefaultBaseUrl() {
   if (Platform.OS === "android") {
     return "http://10.0.2.2:3000/api";
   }
-
   return "http://localhost:3000/api";
 }
 
 export const API_BASE_URL = (explicitBase || getDefaultBaseUrl()).replace(/\/$/, "");
+
+let _authToken = null;
+
+export function setAuthToken(token) {
+  _authToken = token;
+}
+
+export function getAuthToken() {
+  return _authToken;
+}
 
 async function parseJsonSafe(response) {
   const text = await response.text();
@@ -24,12 +33,18 @@ async function parseJsonSafe(response) {
 }
 
 export async function apiFetch(path, options = {}) {
+  const headers = {
+    "Content-Type": "application/json",
+    ...(options.headers || {}),
+  };
+
+  if (_authToken && !headers["Authorization"]) {
+    headers["Authorization"] = `Bearer ${_authToken}`;
+  }
+
   const response = await fetch(`${API_BASE_URL}${path}`, {
-    headers: {
-      "Content-Type": "application/json",
-      ...(options.headers || {}),
-    },
     ...options,
+    headers,
   });
 
   const payload = await parseJsonSafe(response);

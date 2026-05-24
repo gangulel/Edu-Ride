@@ -28,6 +28,7 @@ import * as WebBrowser from "expo-web-browser";
 import GoogleLogo from "../components/icons/GoogleLogo";
 import { responsive, wp, hp, fs } from "../utils/responsive";
 import { apiFetch } from "../../services/api";
+import { useAuth } from "../../contexts/AuthContext";
 
 // Required for web browser redirect
 WebBrowser.maybeCompleteAuthSession();
@@ -47,6 +48,7 @@ const isValidClientId = (id) =>
 
 export default function Login() {
   const router = useRouter();
+  const { login } = useAuth();
   const scrollRef = useRef(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -93,29 +95,28 @@ export default function Login() {
 
   const handleGoogleAuthSuccess = async (authentication) => {
     try {
-      // Get user info from Google
-      const userInfoResponse = await fetch(
-        "https://www.googleapis.com/userinfo/v2/me",
-        {
-          headers: { Authorization: `Bearer ${authentication.accessToken}` },
-        }
-      );
-      const userInfo = await userInfoResponse.json();
+      const payload = await apiFetch("/auth/google", {
+        method: "POST",
+        body: JSON.stringify({ idToken: authentication.idToken || authentication.accessToken, role: "parent" }),
+      });
 
-      console.log("Google User Info:", userInfo);
+      const { token, user } = payload || {};
+      if (token && user) {
+        await login(token, user);
+      }
 
-      // Here you would typically:
-      // 1. Send the token to your backend for verification
-      // 2. Create/login the user in your database
-      // 3. Store the session token
-
-      setGoogleLoading(false);
-
-      // Navigate to driver home on success
-      router.replace("/driver");
+      const role = user?.role;
+      if (role === "parent") {
+        router.replace("/parent");
+      } else if (role === "driver") {
+        router.replace("/driver");
+      } else {
+        router.replace("/parent");
+      }
     } catch (err) {
-      console.error("Error fetching user info:", err);
-      setError("Failed to get user information. Please try again.");
+      console.error("Google auth error:", err);
+      setError(err.message || "Google sign-in failed. Please try again.");
+    } finally {
       setGoogleLoading(false);
     }
   };
@@ -145,7 +146,13 @@ export default function Login() {
         body: JSON.stringify({ email, password }),
       });
 
-      const role = payload?.user?.role;
+      const { token, user } = payload || {};
+      const role = user?.role;
+
+      if (token && user) {
+        await login(token, user);
+      }
+
       if (role === "parent") {
         router.replace("/parent");
       } else if (role === "driver") {

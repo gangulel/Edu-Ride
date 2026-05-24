@@ -1,27 +1,39 @@
 import React, { useState } from 'react';
-import { View, StyleSheet, ScrollView, SafeAreaView } from 'react-native';
+import { View, StyleSheet, ScrollView, SafeAreaView, Alert } from 'react-native';
 import { useRouter } from 'expo-router';
 import { responsive, hp } from '../../utils/responsive';
 import { Button, Avatar, Input } from '../../components/atoms';
 import { Header } from '../../components/organisms';
+import { useAuth } from '../../../contexts/AuthContext';
+import { updateProfile } from '../../../services/parentApi';
 
 export default function EditProfileScreen() {
     const router = useRouter();
+    const { user, updateUser } = useAuth();
     const [loading, setLoading] = useState(false);
     const [form, setForm] = useState({
-        firstName: 'Samantha',
-        lastName: 'Fernando',
-        email: 'samantha.fernando@email.com',
-        phone: '+94 77 123 4567',
-        address: 'Colombo 07, Sri Lanka',
+        fullName: user?.fullName || '',
+        phone: user?.phone || '',
     });
 
-    const handleSave = () => {
+    const handleSave = async () => {
+        if (!form.fullName.trim()) {
+            Alert.alert('Validation', 'Full name is required.');
+            return;
+        }
         setLoading(true);
-        setTimeout(() => {
-            setLoading(false);
+        try {
+            const res = await updateProfile(user.id, {
+                fullName: form.fullName.trim(),
+                phone: form.phone.trim(),
+            });
+            updateUser(res?.user || { fullName: form.fullName, phone: form.phone });
             router.back();
-        }, 1000);
+        } catch (err) {
+            Alert.alert('Error', err.message || 'Failed to update profile. Please try again.');
+        } finally {
+            setLoading(false);
+        }
     };
 
     return (
@@ -29,15 +41,27 @@ export default function EditProfileScreen() {
             <Header title="Edit Profile" showBack />
             <ScrollView style={styles.scrollView} contentContainerStyle={styles.content}>
                 <View style={styles.avatarSection}>
-                    <Avatar name={`${form.firstName} ${form.lastName}`} size="xlarge" />
-                    <Button title="Change Photo" variant="ghost" size="small" style={styles.changePhoto} />
+                    <Avatar name={form.fullName || 'User'} size="xlarge" />
                 </View>
 
-                <Input label="First Name" value={form.firstName} onChangeText={(v) => setForm({ ...form, firstName: v })} />
-                <Input label="Last Name" value={form.lastName} onChangeText={(v) => setForm({ ...form, lastName: v })} />
-                <Input label="Email" value={form.email} onChangeText={(v) => setForm({ ...form, email: v })} keyboardType="email-address" autoCapitalize="none" />
-                <Input label="Phone" value={form.phone} onChangeText={(v) => setForm({ ...form, phone: v })} keyboardType="phone-pad" />
-                <Input label="Address" value={form.address} onChangeText={(v) => setForm({ ...form, address: v })} multiline />
+                <Input
+                    label="Full Name"
+                    value={form.fullName}
+                    onChangeText={(v) => setForm({ ...form, fullName: v })}
+                    autoCapitalize="words"
+                />
+                <Input
+                    label="Email"
+                    value={user?.email || ''}
+                    editable={false}
+                    style={styles.disabledInput}
+                />
+                <Input
+                    label="Phone"
+                    value={form.phone}
+                    onChangeText={(v) => setForm({ ...form, phone: v })}
+                    keyboardType="phone-pad"
+                />
 
                 <Button title="Save Changes" onPress={handleSave} loading={loading} fullWidth size="large" />
                 <View style={{ height: hp(40) }} />
@@ -51,5 +75,5 @@ const styles = StyleSheet.create({
     scrollView: { flex: 1 },
     content: { padding: responsive.paddingLG },
     avatarSection: { alignItems: 'center', marginBottom: responsive.paddingXL },
-    changePhoto: { marginTop: responsive.paddingMD },
+    disabledInput: { opacity: 0.5 },
 });

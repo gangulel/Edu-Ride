@@ -1,76 +1,113 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, FlatList, TouchableOpacity, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { responsive, hp } from '../utils/responsive';
-
-// Components
 import { Badge } from '../components/atoms';
 import { NotificationItem, EmptyState } from '../components/molecules';
 import { Header } from '../components/organisms';
+import { getBookings, getActiveTrip } from '../../services/parentApi';
+
+function buildNotificationsFromData(bookings, activeTrip) {
+    const notifications = [];
+    let idCounter = 1;
+
+    if (activeTrip) {
+        notifications.push({
+            id: idCounter++,
+            type: 'info',
+            title: 'Trip In Progress',
+            message: `Your child's school bus is currently on its way. ${activeTrip.students?.length || 0} student(s) on board.`,
+            time: activeTrip.startedAt || new Date().toISOString(),
+            read: false,
+        });
+    }
+
+    bookings.forEach(booking => {
+        const driverName = booking.driver?.fullName || 'Driver';
+        const childName = booking.child?.fullName || 'Child';
+
+        if (booking.status === 'accepted') {
+            notifications.push({
+                id: idCounter++,
+                type: 'success',
+                title: 'Booking Confirmed',
+                message: `Your booking request for ${driverName} (for ${childName}) has been accepted.`,
+                time: booking.updatedAt || booking.createdAt,
+                read: true,
+                actionRoute: '/parent/my-bookings',
+            });
+        }
+
+        if (booking.status === 'rejected') {
+            notifications.push({
+                id: idCounter++,
+                type: 'warning',
+                title: 'Booking Declined',
+                message: `Your booking request for ${driverName} (for ${childName}) was not accepted.${booking.rejectionReason ? ` Reason: ${booking.rejectionReason}` : ''}`,
+                time: booking.updatedAt || booking.createdAt,
+                read: false,
+                actionRoute: '/parent/search',
+                actionLabel: 'Find Another',
+            });
+        }
+
+        if (booking.status === 'pending') {
+            notifications.push({
+                id: idCounter++,
+                type: 'info',
+                title: 'Booking Pending',
+                message: `Your booking request for ${driverName} (for ${childName}) is awaiting approval.`,
+                time: booking.createdAt,
+                read: true,
+            });
+        }
+
+        if (booking.status === 'cancelled') {
+            notifications.push({
+                id: idCounter++,
+                type: 'warning',
+                title: 'Booking Cancelled',
+                message: `Your booking for ${driverName} (for ${childName}) has been cancelled.`,
+                time: booking.updatedAt || booking.createdAt,
+                read: true,
+            });
+        }
+    });
+
+    return notifications.sort((a, b) => new Date(b.time) - new Date(a.time));
+}
 
 export default function NotificationsScreen() {
     const router = useRouter();
     const [filter, setFilter] = useState('all');
+    const [notifications, setNotifications] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    // Mock notifications
-    const notifications = [
-        {
-            id: 1,
-            type: 'info',
-            title: 'Bus Arriving Soon',
-            message: 'Your bus is 5 minutes away from the pickup point.',
-            time: '2026-01-24T08:25:00',
-            read: false,
-        },
-        {
-            id: 2,
-            type: 'payment',
-            title: 'Payment Reminder',
-            message: 'Your monthly subscription payment of LKR 8,500 is due on Feb 1, 2026.',
-            time: '2026-01-23T10:00:00',
-            read: false,
-            actionLabel: 'Pay Now',
-        },
-        {
-            id: 3,
-            type: 'success',
-            title: 'Payment Successful',
-            message: 'Your payment of LKR 8,500 for January subscription has been processed.',
-            time: '2026-01-01T09:30:00',
-            read: true,
-        },
-        {
-            id: 4,
-            type: 'message',
-            title: 'New Message from Kasun Perera',
-            message: 'Good morning! I wanted to let you know that the bus will be arriving...',
-            time: '2026-01-24T08:30:00',
-            read: false,
-            avatar: null,
-        },
-        {
-            id: 5,
-            type: 'warning',
-            title: 'Schedule Change',
-            message: 'The morning pickup time has been changed to 7:15 AM due to road construction.',
-            time: '2026-01-22T18:00:00',
-            read: true,
-        },
-        {
-            id: 6,
-            type: 'success',
-            title: 'Booking Confirmed',
-            message: 'Your booking request for Kasun Perera has been accepted. Service starts Feb 1.',
-            time: '2026-01-20T14:00:00',
-            read: true,
-        },
-    ];
+    const fetchData = useCallback(async () => {
+        try {
+            setError(null);
+            const [bookingsRes, tripRes] = await Promise.allSettled([
+                getBookings(),
+                getActiveTrip(),
+            ]);
+            const bookings = bookingsRes.status === 'fulfilled' ? bookingsRes.value?.bookings || [] : [];
+            const activeTrip = tripRes.status === 'fulfilled' ? tripRes.value?.trip : null;
+            setNotifications(buildNotificationsFromData(bookings, activeTrip));
+        } catch (err) {
+            setError(err.message || 'Failed to load notifications');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => { fetchData(); }, [fetchData]);
 
     const filters = [
         { key: 'all', label: 'All' },
         { key: 'unread', label: 'Unread' },
-        { key: 'payment', label: 'Payments' },
-        { key: 'message', label: 'Messages' },
+        { key: 'success', label: 'Confirmed' },
+        { key: 'warning', label: 'Alerts' },
     ];
 
     const filteredNotifications = notifications.filter(n => {
@@ -82,18 +119,13 @@ export default function NotificationsScreen() {
     const unreadCount = notifications.filter(n => !n.read).length;
 
     const handleNotificationPress = (notification) => {
-        // Handle navigation based on notification type
-        switch (notification.type) {
-            case 'payment':
-                router.push('/parent/payments');
-                break;
-            case 'message':
-                router.push('/parent/messages');
-                break;
-            default:
-                // Mark as read
-                console.log('Notification pressed:', notification.id);
+        if (notification.actionRoute) {
+            router.push(notification.actionRoute);
         }
+    };
+
+    const markAllRead = () => {
+        setNotifications(prev => prev.map(n => ({ ...n, read: true })));
     };
 
     return (
@@ -103,10 +135,9 @@ export default function NotificationsScreen() {
                 showBack
                 rightAction="Mark all read"
                 rightActionIcon="checkmark-done-outline"
-                onRightAction={() => console.log('Mark all read')}
+                onRightAction={markAllRead}
             />
 
-            {/* Filter Tabs */}
             <View style={styles.filterContainer}>
                 {filters.map(f => (
                     <TouchableOpacity
@@ -124,7 +155,18 @@ export default function NotificationsScreen() {
                 ))}
             </View>
 
-            {filteredNotifications.length > 0 ? (
+            {loading ? (
+                <View style={styles.centered}>
+                    <ActivityIndicator size="large" color="#3B82F6" />
+                </View>
+            ) : error ? (
+                <View style={styles.centered}>
+                    <Text style={styles.errorText}>{error}</Text>
+                    <TouchableOpacity style={styles.retryBtn} onPress={fetchData}>
+                        <Text style={styles.retryText}>Retry</Text>
+                    </TouchableOpacity>
+                </View>
+            ) : filteredNotifications.length > 0 ? (
                 <FlatList
                     data={filteredNotifications}
                     keyExtractor={(item) => item.id.toString()}
@@ -141,7 +183,7 @@ export default function NotificationsScreen() {
                     icon="notifications-outline"
                     title="No notifications"
                     message={filter === 'all'
-                        ? "You're all caught up! New notifications will appear here."
+                        ? "You're all caught up! Activity from your bookings will appear here."
                         : `No ${filter} notifications at the moment.`
                     }
                 />
@@ -151,10 +193,7 @@ export default function NotificationsScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#fff',
-    },
+    container: { flex: 1, backgroundColor: '#fff' },
     filterContainer: {
         flexDirection: 'row',
         paddingHorizontal: responsive.paddingMD,
@@ -164,26 +203,16 @@ const styles = StyleSheet.create({
         borderBottomColor: '#E5E5EA',
     },
     filterTab: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        paddingHorizontal: responsive.paddingMD,
-        paddingVertical: responsive.paddingSM,
-        marginRight: responsive.paddingSM,
-        borderRadius: responsive.radiusFull,
-        gap: responsive.paddingXS,
+        flexDirection: 'row', alignItems: 'center',
+        paddingHorizontal: responsive.paddingMD, paddingVertical: responsive.paddingSM,
+        marginRight: responsive.paddingSM, borderRadius: responsive.radiusFull, gap: responsive.paddingXS,
     },
-    filterTabActive: {
-        backgroundColor: '#E3F2FD',
-    },
-    filterText: {
-        fontSize: responsive.fontSM,
-        color: '#8E8E93',
-        fontWeight: '500',
-    },
-    filterTextActive: {
-        color: '#007AFF',
-    },
-    listContent: {
-        paddingBottom: hp(40),
-    },
+    filterTabActive: { backgroundColor: '#E3F2FD' },
+    filterText: { fontSize: responsive.fontSM, color: '#8E8E93', fontWeight: '500' },
+    filterTextActive: { color: '#007AFF' },
+    listContent: { paddingBottom: hp(40) },
+    centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+    errorText: { fontSize: responsive.fontMD, color: '#EF4444', textAlign: 'center', marginBottom: 12 },
+    retryBtn: { backgroundColor: '#3B82F6', paddingHorizontal: 24, paddingVertical: 10, borderRadius: 20 },
+    retryText: { color: '#fff', fontWeight: '600' },
 });

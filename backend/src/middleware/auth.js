@@ -1,6 +1,7 @@
 import admin from "../config/firebase.js";
 import User from "../models/User.js";
 import { verifyAdminSessionToken } from "../lib/adminSessionToken.js";
+import { verifyMobileSessionToken } from "../lib/mobileSessionToken.js";
 
 export const authenticate = async (req, res, next) => {
   const authHeader = req.headers.authorization;
@@ -22,6 +23,17 @@ export const authenticate = async (req, res, next) => {
       profilePhoto: null,
     };
     return next();
+  }
+
+  // Mobile session token (issued when FIREBASE_WEB_API_KEY is unavailable)
+  const mobileSession = verifyMobileSessionToken(token);
+  if (mobileSession) {
+    const user = await User.findById(mobileSession.id);
+    if (user) {
+      req.user = user;
+      return next();
+    }
+    return res.status(401).json({ error: "User account not found" });
   }
 
   try {

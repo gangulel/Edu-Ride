@@ -1,79 +1,68 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, FlatList } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import { View, Text, StyleSheet, SafeAreaView, FlatList, ActivityIndicator } from 'react-native';
 import { useRouter } from 'expo-router';
 import { responsive, hp } from '../utils/responsive';
-
-// Components
-import { MessagePreview, EmptyState } from '../components/molecules';
+import { EmptyState } from '../components/molecules';
 import { Header, ParentBottomNav } from '../components/organisms';
+import { getBookings } from '../../services/parentApi';
 
 export default function MessagesScreen() {
     const router = useRouter();
+    const [drivers, setDrivers] = useState([]);
+    const [loading, setLoading] = useState(true);
 
-    // Mock conversations
-    const conversations = [
-        {
-            id: 1,
-            participant: {
-                name: 'Kasun Perera',
-                photo: null,
-            },
-            lastMessage: 'Good morning! I wanted to let you know that the bus will be arriving 5 minutes earlier today due to light traffic.',
-            timestamp: '2026-01-24T08:30:00',
-            unreadCount: 2,
-            isOnline: true,
-        },
-        {
-            id: 2,
-            participant: {
-                name: 'Anura Bandara',
-                photo: null,
-            },
-            lastMessage: 'Thank you for your booking request. I will review it and get back to you soon.',
-            timestamp: '2026-01-23T15:45:00',
-            unreadCount: 0,
-            isOnline: false,
-        },
-        {
-            id: 3,
-            participant: {
-                name: 'Edu-Ride Support',
-                photo: null,
-            },
-            lastMessage: 'Your support ticket #12345 has been resolved. Please let us know if you need further assistance.',
-            timestamp: '2026-01-22T10:00:00',
-            unreadCount: 1,
-            isOnline: true,
-        },
-    ];
+    const fetchDrivers = useCallback(async () => {
+        try {
+            const res = await getBookings();
+            const bookings = res?.bookings || [];
+            // Derive unique driver contacts from accepted/pending bookings
+            const seen = new Set();
+            const contacts = [];
+            bookings
+                .filter(b => b.status === 'accepted' || b.status === 'pending')
+                .forEach(b => {
+                    const driverId = b.driver?._id || b.driver;
+                    if (driverId && !seen.has(driverId)) {
+                        seen.add(driverId);
+                        contacts.push({
+                            id: driverId,
+                            participant: {
+                                name: b.driver?.fullName || 'Driver',
+                                photo: b.driver?.profilePhoto || null,
+                            },
+                            bookingStatus: b.status,
+                        });
+                    }
+                });
+            setDrivers(contacts);
+        } catch {
+            // silently ignore — show empty state
+        } finally {
+            setLoading(false);
+        }
+    }, []);
 
-    const handleConversationPress = (conversation) => {
-        router.push(`/parent/chat?driverId=${conversation.id}&name=${encodeURIComponent(conversation.participant.name)}`);
-    };
+    useEffect(() => { fetchDrivers(); }, [fetchDrivers]);
 
     return (
         <SafeAreaView style={styles.container}>
-            <Header title="Messages" showBack showNotification />
+            <Header title="Messages" showBack />
 
-            {conversations.length > 0 ? (
-                <FlatList
-                    data={conversations}
-                    keyExtractor={(item) => item.id.toString()}
-                    renderItem={({ item }) => (
-                        <MessagePreview
-                            conversation={item}
-                            onPress={() => handleConversationPress(item)}
-                        />
-                    )}
-                    contentContainerStyle={styles.listContent}
-                />
+            {loading ? (
+                <View style={styles.centered}>
+                    <ActivityIndicator size="large" color="#3B82F6" />
+                </View>
             ) : (
                 <EmptyState
                     icon="chatbubbles-outline"
-                    title="No messages"
-                    message="Start a conversation with a driver by booking a service or messaging them from their profile."
-                    actionLabel="Find Service"
-                    onAction={() => router.push('/parent/search')}
+                    title="Messaging coming soon"
+                    message={
+                        drivers.length > 0
+                            ? `You have ${drivers.length} driver(s) you can contact. In-app messaging will be available in the next update.`
+                            : "Book a bus service to start communicating with your driver."
+                    }
+                    actionLabel={drivers.length === 0 ? "Find Service" : null}
+                    onAction={drivers.length === 0 ? () => router.push('/parent/search') : null}
                 />
             )}
 
@@ -83,11 +72,6 @@ export default function MessagesScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#fff',
-    },
-    listContent: {
-        paddingBottom: hp(100),
-    },
+    container: { flex: 1, backgroundColor: '#fff' },
+    centered: { flex: 1, alignItems: 'center', justifyContent: 'center' },
 });

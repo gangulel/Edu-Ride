@@ -1,94 +1,105 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+    View, Text, StyleSheet, ScrollView, SafeAreaView,
+    TouchableOpacity, ActivityIndicator, Alert,
+} from 'react-native';
 import { useRouter } from 'expo-router';
 import { responsive, hp } from '../utils/responsive';
-
-// Components
 import { Badge } from '../components/atoms';
 import { SubscriptionCard, FilterChip, EmptyState } from '../components/molecules';
 import { Header, ParentBottomNav } from '../components/organisms';
+import { getBookings, cancelBooking } from '../../services/parentApi';
+
+function formatDate(dateStr) {
+    if (!dateStr) return '—';
+    return new Date(dateStr).toLocaleDateString('en-US', { month: 'short', day: 'numeric', year: 'numeric' });
+}
+
+function mapBookingToSubscription(booking) {
+    return {
+        id: booking._id,
+        driver: {
+            id: booking.driver?._id || booking.driver,
+            name: booking.driver?.fullName || 'Driver',
+            photo: booking.driver?.profilePhoto || null,
+            verified: booking.driver?.isVerified || false,
+        },
+        vehicle: null,
+        status: booking.status,
+        expiryDate: booking.status === 'pending' ? 'Awaiting approval' : formatDate(booking.startDate),
+        nextPaymentDate: null,
+        monthlyFee: booking.monthlyFee,
+        child: { name: booking.child?.fullName || 'Child' },
+        pickupAddress: booking.pickupAddress,
+        startDate: booking.startDate,
+    };
+}
 
 export default function MyBookingsScreen() {
     const router = useRouter();
     const [activeTab, setActiveTab] = useState('active');
+    const [bookings, setBookings] = useState([]);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
+    const [cancellingId, setCancellingId] = useState(null);
 
-    // Mock subscriptions
-    const subscriptions = {
-        active: [
-            {
-                id: 1,
-                driver: {
-                    name: 'Kasun Perera',
-                    photo: null,
-                    verified: true,
+    const fetchBookings = useCallback(async () => {
+        try {
+            setError(null);
+            const res = await getBookings();
+            setBookings(res?.bookings || []);
+        } catch (err) {
+            setError(err.message || 'Failed to load bookings');
+        } finally {
+            setLoading(false);
+        }
+    }, []);
+
+    useEffect(() => { fetchBookings(); }, [fetchBookings]);
+
+    const handleCancel = (bookingId) => {
+        Alert.alert(
+            'Cancel Booking',
+            'Are you sure you want to cancel this booking?',
+            [
+                { text: 'No', style: 'cancel' },
+                {
+                    text: 'Yes, Cancel',
+                    style: 'destructive',
+                    onPress: async () => {
+                        setCancellingId(bookingId);
+                        try {
+                            await cancelBooking(bookingId);
+                            await fetchBookings();
+                        } catch (err) {
+                            Alert.alert('Error', err.message || 'Failed to cancel booking');
+                        } finally {
+                            setCancellingId(null);
+                        }
+                    },
                 },
-                vehicle: {
-                    make: 'Toyota',
-                    model: 'HiAce',
-                    licensePlate: 'CAB-1234',
-                },
-                status: 'active',
-                expiryDate: 'Jan 31, 2026',
-                nextPaymentDate: 'Feb 1, 2026',
-                monthlyFee: 8500,
-                child: { name: 'Kavindi' },
-            },
-        ],
-        pending: [
-            {
-                id: 2,
-                driver: {
-                    name: 'Anura Bandara',
-                    photo: null,
-                    verified: true,
-                },
-                vehicle: {
-                    make: 'Nissan',
-                    model: 'Caravan',
-                    licensePlate: 'CAD-5678',
-                },
-                status: 'pending',
-                expiryDate: 'Awaiting approval',
-                nextPaymentDate: null,
-                monthlyFee: 7500,
-                child: { name: 'Dineth' },
-            },
-        ],
-        past: [
-            {
-                id: 3,
-                driver: {
-                    name: 'Siripala Fernando',
-                    photo: null,
-                    verified: true,
-                },
-                vehicle: {
-                    make: 'Toyota',
-                    model: 'Coaster',
-                    licensePlate: 'CAC-9012',
-                },
-                status: 'expired',
-                expiryDate: 'Dec 31, 2025',
-                nextPaymentDate: null,
-                monthlyFee: 8000,
-                child: { name: 'Kavindi' },
-            },
-        ],
+            ]
+        );
+    };
+
+    const grouped = {
+        active: bookings.filter(b => b.status === 'accepted').map(mapBookingToSubscription),
+        pending: bookings.filter(b => b.status === 'pending').map(mapBookingToSubscription),
+        past: bookings.filter(b => ['rejected', 'cancelled', 'expired'].includes(b.status)).map(mapBookingToSubscription),
     };
 
     const tabs = [
-        { key: 'active', label: 'Active', count: subscriptions.active.length },
-        { key: 'pending', label: 'Pending', count: subscriptions.pending.length },
-        { key: 'past', label: 'Past', count: subscriptions.past.length },
+        { key: 'active', label: 'Active', count: grouped.active.length },
+        { key: 'pending', label: 'Pending', count: grouped.pending.length },
+        { key: 'past', label: 'Past', count: grouped.past.length },
     ];
 
-    const currentSubscriptions = subscriptions[activeTab] || [];
+    const current = grouped[activeTab] || [];
 
     return (
         <SafeAreaView style={styles.container}>
             <Header title="My Bookings" showBack />
 
-            {/* Tabs */}
             <View style={styles.tabsContainer}>
                 {tabs.map(tab => (
                     <TouchableOpacity
@@ -110,38 +121,65 @@ export default function MyBookingsScreen() {
                 ))}
             </View>
 
-            <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-                <View style={styles.content}>
-                    {currentSubscriptions.length > 0 ? (
-                        currentSubscriptions.map(subscription => (
-                            <SubscriptionCard
-                                key={subscription.id}
-                                subscription={subscription}
-                                onPress={() => router.push(`/parent/service-detail?id=${subscription.driver.id}`)}
-                                onMessagePress={() => router.push(`/parent/chat?driverId=${subscription.driver.id}`)}
-                                onViewSchedule={() => router.push(`/parent/service-detail?id=${subscription.driver.id}`)}
-                                onMakePayment={() => router.push('/parent/payments')}
-                            />
-                        ))
-                    ) : (
-                        <EmptyState
-                            icon="calendar-outline"
-                            title={`No ${activeTab} bookings`}
-                            message={
-                                activeTab === 'active'
-                                    ? "You don't have any active subscriptions. Find a bus service to get started."
-                                    : activeTab === 'pending'
-                                        ? "No pending booking requests at the moment."
-                                        : "Your past subscriptions will appear here."
-                            }
-                            actionLabel={activeTab === 'active' ? 'Find Service' : null}
-                            onAction={activeTab === 'active' ? () => router.push('/parent/search') : null}
-                        />
-                    )}
+            {loading ? (
+                <View style={styles.centered}>
+                    <ActivityIndicator size="large" color="#3B82F6" />
+                    <Text style={styles.loadingText}>Loading bookings...</Text>
                 </View>
-
-                <View style={{ height: hp(100) }} />
-            </ScrollView>
+            ) : error ? (
+                <View style={styles.centered}>
+                    <Text style={styles.errorText}>{error}</Text>
+                    <TouchableOpacity style={styles.retryBtn} onPress={fetchBookings}>
+                        <Text style={styles.retryText}>Retry</Text>
+                    </TouchableOpacity>
+                </View>
+            ) : (
+                <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
+                    <View style={styles.content}>
+                        {current.length > 0 ? (
+                            current.map(subscription => (
+                                <View key={subscription.id} style={styles.bookingWrapper}>
+                                    <SubscriptionCard
+                                        subscription={subscription}
+                                        onPress={() => {}}
+                                        onMessagePress={() => router.push('/parent/messages')}
+                                        onViewSchedule={() => {}}
+                                        onMakePayment={() => router.push('/parent/payments')}
+                                    />
+                                    {(activeTab === 'active' || activeTab === 'pending') && (
+                                        <TouchableOpacity
+                                            style={[styles.cancelBtn, cancellingId === subscription.id && styles.cancelBtnDisabled]}
+                                            onPress={() => handleCancel(subscription.id)}
+                                            disabled={cancellingId === subscription.id}
+                                        >
+                                            {cancellingId === subscription.id ? (
+                                                <ActivityIndicator size="small" color="#EF4444" />
+                                            ) : (
+                                                <Text style={styles.cancelBtnText}>Cancel Booking</Text>
+                                            )}
+                                        </TouchableOpacity>
+                                    )}
+                                </View>
+                            ))
+                        ) : (
+                            <EmptyState
+                                icon="calendar-outline"
+                                title={`No ${activeTab} bookings`}
+                                message={
+                                    activeTab === 'active'
+                                        ? "You don't have any active subscriptions. Find a bus service to get started."
+                                        : activeTab === 'pending'
+                                            ? "No pending booking requests at the moment."
+                                            : "Your past subscriptions will appear here."
+                                }
+                                actionLabel={activeTab === 'active' ? 'Find Service' : null}
+                                onAction={activeTab === 'active' ? () => router.push('/parent/search') : null}
+                            />
+                        )}
+                    </View>
+                    <View style={{ height: hp(100) }} />
+                </ScrollView>
+            )}
 
             <ParentBottomNav />
         </SafeAreaView>
@@ -149,43 +187,32 @@ export default function MyBookingsScreen() {
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: '#F2F2F7',
-    },
+    container: { flex: 1, backgroundColor: '#F2F2F7' },
     tabsContainer: {
-        flexDirection: 'row',
-        backgroundColor: '#fff',
-        paddingHorizontal: responsive.paddingLG,
-        paddingVertical: responsive.paddingSM,
-        borderBottomWidth: 1,
-        borderBottomColor: '#E5E5EA',
+        flexDirection: 'row', backgroundColor: '#fff',
+        paddingHorizontal: responsive.paddingLG, paddingVertical: responsive.paddingSM,
+        borderBottomWidth: 1, borderBottomColor: '#E5E5EA',
     },
     tab: {
-        flex: 1,
-        flexDirection: 'row',
-        alignItems: 'center',
-        justifyContent: 'center',
-        paddingVertical: responsive.paddingMD,
-        gap: responsive.paddingSM,
-        borderRadius: responsive.radiusMD,
+        flex: 1, flexDirection: 'row', alignItems: 'center', justifyContent: 'center',
+        paddingVertical: responsive.paddingMD, gap: responsive.paddingSM, borderRadius: responsive.radiusMD,
     },
-    tabActive: {
-        backgroundColor: '#E3F2FD',
+    tabActive: { backgroundColor: '#E3F2FD' },
+    tabText: { fontSize: responsive.fontMD, color: '#8E8E93', fontWeight: '500' },
+    tabTextActive: { color: '#007AFF', fontWeight: '600' },
+    scrollView: { flex: 1 },
+    content: { padding: responsive.paddingLG },
+    centered: { flex: 1, alignItems: 'center', justifyContent: 'center', padding: 24 },
+    loadingText: { marginTop: 12, fontSize: responsive.fontMD, color: '#64748B' },
+    errorText: { fontSize: responsive.fontMD, color: '#EF4444', textAlign: 'center', marginBottom: 12 },
+    retryBtn: { backgroundColor: '#3B82F6', paddingHorizontal: 24, paddingVertical: 10, borderRadius: 20 },
+    retryText: { color: '#fff', fontWeight: '600' },
+    bookingWrapper: { marginBottom: responsive.paddingMD },
+    cancelBtn: {
+        marginTop: 8, borderWidth: 1, borderColor: '#EF4444',
+        borderRadius: responsive.radiusMD, paddingVertical: 10,
+        alignItems: 'center', backgroundColor: '#FEF2F2',
     },
-    tabText: {
-        fontSize: responsive.fontMD,
-        color: '#8E8E93',
-        fontWeight: '500',
-    },
-    tabTextActive: {
-        color: '#007AFF',
-        fontWeight: '600',
-    },
-    scrollView: {
-        flex: 1,
-    },
-    content: {
-        padding: responsive.paddingLG,
-    },
+    cancelBtnDisabled: { opacity: 0.5 },
+    cancelBtnText: { color: '#EF4444', fontWeight: '600', fontSize: responsive.fontMD },
 });

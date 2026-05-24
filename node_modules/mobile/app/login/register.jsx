@@ -29,9 +29,11 @@ import {
 } from "iconsax-react-native";
 import { responsive, wp, hp, fs } from "../utils/responsive";
 import { apiFetch } from "../../services/api";
+import { useAuth } from "../../contexts/AuthContext";
 
 export default function Register() {
   const router = useRouter();
+  const { login } = useAuth();
   const id = useId();
   const scrollRef = useRef(null);
   const [name, setName] = useState("");
@@ -88,9 +90,22 @@ export default function Register() {
         }),
       });
 
-      setLoading(false);
       const resolvedRole = payload?.user?.role || userType;
 
+      // Immediately log in to get an auth token for the new account
+      try {
+        const loginPayload = await apiFetch("/auth/login", {
+          method: "POST",
+          body: JSON.stringify({ email, password }),
+        });
+        if (loginPayload?.token && loginPayload?.user) {
+          await login(loginPayload.token, loginPayload.user);
+        }
+      } catch {
+        // login-after-register failed; user can log in manually
+      }
+
+      setLoading(false);
       if (resolvedRole === "parent") {
         router.replace("/parent");
       } else if (resolvedRole === "driver") {
