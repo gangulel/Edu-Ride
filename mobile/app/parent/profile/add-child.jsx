@@ -13,6 +13,7 @@ import {
     TextInput,
     ActivityIndicator,
     StatusBar,
+    Alert,
 } from 'react-native';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
@@ -104,6 +105,37 @@ const COLOMBO_SCHOOLS = [
     'Gothatuwa National School',
     'Taxila Central College',
     'Dharmapala Vidyalaya',
+];
+
+// ─── Sri Lankan Locations for Address Autocomplete ────────────────────────────
+
+const SRI_LANKAN_LOCATIONS = [
+    // Colombo postal districts
+    'Colombo 01', 'Colombo 02', 'Colombo 03', 'Colombo 04', 'Colombo 05',
+    'Colombo 06', 'Colombo 07', 'Colombo 08', 'Colombo 09', 'Colombo 10',
+    'Colombo 11', 'Colombo 12', 'Colombo 13', 'Colombo 14', 'Colombo 15',
+    // Colombo suburbs
+    'Bambalapitiya', 'Wellawatte', 'Dehiwala', 'Mount Lavinia', 'Ratmalana',
+    'Moratuwa', 'Panadura', 'Nugegoda', 'Maharagama', 'Kottawa', 'Piliyandala',
+    'Boralesgamuwa', 'Homagama', 'Kaduwela', 'Malabe', 'Battaramulla',
+    'Rajagiriya', 'Nawala', 'Narahenpita', 'Kirulapone', 'Kolpetty',
+    'Slave Island', 'Pettah', 'Fort', 'Maradana', 'Grandpass',
+    'Dematagoda', 'Kotahena', 'Mattakkuliya', 'Modara',
+    'Kelaniya', 'Peliyagoda', 'Wattala', 'Hendala', 'Ja-Ela',
+    'Ekala', 'Seeduwa', 'Katunayake', 'Negombo',
+    'Minuwangoda', 'Gampaha', 'Kadawatha', 'Kiribathgoda',
+    // Southern Colombo suburbs
+    'Thalawathugoda', 'Kotte', 'Sri Jayawardenepura', 'Ethul Kotte',
+    'Pita Kotte', 'Mirihana', 'Gangodawila', 'Kohuwala', 'Pepiliyana',
+    'Udahamulla', 'Talangama', 'Koswatta', 'Hokandara', 'Athurugiriya',
+    'Thalahena', 'Welikada', 'Biyagama', 'Sapugaskanda',
+    // Major cities
+    'Kandy', 'Peradeniya', 'Katugastota', 'Kundasale',
+    'Galle', 'Hikkaduwa', 'Matara', 'Weligama',
+    'Jaffna', 'Trincomalee', 'Batticaloa',
+    'Anuradhapura', 'Polonnaruwa', 'Kurunegala',
+    'Badulla', 'Ratnapura', 'Nuwara Eliya',
+    'Kegalle', 'Kalutara', 'Chilaw',
 ];
 
 const GENDER_OPTIONS = [
@@ -359,52 +391,6 @@ const gStyles = StyleSheet.create({
     },
 });
 
-/** Date input field with format validation */
-const DateInput = ({ value, onChange, error }) => {
-    const [focused, setFocused] = useState(false);
-
-    return (
-        <View style={fieldStyles.wrapper}>
-            <Text style={fieldStyles.label}>
-                Preferred Start Date
-                <Text style={fieldStyles.required}> *</Text>
-            </Text>
-
-            <View style={[
-                fieldStyles.inputRow,
-                focused && fieldStyles.inputFocused,
-                error && fieldStyles.inputError,
-            ]}>
-                <Ionicons
-                    name="calendar-outline"
-                    size={18}
-                    color={focused ? '#3B82F6' : '#94A3B8'}
-                    style={fieldStyles.leftIcon}
-                />
-                <TextInput
-                    style={[fieldStyles.input, { flex: 1 }]}
-                    placeholder="YYYY-MM-DD (e.g., 2026-02-01)"
-                    placeholderTextColor="#CBD5E1"
-                    value={value}
-                    onChangeText={onChange}
-                    keyboardType="number-pad"
-                    maxLength={10}
-                    returnKeyType="done"
-                    onFocus={() => setFocused(true)}
-                    onBlur={() => setFocused(false)}
-                />
-            </View>
-
-            {!!error && (
-                <View style={fieldStyles.errorRow}>
-                    <Ionicons name="alert-circle-outline" size={13} color="#EF4444" />
-                    <Text style={fieldStyles.errorText}>{error}</Text>
-                </View>
-            )}
-        </View>
-    );
-};
-
 /** School name field with live Colombo school autocomplete */
 const SchoolAutocomplete = ({ value, onChange, error }) => {
     const [focused,         setFocused]         = useState(false);
@@ -567,6 +553,124 @@ const acStyles = StyleSheet.create({
         fontWeight: '500',
     },
 });
+
+/** Home / boarding address field with Sri Lankan location autocomplete */
+const AddressAutocomplete = ({ value, onChange, error }) => {
+    const [focused,      setFocused]      = useState(false);
+    const [suggestions,  setSuggestions]  = useState([]);
+    const [showDropdown, setShowDropdown] = useState(false);
+
+    const filterLocations = (text) => {
+        onChange(text);
+        if (text.trim().length === 0) {
+            setSuggestions([]);
+            setShowDropdown(false);
+            return;
+        }
+        const q = text.toLowerCase();
+        const matches = SRI_LANKAN_LOCATIONS
+            .filter(s => s.toLowerCase().includes(q))
+            .slice(0, 6);
+        setSuggestions(matches);
+        setShowDropdown(matches.length > 0);
+    };
+
+    const selectLocation = (location) => {
+        onChange(location);
+        setSuggestions([]);
+        setShowDropdown(false);
+    };
+
+    const clearField = () => {
+        onChange('');
+        setSuggestions([]);
+        setShowDropdown(false);
+    };
+
+    return (
+        <View style={[acStyles.wrapper, { zIndex: 9 }]}>
+            <Text style={fieldStyles.label}>
+                Full Address <Text style={fieldStyles.required}>*</Text>
+            </Text>
+
+            <View style={[
+                fieldStyles.inputRow,
+                focused && fieldStyles.inputFocused,
+                error   && fieldStyles.inputError,
+            ]}>
+                <Ionicons
+                    name="home-outline"
+                    size={18}
+                    color={focused ? '#EF4444' : '#94A3B8'}
+                    style={fieldStyles.leftIcon}
+                />
+                <TextInput
+                    style={[fieldStyles.input, { flex: 1 }]}
+                    placeholder="e.g. No 15, Galle Rd, Nugegoda"
+                    placeholderTextColor="#CBD5E1"
+                    value={value}
+                    onChangeText={filterLocations}
+                    autoCapitalize="words"
+                    maxLength={200}
+                    returnKeyType="done"
+                    onFocus={() => {
+                        setFocused(true);
+                        if (suggestions.length > 0) setShowDropdown(true);
+                    }}
+                    onBlur={() => {
+                        setFocused(false);
+                        setTimeout(() => setShowDropdown(false), 180);
+                    }}
+                />
+                {value.length > 0 && (
+                    <TouchableOpacity
+                        onPress={clearField}
+                        hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                    >
+                        <Ionicons name="close-circle" size={18} color="#94A3B8" />
+                    </TouchableOpacity>
+                )}
+            </View>
+
+            {/* Suggestions dropdown */}
+            {showDropdown && (
+                <View style={[acStyles.dropdown, { borderColor: '#FECACA' }]}>
+                    <FlatList
+                        data={suggestions}
+                        keyExtractor={(item) => item}
+                        keyboardShouldPersistTaps="handled"
+                        scrollEnabled={suggestions.length > 4}
+                        nestedScrollEnabled
+                        style={{ maxHeight: hp(210) }}
+                        renderItem={({ item, index }) => (
+                            <TouchableOpacity
+                                style={[
+                                    acStyles.item,
+                                    index < suggestions.length - 1 && acStyles.itemBorder,
+                                ]}
+                                onPress={() => selectLocation(item)}
+                                activeOpacity={0.7}
+                            >
+                                <View style={[acStyles.itemIconWrap, { backgroundColor: '#FEF2F2' }]}>
+                                    <Ionicons name="location-outline" size={15} color="#EF4444" />
+                                </View>
+                                <Text style={acStyles.itemText} numberOfLines={1}>{item}</Text>
+                                <Ionicons name="arrow-forward" size={13} color="#CBD5E1" />
+                            </TouchableOpacity>
+                        )}
+                    />
+                </View>
+            )}
+
+            {!!error && (
+                <View style={fieldStyles.errorRow}>
+                    <Ionicons name="alert-circle-outline" size={13} color="#EF4444" />
+                    <Text style={fieldStyles.errorText}>{error}</Text>
+                </View>
+            )}
+        </View>
+    );
+};
 
 /** Grade picker — tappable display + modal list */
 const GradePicker = ({ value, onChange, error }) => {
@@ -745,8 +849,8 @@ const INITIAL_FORM = {
     gender: '',
     school: '',
     grade: '',
-    startDate: '',
-    specialInstructions: '',
+    homeAddress: '',
+    specialNotes: '',
     emergencyContact1: '',
     emergencyContact2: '',
 };
@@ -757,7 +861,7 @@ const INITIAL_ERRORS = {
     gender: '',
     school: '',
     grade: '',
-    startDate: '',
+    homeAddress: '',
     emergencyContact1: '',
     emergencyContact2: '',
 };
@@ -809,16 +913,12 @@ export default function AddChildScreen() {
             valid = false;
         }
 
-        if (!form.grade) {
-            e.grade = 'Please select a grade';
+        if (!form.homeAddress.trim()) {
+            e.homeAddress = 'Home / boarding address is required for transport matching';
             valid = false;
         }
 
-        if (!form.startDate.trim()) {
-            e.startDate = 'Start date is required';
-            valid = false;
-        } else if (!isValidDate(form.startDate)) {
-            e.startDate = 'Please enter a valid date (YYYY-MM-DD)';
+        if (!form.grade) {            e.grade = 'Please select a grade';
             valid = false;
         }
 
@@ -836,13 +936,6 @@ export default function AddChildScreen() {
         return valid;
     };
 
-    const isValidDate = (dateStr) => {
-        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
-        if (!dateRegex.test(dateStr)) return false;
-        const date = new Date(dateStr + 'T00:00:00');
-        return date instanceof Date && !isNaN(date);
-    };
-
     const handleSave = async () => {
         if (!token) {
             // No session token — redirect to login
@@ -855,22 +948,32 @@ export default function AddChildScreen() {
         setLoading(true);
         try {
             await addChild({
-                fullName:         form.fullName.trim(),
-                grade:            form.grade,
-                school:           form.school.trim(),
-                startDate:        form.startDate.trim(),
-                age:              form.age ? Number(form.age) : undefined,
-                gender:           form.gender || undefined,
-                specialInstructions: form.specialInstructions.trim() || undefined,
+                fullName:          form.fullName.trim(),
+                grade:             form.grade,
+                school:            form.school.trim(),
+                homeAddress:       form.homeAddress.trim() || undefined,
+                age:               form.age ? Number(form.age) : undefined,
+                gender:            form.gender || undefined,
+                specialNotes:      form.specialNotes.trim() || undefined,
                 emergencyContact1: form.emergencyContact1.trim() || undefined,
                 emergencyContact2: form.emergencyContact2.trim() || undefined,
             });
-            router.back();
+            // Navigate to Find Service with child's data pre-loaded for vehicle suggestions
+            router.replace({
+                pathname: '/parent/search',
+                params: {
+                    childName:   form.fullName.trim(),
+                    school:      form.school.trim(),
+                    homeAddress: form.homeAddress.trim(),
+                    autoSearch:  '1',
+                },
+            });
         } catch (err) {
-            setErrors(prev => ({
-                ...prev,
-                fullName: err.message || 'Failed to add child. Please try again.',
-            }));
+            Alert.alert(
+                'Save Failed',
+                err.message || 'Failed to add child. Please try again.',
+                [{ text: 'OK' }]
+            );
         } finally {
             setLoading(false);
         }
@@ -988,31 +1091,47 @@ export default function AddChildScreen() {
                         />
                     </SectionCard>
 
-                    {/* ══ Section 3 — Additional Details ══ */}
+                    {/* ══ Section 3 — Home / Boarding Address ══ */}
+                    <SectionCard
+                        iconName="home-outline"
+                        iconColor="#EF4444"
+                        iconBg="#FEF2F2"
+                        title="Home / Boarding Address"
+                    >
+                        {/* Info note */}
+                        <View style={styles.infoNote}>
+                            <Ionicons name="information-circle-outline" size={15} color="#94A3B8" />
+                            <Text style={styles.infoNoteText}>
+                                This address is mandatory and will be used to match your child with
+                                nearby transport services and auto-fill booking details.
+                            </Text>
+                        </View>
+                        <AddressAutocomplete
+                            value={form.homeAddress}
+                            onChange={v => setField('homeAddress', v)}
+                            error={errors.homeAddress}
+                        />
+                    </SectionCard>
+
+                    {/* ══ Section 4 — Additional Details ══ */}
                     <SectionCard
                         iconName="calendar-outline"
                         iconColor="#8B5CF6"
                         iconBg="#F3E8FF"
                         title="Additional Details"
                     >
-                        <DateInput
-                            value={form.startDate}
-                            onChange={v => setField('startDate', v)}
-                            error={errors.startDate}
-                        />
-
                         <FormField
-                            label="Special Instructions (Optional)"
+                            label="Special Notes (Optional)"
                             placeholder="Any special needs or instructions..."
-                            value={form.specialInstructions}
-                            onChangeText={v => setField('specialInstructions', v)}
+                            value={form.specialNotes}
+                            onChangeText={v => setField('specialNotes', v)}
                             autoCapitalize="sentences"
-                            maxLength={300}
+                            maxLength={500}
                             returnKeyType="done"
                         />
                     </SectionCard>
 
-                    {/* ══ Section 4 — Emergency Contacts ══ */}
+                    {/* ══ Section 5 — Emergency Contacts ══ */}
                     <SectionCard
                         iconName="call-outline"
                         iconColor="#F59E0B"

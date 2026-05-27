@@ -288,6 +288,7 @@ export const createChildSchema = z
     fullName: nonEmptyText("fullName", 2, 80),
     grade: childGradeSchema,
     school: nonEmptyText("school", 2, 120),
+    homeAddress: z.string().trim().max(300).nullable().optional(),
     age: numberFromAny(z.number().int().min(3).max(25)).nullable().optional(),
     gender: z.enum(["Male", "Female"]).nullable().optional(),
     emergencyContact1: z
@@ -310,3 +311,4 @@ export const updateChildSchema = createChildSchema
   .partial()
   .strict()
   .refine((value) => Object.keys(value).length > 0, "At least one child field must be provided");
+

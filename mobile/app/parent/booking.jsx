@@ -8,7 +8,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { responsive, hp } from '../utils/responsive';
 import { Button, Input, Card } from '../components/atoms';
 import { Header } from '../components/organisms';
-import { getChildren, createBooking, getRouteById } from '../../services/parentApi';
+import { getChildren, createBooking, getRouteById, searchRoutes } from '../../services/parentApi';
 
 export default function BookingScreen() {
     const router = useRouter();
@@ -26,6 +26,12 @@ export default function BookingScreen() {
         specialInstructions: '',
     });
     const [errors, setErrors] = useState({});
+
+    // Vehicle suggestion state
+    const [suggestedRoutes, setSuggestedRoutes]         = useState([]);
+    const [loadingSuggestions, setLoadingSuggestions]   = useState(false);
+    const [isPickupAutofilled, setIsPickupAutofilled]   = useState(false);
+    const [isDropoffAutofilled, setIsDropoffAutofilled] = useState(false);
 
     const fetchData = useCallback(async () => {
         try {
@@ -52,6 +58,45 @@ export default function BookingScreen() {
     }, [routeId]);
 
     useEffect(() => { fetchData(); }, [fetchData]);
+
+    // ── Auto-fill pickup / drop-off from selected child's saved data ──────────
+    useEffect(() => {
+        if (!selectedChildId || children.length === 0) return;
+        const child = children.find(c => c._id === selectedChildId);
+        if (!child) return;
+
+        setForm(prev => {
+            const updates = {};
+            if (child.homeAddress) {
+                updates.pickupAddress = child.homeAddress;
+                setIsPickupAutofilled(true);
+            }
+            if (child.school) {
+                updates.dropoffAddress = child.school;
+                setIsDropoffAutofilled(true);
+            }
+            return { ...prev, ...updates };
+        });
+    }, [selectedChildId, children]);
+
+    // ── Load vehicle suggestions whenever pickup / drop-off change ────────────
+    const loadSuggestedRoutes = useCallback(async (pickup, dropoff) => {
+        const query = dropoff || pickup;
+        if (!query) { setSuggestedRoutes([]); return; }
+        setLoadingSuggestions(true);
+        try {
+            const res = await searchRoutes({ status: 'active', search: query });
+            setSuggestedRoutes((res?.routes || []).slice(0, 3));
+        } catch {
+            setSuggestedRoutes([]);
+        } finally {
+            setLoadingSuggestions(false);
+        }
+    }, []);
+
+    useEffect(() => {
+        loadSuggestedRoutes(form.pickupAddress, form.dropoffAddress);
+    }, [form.pickupAddress, form.dropoffAddress, loadSuggestedRoutes]);
 
     const validate = () => {
         const newErrors = {};
@@ -165,22 +210,95 @@ export default function BookingScreen() {
                         )}
                     </View>
 
+                    {/* ── Suggested Vehicles (appears at the top of the service section) ── */}
+                    {(suggestedRoutes.length > 0 || loadingSuggestions) && (
+                        <View style={styles.section}>
+                            <View style={styles.suggestionsHeader}>
+                                <Ionicons name="sparkles" size={16} color="#F59E0B" />
+                                <Text style={styles.sectionTitle}>Suggested Vehicles</Text>
+                                {loadingSuggestions && (
+                                    <ActivityIndicator size="small" color="#3B82F6" style={{ marginLeft: 8 }} />
+                                )}
+                            </View>
+                            <Text style={styles.suggestionsSubtitle}>
+                                Matched to pickup location &amp; school
+                            </Text>
+                            {suggestedRoutes.map(route => {
+                                const driverName = route.driver?.fullName || 'Available Driver';
+                                const initial    = driverName[0].toUpperCase();
+                                const fee        = route.driver?.monthlyFee || 0;
+                                return (
+                                    <TouchableOpacity
+                                        key={route._id}
+                                        style={styles.suggestionCard}
+                                        onPress={() =>
+                                            router.push(
+                                                `/parent/service-detail?id=${route.driver?._id}&routeId=${route._id}`
+                                            )
+                                        }
+                                        activeOpacity={0.7}
+                                    >
+                                        <View style={styles.suggestionLeft}>
+                                            <View style={styles.suggestionAvatar}>
+                                                <Text style={styles.suggestionInitial}>{initial}</Text>
+                                            </View>
+                                            <View style={{ flex: 1 }}>
+                                                <Text style={styles.suggestionName}>{driverName}</Text>
+                                                <Text style={styles.suggestionMeta} numberOfLines={1}>
+                                                    {route.school || 'School Transport'} •{' '}
+                                                    LKR {fee.toLocaleString()}/mo
+                                                </Text>
+                                            </View>
+                                        </View>
+                                        <Ionicons name="chevron-forward" size={18} color="#94A3B8" />
+                                    </TouchableOpacity>
+                                );
+                            })}
+                        </View>
+                    )}
+
                     {/* Pickup Details */}
                     <View style={styles.section}>
                         <Text style={styles.sectionTitle}>Pickup / Drop-off</Text>
+
+                        {/* Pickup address with auto-fill badge */}
+                        {isPickupAutofilled && (
+                            <View style={styles.autofillBadge}>
+                                <Ionicons name="sparkles-outline" size={11} color="#3B82F6" />
+                                <Text style={styles.autofillText}>
+                                    Auto-filled from child's home address
+                                </Text>
+                            </View>
+                        )}
                         <Input
                             label="Pickup Address *"
                             placeholder="Enter your pickup location"
                             value={form.pickupAddress}
-                            onChangeText={(v) => setForm({ ...form, pickupAddress: v })}
+                            onChangeText={(v) => {
+                                setForm({ ...form, pickupAddress: v });
+                                setIsPickupAutofilled(false);
+                            }}
                             error={errors.pickupAddress}
                             leftIcon="location-outline"
                         />
+
+                        {/* Drop-off address with auto-fill badge */}
+                        {isDropoffAutofilled && (
+                            <View style={styles.autofillBadge}>
+                                <Ionicons name="sparkles-outline" size={11} color="#10B981" />
+                                <Text style={[styles.autofillText, { color: '#10B981' }]}>
+                                    Auto-filled from child's school
+                                </Text>
+                            </View>
+                        )}
                         <Input
                             label="Drop-off Address (Optional)"
                             placeholder="Same as school if not specified"
                             value={form.dropoffAddress}
-                            onChangeText={(v) => setForm({ ...form, dropoffAddress: v })}
+                            onChangeText={(v) => {
+                                setForm({ ...form, dropoffAddress: v });
+                                setIsDropoffAutofilled(false);
+                            }}
                             leftIcon="flag-outline"
                         />
                     </View>
@@ -260,5 +378,49 @@ const styles = StyleSheet.create({
     disclaimer: {
         fontSize: responsive.fontSM, color: '#8E8E93', textAlign: 'center',
         marginTop: responsive.paddingMD, lineHeight: responsive.fontSM * 1.5,
+    },
+
+    // ── Suggested vehicles ────────────────────────────────────────────────────
+    suggestionsHeader: {
+        flexDirection: 'row', alignItems: 'center', gap: 6,
+        marginBottom: 4,
+    },
+    suggestionsSubtitle: {
+        fontSize: responsive.fontXS ?? 11, color: '#94A3B8',
+        marginBottom: responsive.paddingMD, marginTop: 2,
+    },
+    suggestionCard: {
+        flexDirection: 'row', alignItems: 'center', justifyContent: 'space-between',
+        backgroundColor: '#fff', borderRadius: 12, padding: 12, marginBottom: 8,
+        borderWidth: 1.5, borderColor: '#FEF3C7',
+    },
+    suggestionLeft: {
+        flexDirection: 'row', alignItems: 'center', gap: 10, flex: 1,
+    },
+    suggestionAvatar: {
+        width: 38, height: 38, borderRadius: 19,
+        backgroundColor: '#FFFBEB',
+        alignItems: 'center', justifyContent: 'center',
+    },
+    suggestionInitial: {
+        fontSize: responsive.fontLG, fontWeight: 'bold', color: '#F59E0B',
+    },
+    suggestionName: {
+        fontSize: responsive.fontMD, fontWeight: '600', color: '#1E293B',
+    },
+    suggestionMeta: {
+        fontSize: responsive.fontSM ?? 12, color: '#64748B', marginTop: 1,
+    },
+
+    // ── Autofill badge ────────────────────────────────────────────────────────
+    autofillBadge: {
+        flexDirection: 'row', alignItems: 'center', gap: 4,
+        backgroundColor: '#EFF6FF',
+        paddingHorizontal: 8, paddingVertical: 4,
+        borderRadius: 6, alignSelf: 'flex-start',
+        marginBottom: 4,
+    },
+    autofillText: {
+        fontSize: responsive.fontXS ?? 11, color: '#3B82F6', fontWeight: '500',
     },
 });

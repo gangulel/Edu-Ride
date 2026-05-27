@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -11,7 +11,7 @@ import {
     ActivityIndicator,
     StatusBar,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
     SearchNormal1,
@@ -69,19 +69,36 @@ function mapRouteToService(route) {
 
 export default function SearchScreen() {
     const router = useRouter();
-    const [searchQuery, setSearchQuery] = useState('');
-    const [loading, setLoading] = useState(true);
-    const [activeFilter, setActiveFilter] = useState('all');
-    const [allRoutes, setAllRoutes] = useState([]);
-    const [error, setError] = useState(null);
+    const params = useLocalSearchParams();
+
+    // Smart-match params passed from add-child or home screen
+    const incomingChild    = params.childName    || '';
+    const incomingSchool   = params.school       || '';
+    const incomingAddress  = params.homeAddress  || '';
+    const shouldAutoSearch = params.autoSearch   === '1';
+
+    const [searchQuery,        setSearchQuery]        = useState('');
+    const [loading,            setLoading]            = useState(true);
+    const [activeFilter,       setActiveFilter]       = useState('all');
+    const [allRoutes,          setAllRoutes]          = useState([]);
+    const [error,              setError]              = useState(null);
+
+    // Smart-match (child-aware) state
+    const [smartPickup,        setSmartPickup]        = useState(incomingAddress);
+    const [smartDrop,          setSmartDrop]          = useState(incomingSchool);
+    const [smartChildName,     setSmartChildName]     = useState(incomingChild);
+    const [showSmartBanner,    setShowSmartBanner]    = useState(shouldAutoSearch);
+    const [smartPickupFocused, setSmartPickupFocused] = useState(false);
+    const [smartDropFocused,   setSmartDropFocused]   = useState(false);
+    const didAutoSearch = useRef(false);
 
     const loadRoutes = useCallback(async (query = '') => {
         try {
             setLoading(true);
             setError(null);
-            const params = { status: 'active' };
-            if (query) params.search = query;
-            const res = await searchRoutes(params);
+            const reqParams = { status: 'active' };
+            if (query) reqParams.search = query;
+            const res = await searchRoutes(reqParams);
             const routes = (res?.routes || []).map(mapRouteToService);
             setAllRoutes(routes);
         } catch (err) {
@@ -91,7 +108,26 @@ export default function SearchScreen() {
         }
     }, []);
 
-    useEffect(() => { loadRoutes(); }, [loadRoutes]);
+    // Auto-trigger search using child's school / address when navigated from add-child
+    useEffect(() => {
+        if (shouldAutoSearch && !didAutoSearch.current) {
+            didAutoSearch.current = true;
+            const query = incomingSchool || incomingAddress;
+            if (query) {
+                loadRoutes(query);
+                return;
+            }
+        }
+        loadRoutes();
+    }, [loadRoutes]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Re-run search when smart pickup / drop values change
+    useEffect(() => {
+        const query = smartDrop || smartPickup;
+        if (query && didAutoSearch.current) {
+            loadRoutes(query);
+        }
+    }, [smartPickup, smartDrop, loadRoutes]);
 
     const quickFilters = [
         { key: 'all', label: 'All', icon: Bus },
@@ -564,6 +600,89 @@ export default function SearchScreen() {
                 </SafeAreaView>
             </LinearGradient>
 
+            {/* ── Smart Match Banner ─────────────────────────────────────────── */}
+            {showSmartBanner && (
+                <View style={styles.smartBanner}>
+                    {/* Header row */}
+                    <View style={styles.smartBannerHeader}>
+                        <View style={styles.smartBannerTitleRow}>
+                            <Location size={15} color="#3B82F6" variant="Bold" />
+                            <Text style={styles.smartBannerTitle}>
+                                {smartChildName
+                                    ? `Smart Match for ${smartChildName}`
+                                    : 'Smart Vehicle Match'}
+                            </Text>
+                        </View>
+                        <TouchableOpacity
+                            onPress={() => setShowSmartBanner(false)}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                            <CloseCircle size={18} color="#94A3B8" variant="Bold" />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Pickup row */}
+                    <View style={styles.smartRow}>
+                        <View style={styles.smartIconWrap}>
+                            <Location size={14} color="#3B82F6" variant="Bold" />
+                        </View>
+                        <Text style={styles.smartLabel}>Pickup</Text>
+                        <View style={[
+                            styles.smartInputWrap,
+                            smartPickupFocused && styles.smartInputFocused,
+                        ]}>
+                            <TextInput
+                                style={styles.smartInput}
+                                value={smartPickup}
+                                onChangeText={setSmartPickup}
+                                placeholder="Home / boarding address"
+                                placeholderTextColor="#CBD5E1"
+                                onFocus={() => setSmartPickupFocused(true)}
+                                onBlur={() => setSmartPickupFocused(false)}
+                                returnKeyType="done"
+                            />
+                            {smartPickup.length > 0 && (
+                                <TouchableOpacity onPress={() => setSmartPickup('')}>
+                                    <CloseCircle size={14} color="#94A3B8" variant="Bold" />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
+
+                    {/* Drop-off row */}
+                    <View style={styles.smartRow}>
+                        <View style={[styles.smartIconWrap, { backgroundColor: '#ECFDF5' }]}>
+                            <Bus size={14} color="#10B981" variant="Bold" />
+                        </View>
+                        <Text style={styles.smartLabel}>Drop</Text>
+                        <View style={[
+                            styles.smartInputWrap,
+                            smartDropFocused && styles.smartInputFocused,
+                        ]}>
+                            <TextInput
+                                style={styles.smartInput}
+                                value={smartDrop}
+                                onChangeText={setSmartDrop}
+                                placeholder="School name"
+                                placeholderTextColor="#CBD5E1"
+                                onFocus={() => setSmartDropFocused(true)}
+                                onBlur={() => setSmartDropFocused(false)}
+                                returnKeyType="done"
+                            />
+                            {smartDrop.length > 0 && (
+                                <TouchableOpacity onPress={() => setSmartDrop('')}>
+                                    <CloseCircle size={14} color="#94A3B8" variant="Bold" />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
+
+                    <Text style={styles.smartHint}>
+                        ✨ Vehicle list updates automatically when you edit these fields.
+                    </Text>
+                </View>
+            )}
+
             {/* Results Section */}
             <View style={styles.resultsHeader}>
                 <Text style={styles.resultsCount}>
@@ -988,5 +1107,86 @@ const styles = StyleSheet.create({
         fontSize: fs(14),
         fontFamily: 'Roboto-Medium',
         color: '#fff',
+    },
+
+    // ── Smart Match Banner ────────────────────────────────────────────────────
+    smartBanner: {
+        marginHorizontal: wp(16),
+        marginTop: hp(12),
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        padding: 14,
+        borderWidth: 1.5,
+        borderColor: '#BFDBFE',
+        shadowColor: '#3B82F6',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 3,
+    },
+    smartBannerHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 10,
+    },
+    smartBannerTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    smartBannerTitle: {
+        fontSize: fs(13),
+        fontFamily: 'Roboto-Bold',
+        color: '#1E293B',
+    },
+    smartRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 8,
+    },
+    smartIconWrap: {
+        width: 26,
+        height: 26,
+        borderRadius: 8,
+        backgroundColor: '#EFF6FF',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    smartLabel: {
+        fontSize: fs(11),
+        fontFamily: 'Roboto-Bold',
+        color: '#94A3B8',
+        width: 38,
+    },
+    smartInputWrap: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        gap: 6,
+    },
+    smartInputFocused: {
+        borderColor: '#3B82F6',
+        backgroundColor: '#fff',
+    },
+    smartInput: {
+        flex: 1,
+        fontSize: fs(13),
+        fontFamily: 'Roboto-Regular',
+        color: '#1E293B',
+    },
+    smartHint: {
+        fontSize: fs(11),
+        fontFamily: 'Roboto-Regular',
+        color: '#94A3B8',
+        marginTop: 4,
+        textAlign: 'center',
     },
 });

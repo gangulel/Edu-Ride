@@ -30,6 +30,7 @@ const childSchema = new mongoose.Schema(
     emergencyContact1: { type: String, trim: true, maxlength: 20, default: null },
     emergencyContact2: { type: String, trim: true, maxlength: 20, default: null },
     specialNotes: { type: String, trim: true, maxlength: 500, default: "" },
+    homeAddress:  { type: String, trim: true, maxlength: 300, default: null },
   },
   { timestamps: true }
 );
