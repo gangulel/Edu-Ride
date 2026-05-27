@@ -62,8 +62,8 @@ export default function Register() {
       setError("Please enter a valid mobile number.");
       return false;
     }
-    if (password.length < 6) {
-      setError("Password should be at least 6 characters.");
+    if (password.length < 8) {
+      setError("Password should be at least 8 characters.");
       return false;
     }
     if (!termsChecked) {
@@ -93,6 +93,7 @@ export default function Register() {
       const resolvedRole = payload?.user?.role || userType;
 
       // Immediately log in to get an auth token for the new account
+      let loginSuccess = false;
       try {
         const loginPayload = await apiFetch("/auth/login", {
           method: "POST",
@@ -100,12 +101,21 @@ export default function Register() {
         });
         if (loginPayload?.token && loginPayload?.user) {
           await login(loginPayload.token, loginPayload.user);
+          loginSuccess = true;
         }
       } catch {
-        // login-after-register failed; user can log in manually
+        // login-after-register failed — redirect to login so user can sign in manually
       }
 
       setLoading(false);
+
+      if (!loginSuccess) {
+        // We registered successfully but couldn't get a session token.
+        // Send the user to login so they can authenticate properly.
+        router.replace("/login/login");
+        return;
+      }
+
       if (resolvedRole === "parent") {
         router.replace("/parent");
       } else if (resolvedRole === "driver") {

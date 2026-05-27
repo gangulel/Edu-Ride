@@ -72,6 +72,7 @@ export const authRegisterSchema = z
 export const authLoginSchema = z
   .object({
     email: z.string().trim().toLowerCase().regex(EMAIL_REGEX, "Invalid email format"),
+    password: z.string().min(1, "Password is required").max(128),
   })
   .strict();
 

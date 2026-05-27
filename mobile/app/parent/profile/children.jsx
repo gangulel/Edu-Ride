@@ -6,15 +6,22 @@ import { Button } from '../../components/atoms';
 import { ChildCard, EmptyState } from '../../components/molecules';
 import { Header } from '../../components/organisms';
 import { getChildren, deleteChild } from '../../../services/parentApi';
+import { useAuth } from '../../../contexts/AuthContext';
 
 export default function ChildrenScreen() {
     const router = useRouter();
+    const { token } = useAuth();
     const [children, setChildren] = useState([]);
     const [loading, setLoading] = useState(true);
     const [error, setError] = useState(null);
     const [deletingId, setDeletingId] = useState(null);
 
     const fetchChildren = useCallback(async () => {
+        if (!token) {
+            setError('Session expired. Please log in again.');
+            setLoading(false);
+            return;
+        }
         try {
             setError(null);
             const res = await getChildren();
@@ -24,7 +31,7 @@ export default function ChildrenScreen() {
         } finally {
             setLoading(false);
         }
-    }, []);
+    }, [token]);
 
     useEffect(() => { fetchChildren(); }, [fetchChildren]);
 
@@ -71,9 +78,15 @@ export default function ChildrenScreen() {
             ) : error ? (
                 <View style={styles.centered}>
                     <Text style={styles.errorText}>{error}</Text>
-                    <TouchableOpacity style={styles.retryBtn} onPress={fetchChildren}>
-                        <Text style={styles.retryText}>Retry</Text>
-                    </TouchableOpacity>
+                    {!token ? (
+                        <TouchableOpacity style={styles.retryBtn} onPress={() => router.replace('/login/login')}>
+                            <Text style={styles.retryText}>Go to Login</Text>
+                        </TouchableOpacity>
+                    ) : (
+                        <TouchableOpacity style={styles.retryBtn} onPress={fetchChildren}>
+                            <Text style={styles.retryText}>Retry</Text>
+                        </TouchableOpacity>
+                    )}
                 </View>
             ) : children.length > 0 ? (
                 <FlatList

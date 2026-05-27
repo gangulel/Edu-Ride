@@ -19,6 +19,7 @@ import { Ionicons } from '@expo/vector-icons';
 import { LinearGradient } from 'expo-linear-gradient';
 import { responsive, hp, wp } from '../../utils/responsive';
 import { addChild } from '../../../services/parentApi';
+import { useAuth } from '../../../contexts/AuthContext';
 
 // ─── Constants ────────────────────────────────────────────────────────────────
 
@@ -476,6 +477,7 @@ const PHONE_RE = /^\+?\d{7,15}$/;
 
 export default function AddChildScreen() {
     const router = useRouter();
+    const { token } = useAuth();
     const [form, setForm] = useState(INITIAL_FORM);
     const [errors, setErrors] = useState(INITIAL_ERRORS);
     const [loading, setLoading] = useState(false);
@@ -538,6 +540,12 @@ export default function AddChildScreen() {
     };
 
     const handleSave = async () => {
+        if (!token) {
+            // No session token — redirect to login
+            router.replace('/login/login');
+            return;
+        }
+
         if (!validate()) return;
 
         setLoading(true);
