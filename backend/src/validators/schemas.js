@@ -288,6 +288,19 @@ export const createChildSchema = z
     grade: childGradeSchema,
     school: nonEmptyText("school", 2, 120),
     age: numberFromAny(z.number().int().min(3).max(25)).nullable().optional(),
+    gender: z.enum(["Male", "Female"]).nullable().optional(),
+    emergencyContact1: z
+      .string()
+      .trim()
+      .regex(PHONE_REGEX, "emergencyContact1 must be a valid phone number (7–15 digits)")
+      .nullable()
+      .optional(),
+    emergencyContact2: z
+      .string()
+      .trim()
+      .regex(PHONE_REGEX, "emergencyContact2 must be a valid phone number (7–15 digits)")
+      .nullable()
+      .optional(),
     specialNotes: z.string().trim().max(500).optional(),
   })
   .strict();

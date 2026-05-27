@@ -8,7 +8,7 @@ export const getChildren = async (req, res) => {
 
 // POST /api/children — Add a child
 export const addChild = async (req, res) => {
-  const { fullName, grade, school, age, specialNotes } = req.body;
+  const { fullName, grade, school, age, gender, emergencyContact1, emergencyContact2, specialNotes } = req.body;
 
   const child = await Child.create({
     parent: req.user._id,
@@ -16,6 +16,9 @@ export const addChild = async (req, res) => {
     grade,
     school: school.trim(),
     age: age ?? null,
+    gender: gender ?? null,
+    emergencyContact1: emergencyContact1 ?? null,
+    emergencyContact2: emergencyContact2 ?? null,
     specialNotes: specialNotes || "",
   });
 
@@ -29,7 +32,7 @@ export const updateChild = async (req, res) => {
     return res.status(404).json({ error: "Child not found" });
   }
 
-  const allowedFields = ["fullName", "grade", "school", "age", "specialNotes"];
+  const allowedFields = ["fullName", "grade", "school", "age", "gender", "emergencyContact1", "emergencyContact2", "specialNotes"];
   for (const field of allowedFields) {
     if (req.body[field] !== undefined) {
       child[field] = req.body[field];

@@ -26,6 +26,9 @@ const childSchema = new mongoose.Schema(
     },
     school: { type: String, required: true, trim: true, minlength: 2, maxlength: 120 },
     age: { type: Number, min: 3, max: 25, default: null },
+    gender: { type: String, enum: ['Male', 'Female'], default: null },
+    emergencyContact1: { type: String, trim: true, maxlength: 20, default: null },
+    emergencyContact2: { type: String, trim: true, maxlength: 20, default: null },
     specialNotes: { type: String, trim: true, maxlength: 500, default: "" },
   },
   { timestamps: true }

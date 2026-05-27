@@ -132,12 +132,13 @@ export const register = async (req, res) => {
         alreadyRegistered: true,
         user: {
           id: existingMongoUser._id,
-          firebaseUid: existingMongoUser.firebaseUid,
           email: existingMongoUser.email,
           fullName: existingMongoUser.fullName,
-          phone: existingMongoUser.phone,
+          phone: existingMongoUser.phone ?? null,
           role: existingMongoUser.role,
           status: existingMongoUser.status,
+          profilePhoto: existingMongoUser.profilePhoto ?? null,
+          createdAt: existingMongoUser.createdAt ?? null,
         },
       });
     }
@@ -162,12 +163,13 @@ export const register = async (req, res) => {
       : "Registration successful",
     user: {
       id: user._id,
-      firebaseUid: user.firebaseUid,
       email: user.email,
       fullName: user.fullName,
-      phone: user.phone,
+      phone: user.phone ?? null,
       role: user.role,
       status: user.status,
+      profilePhoto: user.profilePhoto ?? null,
+      createdAt: user.createdAt ?? null,
     },
   });
 };
@@ -233,13 +235,13 @@ export const login = async (req, res) => {
 
   const userPayload = {
     id: user._id,
-    firebaseUid: user.firebaseUid,
     email: user.email,
     fullName: user.fullName,
-    phone: user.phone,
+    phone: user.phone ?? null,
     role: user.role,
     status: user.status,
-    profilePhoto: user.profilePhoto,
+    profilePhoto: user.profilePhoto ?? null,
+    createdAt: user.createdAt ?? null,
     ...(user.role === "driver" && {
       rating: user.rating,
       reviewCount: user.reviewCount,
@@ -430,13 +432,13 @@ export const googleAuth = async (req, res) => {
     token: googleSessionToken,
     user: {
       id: user._id,
-      firebaseUid: user.firebaseUid,
       email: user.email,
       fullName: user.fullName,
-      phone: user.phone,
+      phone: user.phone ?? null,
       role: user.role,
       status: user.status,
-      profilePhoto: user.profilePhoto,
+      profilePhoto: user.profilePhoto ?? null,
+      createdAt: user.createdAt ?? null,
     },
   });
 };
@@ -466,5 +468,32 @@ export const getMe = async (req, res) => {
     return res.status(404).json({ error: "User profile not found" });
   }
 
-  res.json({ user: req.user });
+  const u = req.user;
+
+  // Return a clean, normalized profile — never expose firebaseUid to the client.
+  const profile = {
+    id: u._id ?? u.id,
+    email: u.email,
+    fullName: u.fullName,
+    phone: u.phone ?? null,
+    role: u.role,
+    status: u.status,
+    profilePhoto: u.profilePhoto ?? null,
+    createdAt: u.createdAt ?? null,
+    updatedAt: u.updatedAt ?? null,
+    // Driver-specific fields — omitted for parents so the payload stays lean.
+    ...(u.role === "driver" && {
+      rating: u.rating,
+      reviewCount: u.reviewCount,
+      totalTrips: u.totalTrips,
+      isVerified: u.isVerified,
+      experience: u.experience,
+      areasServed: u.areasServed,
+      school: u.school,
+      monthlyFee: u.monthlyFee,
+      isAC: u.isAC,
+    }),
+  };
+
+  res.json({ user: profile });
 };
