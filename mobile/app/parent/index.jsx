@@ -28,7 +28,7 @@ import {
 import { responsive, wp, hp, fs } from '../utils/responsive';
 import { useAuth } from '../../contexts/AuthContext';
 import { getChildren, getBookings, getMe } from '../../services/parentApi';
-import { ParentBottomNav } from '../components/organisms';
+import { ParentBottomNav, FirstTimeHomeScreen } from '../components/organisms';
 
 function getGreeting() {
     const h = new Date().getHours();
@@ -79,6 +79,20 @@ export default function ParentHome() {
 
     const activeBookings = bookings.filter(b => b.status === 'accepted');
     const activeBooking = activeBookings[0] || null;
+
+    // ── First-time user detection ──────────────────────────────────────────
+    // Set PREVIEW_FIRST_TIME=true to force the onboarding screen during dev.
+    // In production it shows automatically when the account has no children
+    // and no bookings (data loaded successfully with empty results).
+    const PREVIEW_FIRST_TIME = true; // ← toggle to false when done testing
+
+    const isFirstTimeUser =
+        PREVIEW_FIRST_TIME ||
+        (!loading && !error && children.length === 0 && bookings.length === 0);
+
+    if (isFirstTimeUser) {
+        return <FirstTimeHomeScreen user={user} />;
+    }
 
     const quickActions = [
         { icon: SearchNormal1, label: 'Find Service', route: '/parent/search', color: '#3B82F6', bg: '#EFF6FF' },

@@ -1,5 +1,6 @@
 import React from 'react';
-import { View, SafeAreaView, StyleSheet, StatusBar } from 'react-native';
+import { View, StyleSheet, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ScreenTemplate = ({
     children,
@@ -8,7 +9,10 @@ const ScreenTemplate = ({
     safeArea = true,
     style,
 }) => {
-    const Container = safeArea ? SafeAreaView : View;
+    // Only apply top safe area inset — the bottom is handled by ParentBottomNav/DriverBottomNav
+    const Container = safeArea
+        ? (props) => <SafeAreaView edges={['top']} {...props} />
+        : View;
 
     return (
         <Container style={[styles.container, { backgroundColor }, style]}>

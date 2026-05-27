@@ -1,15 +1,23 @@
-import React from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity } from 'react-native';
+import React, { useEffect } from 'react';
+import { View, Text, StyleSheet, ScrollView, TouchableOpacity } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { responsive, hp, wp } from '../../utils/responsive';
 import { Avatar, Card, Badge } from '../../components/atoms';
 import { Header, ParentBottomNav } from '../../components/organisms';
 import { useAuth } from '../../../contexts/AuthContext';
+import { getMe } from '../../../services/parentApi';
 
 export default function ProfileScreen() {
     const router = useRouter();
-    const { user, logout } = useAuth();
+    const { user, logout, updateUser } = useAuth();
+
+    useEffect(() => {
+        getMe()
+            .then((res) => { if (res?.user) updateUser(res.user); })
+            .catch(() => {});
+    }, []);
 
     const formatMemberSince = (dateStr) => {
         if (!dateStr) return '';
@@ -32,7 +40,7 @@ export default function ProfileScreen() {
     };
 
     return (
-        <SafeAreaView style={styles.container}>
+        <SafeAreaView edges={['top']} style={styles.container}>
             <Header title="Profile" showBack />
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
                 <Card style={styles.profileCard}>

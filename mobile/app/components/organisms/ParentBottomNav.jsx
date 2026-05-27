@@ -1,12 +1,14 @@
 import React from 'react';
-import { View, TouchableOpacity, Text, StyleSheet } from 'react-native';
+import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native';
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
-import { responsive, hp } from '../../utils/responsive';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { responsive } from '../../utils/responsive';
 
 const ParentBottomNav = () => {
     const router = useRouter();
     const pathname = usePathname();
+    const insets = useSafeAreaInsets();
 
     const tabs = [
         { name: 'Home', icon: 'home-outline', iconActive: 'home', route: '/parent' },
@@ -24,7 +26,7 @@ const ParentBottomNav = () => {
     };
 
     return (
-        <View style={styles.container}>
+        <View style={[styles.container, { paddingBottom: Math.max(insets.bottom, 8) }]}>
             {tabs.map((tab) => {
                 const active = isActive(tab.route);
                 return (
@@ -55,9 +57,17 @@ const styles = StyleSheet.create({
         backgroundColor: '#fff',
         borderTopWidth: 1,
         borderTopColor: '#E5E5EA',
-        paddingBottom: hp(20),
         paddingTop: responsive.paddingSM,
         paddingHorizontal: responsive.paddingSM,
+        ...Platform.select({
+            ios: {
+                shadowColor: '#000',
+                shadowOffset: { width: 0, height: -2 },
+                shadowOpacity: 0.05,
+                shadowRadius: 4,
+            },
+            android: { elevation: 8 },
+        }),
     },
     tab: {
         flex: 1,
