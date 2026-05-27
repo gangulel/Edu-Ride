@@ -50,10 +50,16 @@ export async function apiFetch(path, options = {}) {
   const payload = await parseJsonSafe(response);
 
   if (!response.ok) {
-    const errorMessage =
-      payload && typeof payload === "object" && payload.error
-        ? payload.error
-        : `Request failed with status ${response.status}`;
+    let errorMessage = `Request failed with status ${response.status}`;
+    if (payload && typeof payload === "object") {
+      if (payload.error) {
+        // Append Zod field-level details when present so the UI shows a useful message
+        const detail = Array.isArray(payload.details) && payload.details.length > 0
+          ? payload.details.map((d) => d.message || d).join(", ")
+          : null;
+        errorMessage = detail ? `${payload.error}: ${detail}` : payload.error;
+      }
+    }
     throw new Error(errorMessage);
   }
 

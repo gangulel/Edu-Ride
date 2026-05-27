@@ -267,6 +267,215 @@ const hero = StyleSheet.create({
     },
 });
 
+/** Added-children card — shown instead of the hero illustration once ≥1 child exists */
+function ChildrenCard({ children, onManage, onAddAnother }) {
+    return (
+        <View style={cc.card}>
+            {/* Header */}
+            <View style={cc.header}>
+                <View style={cc.headerLeft}>
+                    <View style={cc.iconBadge}>
+                        <Profile2User size={18} color="#3B82F6" variant="Bold" />
+                    </View>
+                    <Text style={cc.title}>My Children</Text>
+                </View>
+                <View style={cc.countBadge}>
+                    <Text style={cc.countText}>{children.length} added</Text>
+                </View>
+            </View>
+
+            <View style={cc.divider} />
+
+            {/* Child rows */}
+            {children.map((child, i) => (
+                <View
+                    key={child._id || i}
+                    style={[cc.childRow, i < children.length - 1 && cc.childRowBorder]}
+                >
+                    {/* Avatar */}
+                    <View style={cc.avatar}>
+                        <Text style={cc.avatarText}>
+                            {child.fullName
+                                ?.split(' ')
+                                .map((n) => n[0])
+                                .join('')
+                                .toUpperCase()
+                                .slice(0, 2) || '?'}
+                        </Text>
+                    </View>
+
+                    {/* Info */}
+                    <View style={cc.info}>
+                        <Text style={cc.childName} numberOfLines={1}>{child.fullName}</Text>
+                        <Text style={cc.childMeta} numberOfLines={1}>
+                            Grade {child.grade}
+                            {child.school ? `  •  ${child.school}` : ''}
+                        </Text>
+                        {child.homeAddress ? (
+                            <Text style={cc.childAddr} numberOfLines={1}>
+                                📍 {child.homeAddress}
+                            </Text>
+                        ) : null}
+                    </View>
+
+                    {/* Status pill */}
+                    <View style={cc.statusPill}>
+                        <View style={cc.statusDot} />
+                        <Text style={cc.statusText}>No Ride Yet</Text>
+                    </View>
+                </View>
+            ))}
+
+            {/* Footer actions */}
+            <View style={cc.footer}>
+                <TouchableOpacity style={cc.manageBtn} onPress={onManage} activeOpacity={0.7}>
+                    <Text style={cc.manageBtnText}>Manage</Text>
+                </TouchableOpacity>
+                <TouchableOpacity style={cc.addBtn} onPress={onAddAnother} activeOpacity={0.7}>
+                    <AddCircle size={15} color="#3B82F6" variant="Bold" />
+                    <Text style={cc.addBtnText}>Add Another</Text>
+                </TouchableOpacity>
+            </View>
+        </View>
+    );
+}
+
+const cc = StyleSheet.create({
+    card: {
+        marginHorizontal: wp(16),
+        marginTop: hp(16),
+        backgroundColor: '#fff',
+        borderRadius: 24,
+        overflow: 'hidden',
+        shadowColor: '#3B82F6',
+        shadowOffset: { width: 0, height: 6 },
+        shadowOpacity: 0.10,
+        shadowRadius: 16,
+        elevation: 6,
+        padding: wp(18),
+    },
+    header: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: hp(10),
+    },
+    headerLeft: { flexDirection: 'row', alignItems: 'center', gap: wp(10) },
+    iconBadge: {
+        width: 36, height: 36, borderRadius: 10,
+        backgroundColor: '#EFF6FF',
+        alignItems: 'center', justifyContent: 'center',
+    },
+    title: {
+        fontSize: fs(17),
+        fontFamily: 'Roboto-Bold',
+        color: '#1E293B',
+    },
+    countBadge: {
+        backgroundColor: '#ECFDF5',
+        paddingHorizontal: 10,
+        paddingVertical: 4,
+        borderRadius: 20,
+    },
+    countText: {
+        fontSize: fs(12),
+        fontFamily: 'Roboto-Bold',
+        color: '#10B981',
+    },
+    divider: { height: 1, backgroundColor: '#F1F5F9', marginBottom: hp(10) },
+
+    // Child row
+    childRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: hp(12),
+        gap: wp(12),
+    },
+    childRowBorder: {
+        borderBottomWidth: 1,
+        borderBottomColor: '#F1F5F9',
+    },
+    avatar: {
+        width: 46, height: 46, borderRadius: 23,
+        backgroundColor: '#EFF6FF',
+        alignItems: 'center', justifyContent: 'center',
+    },
+    avatarText: {
+        fontSize: fs(16),
+        fontFamily: 'Roboto-Bold',
+        color: '#3B82F6',
+    },
+    info: { flex: 1 },
+    childName: {
+        fontSize: fs(15),
+        fontFamily: 'Roboto-Bold',
+        color: '#1E293B',
+    },
+    childMeta: {
+        fontSize: fs(12),
+        fontFamily: 'Roboto-Regular',
+        color: '#64748B',
+        marginTop: 2,
+    },
+    childAddr: {
+        fontSize: fs(11),
+        fontFamily: 'Roboto-Regular',
+        color: '#94A3B8',
+        marginTop: 2,
+    },
+    statusPill: {
+        flexDirection: 'row', alignItems: 'center', gap: 5,
+        backgroundColor: '#FEF3C7',
+        paddingHorizontal: 9, paddingVertical: 4,
+        borderRadius: 20,
+    },
+    statusDot: {
+        width: 6, height: 6, borderRadius: 3,
+        backgroundColor: '#F59E0B',
+    },
+    statusText: {
+        fontSize: fs(11),
+        fontFamily: 'Roboto-Medium',
+        color: '#F59E0B',
+    },
+
+    // Footer
+    footer: {
+        flexDirection: 'row',
+        justifyContent: 'space-between',
+        alignItems: 'center',
+        marginTop: hp(14),
+        paddingTop: hp(12),
+        borderTopWidth: 1,
+        borderTopColor: '#F1F5F9',
+    },
+    manageBtn: {
+        paddingHorizontal: 16, paddingVertical: 8,
+        borderRadius: 10,
+        borderWidth: 1.5,
+        borderColor: '#BFDBFE',
+        backgroundColor: '#EFF6FF',
+    },
+    manageBtnText: {
+        fontSize: fs(13),
+        fontFamily: 'Roboto-Bold',
+        color: '#2563EB',
+    },
+    addBtn: {
+        flexDirection: 'row', alignItems: 'center', gap: 5,
+        paddingHorizontal: 16, paddingVertical: 8,
+        borderRadius: 10,
+        backgroundColor: '#F0FDF4',
+        borderWidth: 1.5,
+        borderColor: '#BBF7D0',
+    },
+    addBtnText: {
+        fontSize: fs(13),
+        fontFamily: 'Roboto-Bold',
+        color: '#10B981',
+    },
+});
+
 /** Single onboarding step row */
 function SetupStep({ icon: Icon, label, description, stepNo, total, done = false, isLast = false }) {
     return (
@@ -602,17 +811,25 @@ export default function FirstTimeHomeScreen({ user, children = [], bookings = []
             >
                 <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
 
-                    {/* ── 2. HERO ILLUSTRATION ───────────────────── */}
-                    <View style={s.heroCard}>
-                        <HeroIllustration />
-                        <View style={s.heroCopy}>
-                            <Text style={s.heroTitle}>Your child's safe ride{'\n'}starts here 🚌</Text>
-                            <Text style={s.heroSub}>
-                                Set up your account in minutes and track your child's journey
-                                to school with complete peace of mind.
-                            </Text>
+                    {/* ── 2. HERO ILLUSTRATION / CHILDREN CARD ───── */}
+                    {childAdded ? (
+                        <ChildrenCard
+                            children={children}
+                            onManage={() => router.push('/parent/profile/children')}
+                            onAddAnother={() => router.push('/parent/profile/add-child')}
+                        />
+                    ) : (
+                        <View style={s.heroCard}>
+                            <HeroIllustration />
+                            <View style={s.heroCopy}>
+                                <Text style={s.heroTitle}>Your child's safe ride{'\n'}starts here 🚌</Text>
+                                <Text style={s.heroSub}>
+                                    Set up your account in minutes and track your child's journey
+                                    to school with complete peace of mind.
+                                </Text>
+                            </View>
                         </View>
-                    </View>
+                    )}
 
                     {/* ── 3. SETUP PROGRESS CARD ─────────────────── */}
                     <View style={s.section}>
