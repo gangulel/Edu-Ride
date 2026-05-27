@@ -29,6 +29,83 @@ const GRADE_OPTIONS = [
     '7', '8', '9', '10', '11', '12',
 ];
 
+// ─── Colombo Schools Master List ──────────────────────────────────────────────
+
+const COLOMBO_SCHOOLS = [
+    // National schools – Colombo
+    'Royal College',
+    'Thurstan College',
+    'DS Senanayake College',
+    'Mahanama College',
+    'Nalanda College',
+    'Ananda College',
+    'Isipathana College',
+    'Lumbini College',
+    'Zahira College',
+    'President\'s College',
+    'Gamini Vidyalaya',
+    'Sri Jayawardenepura Maha Vidyalaya',
+    // Girls national schools
+    'Visakha Vidyalaya',
+    'Devi Balika Vidyalaya',
+    'Musaeus College',
+    'Ladies College',
+    'Holy Family Convent',
+    'St. Bridget\'s Convent',
+    'Good Shepherd Convent',
+    'St. Clare\'s College',
+    'Gothami Vidyalaya',
+    // Catholic / faith-based
+    'St. Joseph\'s College',
+    'St. Peter\'s College',
+    'St. Benedict\'s College',
+    'De Mazenod College',
+    'St. Thomas\' College',
+    'Methodist College',
+    'Bishop\'s College',
+    'St. Mary\'s College',
+    'St. Thomas\' Preparatory School',
+    // International schools
+    'Colombo International School',
+    'Asian International School',
+    'The British School in Colombo',
+    'Overseas School of Colombo',
+    'Elizabeth Moir School',
+    'Gateway College Colombo',
+    'Lyceum International School',
+    'Lyceum International School Nugegoda',
+    'Stafford International School',
+    'GEMS World Academy Colombo',
+    'Ilma International School',
+    'Loreburn International School',
+    // Suburban / Greater Colombo
+    'Mahinda College',
+    'Richmond College',
+    'Prince of Wales College',
+    'Dharmaraja College',
+    'Dharmasoka College',
+    'Rahula College',
+    'Bandaranaike College',
+    'Sirimavo Bandaranaike Vidyalaya',
+    'Sirimavo Bandaranaike School',
+    'Ferguson High School',
+    'Carey College',
+    'S. Thomas\' College Mount Lavinia',
+    'Southlands College',
+    'Sujatha Vidyalaya',
+    'Vidyala Madhya Maha Vidyalaya',
+    'Piliyandala Central College',
+    'Kelaniya Madhya Maha Vidyalaya',
+    'Kalubowila Central College',
+    'Moratuwa Maha Vidyalaya',
+    'Rathnavali Balika Vidyalaya',
+    'Sangamitta Balika Vidyalaya',
+    'Samudradevi Balika Vidyalaya',
+    'Gothatuwa National School',
+    'Taxila Central College',
+    'Dharmapala Vidyalaya',
+];
+
 const GENDER_OPTIONS = [
     { label: 'Male',   icon: 'male-outline' },
     { label: 'Female', icon: 'female-outline' },
@@ -282,6 +359,215 @@ const gStyles = StyleSheet.create({
     },
 });
 
+/** Date input field with format validation */
+const DateInput = ({ value, onChange, error }) => {
+    const [focused, setFocused] = useState(false);
+
+    return (
+        <View style={fieldStyles.wrapper}>
+            <Text style={fieldStyles.label}>
+                Preferred Start Date
+                <Text style={fieldStyles.required}> *</Text>
+            </Text>
+
+            <View style={[
+                fieldStyles.inputRow,
+                focused && fieldStyles.inputFocused,
+                error && fieldStyles.inputError,
+            ]}>
+                <Ionicons
+                    name="calendar-outline"
+                    size={18}
+                    color={focused ? '#3B82F6' : '#94A3B8'}
+                    style={fieldStyles.leftIcon}
+                />
+                <TextInput
+                    style={[fieldStyles.input, { flex: 1 }]}
+                    placeholder="YYYY-MM-DD (e.g., 2026-02-01)"
+                    placeholderTextColor="#CBD5E1"
+                    value={value}
+                    onChangeText={onChange}
+                    keyboardType="number-pad"
+                    maxLength={10}
+                    returnKeyType="done"
+                    onFocus={() => setFocused(true)}
+                    onBlur={() => setFocused(false)}
+                />
+            </View>
+
+            {!!error && (
+                <View style={fieldStyles.errorRow}>
+                    <Ionicons name="alert-circle-outline" size={13} color="#EF4444" />
+                    <Text style={fieldStyles.errorText}>{error}</Text>
+                </View>
+            )}
+        </View>
+    );
+};
+
+/** School name field with live Colombo school autocomplete */
+const SchoolAutocomplete = ({ value, onChange, error }) => {
+    const [focused,         setFocused]         = useState(false);
+    const [suggestions,     setSuggestions]     = useState([]);
+    const [showDropdown,    setShowDropdown]    = useState(false);
+
+    const filterSchools = (text) => {
+        onChange(text);
+        if (text.trim().length === 0) {
+            setSuggestions([]);
+            setShowDropdown(false);
+            return;
+        }
+        const q = text.toLowerCase();
+        const matches = COLOMBO_SCHOOLS
+            .filter(s => s.toLowerCase().includes(q))
+            .slice(0, 6);
+        setSuggestions(matches);
+        setShowDropdown(matches.length > 0);
+    };
+
+    const selectSchool = (school) => {
+        onChange(school);
+        setSuggestions([]);
+        setShowDropdown(false);
+    };
+
+    const clearField = () => {
+        onChange('');
+        setSuggestions([]);
+        setShowDropdown(false);
+    };
+
+    return (
+        <View style={acStyles.wrapper}>
+            <Text style={fieldStyles.label}>
+                School Name <Text style={fieldStyles.required}>*</Text>
+            </Text>
+
+            {/* Input row */}
+            <View style={[
+                fieldStyles.inputRow,
+                focused  && fieldStyles.inputFocused,
+                error    && fieldStyles.inputError,
+            ]}>
+                <Ionicons
+                    name="business-outline"
+                    size={18}
+                    color={focused ? '#3B82F6' : '#94A3B8'}
+                    style={fieldStyles.leftIcon}
+                />
+                <TextInput
+                    style={[fieldStyles.input, { flex: 1 }]}
+                    placeholder="e.g. Colombo International School"
+                    placeholderTextColor="#CBD5E1"
+                    value={value}
+                    onChangeText={filterSchools}
+                    autoCapitalize="words"
+                    maxLength={120}
+                    returnKeyType="done"
+                    onFocus={() => {
+                        setFocused(true);
+                        if (suggestions.length > 0) setShowDropdown(true);
+                    }}
+                    onBlur={() => {
+                        setFocused(false);
+                        // small delay so tap on a suggestion registers first
+                        setTimeout(() => setShowDropdown(false), 180);
+                    }}
+                />
+                {value.length > 0 && (
+                    <TouchableOpacity onPress={clearField} hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}>
+                        <Ionicons name="close-circle" size={18} color="#94A3B8" />
+                    </TouchableOpacity>
+                )}
+            </View>
+
+            {/* Suggestions dropdown */}
+            {showDropdown && (
+                <View style={acStyles.dropdown}>
+                    <FlatList
+                        data={suggestions}
+                        keyExtractor={(item) => item}
+                        keyboardShouldPersistTaps="handled"
+                        scrollEnabled={suggestions.length > 4}
+                        nestedScrollEnabled
+                        style={{ maxHeight: hp(210) }}
+                        renderItem={({ item, index }) => (
+                            <TouchableOpacity
+                                style={[
+                                    acStyles.item,
+                                    index < suggestions.length - 1 && acStyles.itemBorder,
+                                ]}
+                                onPress={() => selectSchool(item)}
+                                activeOpacity={0.7}
+                            >
+                                <View style={acStyles.itemIconWrap}>
+                                    <Ionicons name="school-outline" size={15} color="#3B82F6" />
+                                </View>
+                                <Text style={acStyles.itemText} numberOfLines={1}>{item}</Text>
+                                <Ionicons name="arrow-forward" size={13} color="#CBD5E1" />
+                            </TouchableOpacity>
+                        )}
+                    />
+                </View>
+            )}
+
+            {!!error && (
+                <View style={fieldStyles.errorRow}>
+                    <Ionicons name="alert-circle-outline" size={13} color="#EF4444" />
+                    <Text style={fieldStyles.errorText}>{error}</Text>
+                </View>
+            )}
+        </View>
+    );
+};
+
+const acStyles = StyleSheet.create({
+    wrapper: {
+        marginBottom: responsive.paddingMD,
+        zIndex: 10,
+    },
+    dropdown: {
+        marginTop: hp(4),
+        backgroundColor: '#FFFFFF',
+        borderWidth: 1.5,
+        borderColor: '#BFDBFE',
+        borderRadius: 12,
+        overflow: 'hidden',
+        shadowColor: '#3B82F6',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.10,
+        shadowRadius: 10,
+        elevation: 5,
+    },
+    item: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        paddingVertical: hp(12),
+        paddingHorizontal: responsive.paddingMD,
+        gap: hp(10),
+        backgroundColor: '#FFFFFF',
+    },
+    itemBorder: {
+        borderBottomWidth: 1,
+        borderBottomColor: '#F1F5F9',
+    },
+    itemIconWrap: {
+        width: 28,
+        height: 28,
+        borderRadius: 8,
+        backgroundColor: '#EFF6FF',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    itemText: {
+        flex: 1,
+        fontSize: responsive.fontMD,
+        color: '#1E293B',
+        fontWeight: '500',
+    },
+});
+
 /** Grade picker — tappable display + modal list */
 const GradePicker = ({ value, onChange, error }) => {
     const [open, setOpen] = useState(false);
@@ -459,6 +745,8 @@ const INITIAL_FORM = {
     gender: '',
     school: '',
     grade: '',
+    startDate: '',
+    specialInstructions: '',
     emergencyContact1: '',
     emergencyContact2: '',
 };
@@ -469,6 +757,7 @@ const INITIAL_ERRORS = {
     gender: '',
     school: '',
     grade: '',
+    startDate: '',
     emergencyContact1: '',
     emergencyContact2: '',
 };
@@ -525,6 +814,14 @@ export default function AddChildScreen() {
             valid = false;
         }
 
+        if (!form.startDate.trim()) {
+            e.startDate = 'Start date is required';
+            valid = false;
+        } else if (!isValidDate(form.startDate)) {
+            e.startDate = 'Please enter a valid date (YYYY-MM-DD)';
+            valid = false;
+        }
+
         if (form.emergencyContact1 && !PHONE_RE.test(form.emergencyContact1.trim())) {
             e.emergencyContact1 = 'Enter a valid phone number (e.g. +94771234567)';
             valid = false;
@@ -537,6 +834,13 @@ export default function AddChildScreen() {
 
         setErrors(e);
         return valid;
+    };
+
+    const isValidDate = (dateStr) => {
+        const dateRegex = /^\d{4}-\d{2}-\d{2}$/;
+        if (!dateRegex.test(dateStr)) return false;
+        const date = new Date(dateStr + 'T00:00:00');
+        return date instanceof Date && !isNaN(date);
     };
 
     const handleSave = async () => {
@@ -554,8 +858,10 @@ export default function AddChildScreen() {
                 fullName:         form.fullName.trim(),
                 grade:            form.grade,
                 school:           form.school.trim(),
+                startDate:        form.startDate.trim(),
                 age:              form.age ? Number(form.age) : undefined,
                 gender:           form.gender || undefined,
+                specialInstructions: form.specialInstructions.trim() || undefined,
                 emergencyContact1: form.emergencyContact1.trim() || undefined,
                 emergencyContact2: form.emergencyContact2.trim() || undefined,
             });
@@ -669,18 +975,10 @@ export default function AddChildScreen() {
                         iconBg="#ECFDF5"
                         title="Academic Information"
                     >
-                        <FormField
-                            label="School Name"
-                            required
-                            placeholder="e.g. Colombo International School"
+                        <SchoolAutocomplete
                             value={form.school}
-                            onChangeText={v => setField('school', v)}
-                            autoCapitalize="words"
-                            leftIcon="business-outline"
-                            maxLength={120}
+                            onChange={v => setField('school', v)}
                             error={errors.school}
-                            nextRef={schoolRef}
-                            returnKeyType="done"
                         />
 
                         <GradePicker
@@ -690,7 +988,31 @@ export default function AddChildScreen() {
                         />
                     </SectionCard>
 
-                    {/* ══ Section 3 — Emergency Contacts ══ */}
+                    {/* ══ Section 3 — Additional Details ══ */}
+                    <SectionCard
+                        iconName="calendar-outline"
+                        iconColor="#8B5CF6"
+                        iconBg="#F3E8FF"
+                        title="Additional Details"
+                    >
+                        <DateInput
+                            value={form.startDate}
+                            onChange={v => setField('startDate', v)}
+                            error={errors.startDate}
+                        />
+
+                        <FormField
+                            label="Special Instructions (Optional)"
+                            placeholder="Any special needs or instructions..."
+                            value={form.specialInstructions}
+                            onChangeText={v => setField('specialInstructions', v)}
+                            autoCapitalize="sentences"
+                            maxLength={300}
+                            returnKeyType="done"
+                        />
+                    </SectionCard>
+
+                    {/* ══ Section 4 — Emergency Contacts ══ */}
                     <SectionCard
                         iconName="call-outline"
                         iconColor="#F59E0B"
