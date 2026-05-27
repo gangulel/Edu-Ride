@@ -440,7 +440,7 @@ const trust = StyleSheet.create({
 
 // ─── main screen ─────────────────────────────────────────────────────────────
 
-export default function FirstTimeHomeScreen({ user }) {
+export default function FirstTimeHomeScreen({ user, children = [], bookings = [] }) {
     const router = useRouter();
     const fadeAnim = useRef(new Animated.Value(0)).current;
     const slideAnim = useRef(new Animated.Value(20)).current;
@@ -448,6 +448,19 @@ export default function FirstTimeHomeScreen({ user }) {
     const firstName =
         user?.fullName?.split(' ')[0] || user?.email?.split('@')[0] || 'Parent';
     const fullName = user?.fullName || 'Parent';
+
+    // ── Checklist completion ────────────────────────────────────────────────
+    // Step 1: child added
+    // Step 2: any booking initiated (route + service selected together)
+    // Step 3: same milestone as step 2
+    // Step 4: at least one booking accepted by a driver
+    const childAdded      = children.length > 0;
+    const bookingCreated  = bookings.length > 0;
+    const bookingAccepted = bookings.some(b => b.status === 'accepted');
+
+    const stepsDone = [childAdded, bookingCreated, bookingCreated, bookingAccepted];
+    const completedCount = stepsDone.filter(Boolean).length;
+    const progressPct    = `${(completedCount / 4) * 100}%`;
 
     useEffect(() => {
         Animated.parallel([
@@ -606,14 +619,14 @@ export default function FirstTimeHomeScreen({ user }) {
                         <View style={s.sectionHeader}>
                             <Text style={s.sectionTitle}>Your Setup Checklist</Text>
                             <View style={s.progressPill}>
-                                <Text style={s.progressPillText}>0 / 4</Text>
+                                <Text style={s.progressPillText}>{completedCount} / 4</Text>
                             </View>
                         </View>
 
                         <View style={s.card}>
                             {/* Progress bar */}
                             <View style={s.progressBarBg}>
-                                <View style={[s.progressBarFill, { width: '0%' }]} />
+                                <View style={[s.progressBarFill, { width: progressPct }]} />
                             </View>
                             <Text style={s.progressNote}>
                                 Complete all steps to activate your first booking
@@ -626,7 +639,7 @@ export default function FirstTimeHomeScreen({ user }) {
                                         {...step}
                                         stepNo={i + 1}
                                         total={SETUP_STEPS.length}
-                                        done={false}
+                                        done={stepsDone[i]}
                                         isLast={i === SETUP_STEPS.length - 1}
                                     />
                                 ))}

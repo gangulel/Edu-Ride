@@ -91,7 +91,7 @@ export default function ParentHome() {
         (!loading && !error && children.length === 0 && bookings.length === 0);
 
     if (isFirstTimeUser) {
-        return <FirstTimeHomeScreen user={user} />;
+        return <FirstTimeHomeScreen user={user} children={children} bookings={bookings} />;
     }
 
     const quickActions = [
