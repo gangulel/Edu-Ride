@@ -233,7 +233,7 @@ const styles = StyleSheet.create({
   section: { marginBottom: spacing.lg },
   sectionTitle: {
     fontSize: typography.size.xs,
-    color: colors.textTertiary,
+    color: colors.textSecondary,
     fontFamily: typography.fontFamily.bold,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
@@ -248,7 +248,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontSize: typography.size.xs,
-    color: colors.textSecondary,
+    color: colors.textPrimary,
     fontFamily: typography.fontFamily.semibold,
     marginBottom: spacing.sm - 2,
   },

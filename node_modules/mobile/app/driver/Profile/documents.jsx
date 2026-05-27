@@ -170,12 +170,12 @@ const styles = StyleSheet.create({
   summaryRow: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
   summaryCard: { flex: 1, alignItems: 'flex-start' },
   summaryValue: { fontSize: typography.size.xl, color: colors.textPrimary, fontFamily: typography.fontFamily.bold, marginTop: spacing.sm },
-  summaryLabel: { fontSize: typography.size.xs, color: colors.textSecondary, marginTop: 2 },
+  summaryLabel: { fontSize: typography.size.xs, color: colors.textPrimary, fontFamily: typography.fontFamily.medium, marginTop: 2 },
 
   section: { marginTop: spacing.sm },
   sectionTitle: {
     fontSize: typography.size.xs,
-    color: colors.textTertiary,
+    color: colors.textSecondary,
     fontFamily: typography.fontFamily.bold,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
@@ -190,9 +190,9 @@ const styles = StyleSheet.create({
   },
   docName: { fontSize: typography.size.md, color: colors.textPrimary, fontFamily: typography.fontFamily.semibold },
   docMeta: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
-  docMetaText: { fontSize: typography.size.xs, color: colors.textSecondary },
+  docMetaText: { fontSize: typography.size.xs, color: colors.textSecondary, fontFamily: typography.fontFamily.medium },
   docStatusRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
-  docStatusText: { fontSize: typography.size.xs, fontFamily: typography.fontFamily.semibold },
+  docStatusText: { fontSize: typography.size.xs, fontFamily: typography.fontFamily.bold },
   docAction: {
     width: 36, height: 36, borderRadius: 18,
     backgroundColor: colors.primarySurface,

@@ -112,7 +112,13 @@ export default function PaymentMethodsScreen() {
               <View style={styles.heroIcon}>
                 <Wallet3 size={fs(22)} color="#fff" variant="Bold" />
               </View>
-              <Badge label="Next payout" tone="primary" variant="soft" style={{ backgroundColor: 'rgba(255,255,255,0.22)' }} />
+              <Badge
+                label="Next payout"
+                tone="primary"
+                variant="soft"
+                textColor="#fff"
+                style={{ backgroundColor: 'rgba(255,255,255,0.22)' }}
+              />
             </View>
             <Text style={styles.heroLabel}>Pending Payout</Text>
             <Text style={styles.heroAmount}>Rs. {EARNINGS.pendingPayout.toLocaleString()}</Text>
@@ -249,15 +255,15 @@ const styles = StyleSheet.create({
     backgroundColor: 'rgba(255,255,255,0.22)',
     alignItems: 'center', justifyContent: 'center',
   },
-  heroLabel: { color: 'rgba(255,255,255,0.85)', fontSize: typography.size.sm, fontFamily: typography.fontFamily.medium },
+  heroLabel: { color: 'rgba(255,255,255,0.92)', fontSize: typography.size.sm, fontFamily: typography.fontFamily.medium },
   heroAmount: { color: '#fff', fontSize: fs(32), fontFamily: typography.fontFamily.bold, marginTop: 4, letterSpacing: -0.5 },
   heroFooter: { marginTop: spacing.sm },
-  heroDate: { color: 'rgba(255,255,255,0.85)', fontSize: typography.size.xs },
+  heroDate: { color: 'rgba(255,255,255,0.92)', fontSize: typography.size.xs },
 
   section: { marginTop: spacing.sm },
   sectionTitle: {
     fontSize: typography.size.xs,
-    color: colors.textTertiary,
+    color: colors.textSecondary,
     fontFamily: typography.fontFamily.bold,
     letterSpacing: 0.8,
     textTransform: 'uppercase',

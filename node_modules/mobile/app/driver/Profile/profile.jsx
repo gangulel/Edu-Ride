@@ -101,8 +101,20 @@ export default function DriverProfile() {
           <Text style={styles.heroName}>{profile.fullName}</Text>
           <Text style={styles.heroEmail}>{profile.email}</Text>
           <View style={styles.heroBadges}>
-            <Badge label={`${profile.yearsActive} yrs active`} tone="primary" variant="soft" style={{ backgroundColor: colors.onDark.surface }} />
-            <Badge label="Verified driver" tone="success" variant="soft" style={{ backgroundColor: 'rgba(16,185,129,0.22)' }} />
+            <Badge
+              label={`${profile.yearsActive} yrs active`}
+              tone="primary"
+              variant="soft"
+              textColor="#fff"
+              style={{ backgroundColor: 'rgba(255,255,255,0.22)' }}
+            />
+            <Badge
+              label="Verified driver"
+              tone="success"
+              variant="soft"
+              textColor="#fff"
+              style={{ backgroundColor: 'rgba(16,185,129,0.30)' }}
+            />
           </View>
 
           <Card padding="lg" style={styles.statsCard} tone="elevated">
@@ -293,7 +305,7 @@ const styles = StyleSheet.create({
     borderWidth: 2, borderColor: '#fff',
   },
   heroName: { color: '#fff', fontSize: typography.size['2xl'], fontFamily: typography.fontFamily.bold },
-  heroEmail: { color: colors.onDark.textMuted, fontSize: typography.size.sm, marginTop: 4 },
+  heroEmail: { color: colors.onDark.text, fontSize: typography.size.sm, marginTop: 4, opacity: 0.88 },
   heroBadges: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
 
   statsCard: {
@@ -304,13 +316,13 @@ const styles = StyleSheet.create({
   },
   statItem: { flex: 1, alignItems: 'center', gap: 4 },
   statValue: { fontSize: typography.size.lg, color: colors.textPrimary, fontFamily: typography.fontFamily.bold },
-  statLabel: { fontSize: typography.size.xs, color: colors.textSecondary },
-  statsDivider: { width: 1, height: 36, backgroundColor: colors.divider },
+  statLabel: { fontSize: typography.size.xs, color: colors.textSecondary, fontFamily: typography.fontFamily.medium },
+  statsDivider: { width: 1, height: 36, backgroundColor: colors.border },
 
   section: { paddingHorizontal: spacing.lg, marginTop: spacing.xl },
   sectionTitle: {
     fontSize: typography.size.xs,
-    color: colors.textTertiary,
+    color: colors.textSecondary,
     fontFamily: typography.fontFamily.bold,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
@@ -333,5 +345,5 @@ const styles = StyleSheet.create({
     width: '100%',
   },
   logoutText: { color: colors.danger, fontSize: typography.size.md, fontFamily: typography.fontFamily.bold },
-  version: { fontSize: typography.size.xs, color: colors.textTertiary, marginTop: spacing.lg },
+  version: { fontSize: typography.size.xs, color: colors.textSecondary, marginTop: spacing.lg },
 });

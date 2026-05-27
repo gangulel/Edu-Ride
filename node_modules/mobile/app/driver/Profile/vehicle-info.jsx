@@ -112,9 +112,27 @@ export default function VehicleInfo() {
               </Text>
               <Text style={styles.heroPlate}>{vehicle.licensePlate}</Text>
               <View style={styles.heroBadges}>
-                <Badge label={vehicle.vehicleType} tone="primary" variant="soft" style={{ backgroundColor: colors.onDark.surface }} />
-                <Badge label={`${vehicle.capacity} seats`} tone="primary" variant="soft" style={{ backgroundColor: colors.onDark.surface }} />
-                <Badge label={vehicle.color} tone="primary" variant="soft" style={{ backgroundColor: colors.onDark.surface }} />
+                <Badge
+                  label={vehicle.vehicleType}
+                  tone="primary"
+                  variant="soft"
+                  textColor="#fff"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.22)' }}
+                />
+                <Badge
+                  label={`${vehicle.capacity} seats`}
+                  tone="primary"
+                  variant="soft"
+                  textColor="#fff"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.22)' }}
+                />
+                <Badge
+                  label={vehicle.color}
+                  tone="primary"
+                  variant="soft"
+                  textColor="#fff"
+                  style={{ backgroundColor: 'rgba(255,255,255,0.22)' }}
+                />
               </View>
             </LinearGradient>
           </View>
@@ -264,7 +282,7 @@ const styles = StyleSheet.create({
     marginBottom: spacing.md,
   },
   heroTitle: { color: '#fff', fontSize: typography.size.xl, fontFamily: typography.fontFamily.bold },
-  heroPlate: { color: colors.onDark.textMuted, fontSize: typography.size.lg, fontFamily: typography.fontFamily.semibold, marginTop: 4, letterSpacing: 2 },
+  heroPlate: { color: colors.onDark.text, fontSize: typography.size.lg, fontFamily: typography.fontFamily.semibold, marginTop: 4, letterSpacing: 2, opacity: 0.9 },
   heroBadges: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md, flexWrap: 'wrap', justifyContent: 'center' },
 
   statusGrid: { flexDirection: 'row', gap: spacing.sm, marginBottom: spacing.lg },
@@ -274,14 +292,14 @@ const styles = StyleSheet.create({
     alignItems: 'center', justifyContent: 'center',
     marginBottom: spacing.sm,
   },
-  statusLabel: { fontSize: typography.size.xs, color: colors.textSecondary, fontFamily: typography.fontFamily.medium },
+  statusLabel: { fontSize: typography.size.xs, color: colors.textPrimary, fontFamily: typography.fontFamily.semibold },
   statusValue: { fontSize: typography.size.sm, fontFamily: typography.fontFamily.bold, marginTop: 2 },
-  statusDate: { fontSize: 10, color: colors.textTertiary, marginTop: 2 },
+  statusDate: { fontSize: 10, color: colors.textSecondary, marginTop: 2 },
 
   section: { marginBottom: spacing.lg },
   sectionTitle: {
     fontSize: typography.size.xs,
-    color: colors.textTertiary,
+    color: colors.textSecondary,
     fontFamily: typography.fontFamily.bold,
     letterSpacing: 0.8,
     textTransform: 'uppercase',
@@ -296,7 +314,7 @@ const styles = StyleSheet.create({
   },
   fieldLabel: {
     fontSize: typography.size.xs,
-    color: colors.textSecondary,
+    color: colors.textPrimary,
     fontFamily: typography.fontFamily.semibold,
     marginBottom: spacing.sm - 2,
   },
@@ -325,7 +343,7 @@ const styles = StyleSheet.create({
     paddingHorizontal: spacing.md, paddingVertical: spacing.sm,
     borderRadius: radii.full,
   },
-  featureText: { color: colors.successDark, fontSize: typography.size.xs, fontFamily: typography.fontFamily.semibold },
+  featureText: { color: colors.palette.emerald[700], fontSize: typography.size.xs, fontFamily: typography.fontFamily.semibold },
 
   editActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
 });

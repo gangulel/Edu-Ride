@@ -27,6 +27,7 @@ const Badge = ({
   variant = 'soft', // soft | solid
   size = 'sm',     // xs | sm | md
   dotColor,
+  textColor,       // override the computed foreground colour (useful on dark/gradient backgrounds)
   style,
 }) => {
   const palette = variant === 'solid' ? SOLID[tone] ?? SOLID.primary : TONES[tone] ?? TONES.primary;
@@ -42,7 +43,7 @@ const Badge = ({
           styles.text,
           size === 'xs' && { fontSize: 10 },
           size === 'md' && { fontSize: typography.size.sm },
-          { color: palette.fg },
+          { color: textColor ?? palette.fg },
         ]}
       >
         {label}
