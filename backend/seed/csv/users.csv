@@ -1,0 +1,11 @@
+email,fullName,phone,role,status,isVerified,rating,reviewCount,totalTrips,experience,school,monthlyFee,isAC,areasServed
+kasun.bandara@eduride.test,Kasun Bandara,+94771000001,driver,active,true,4.8,234,312,8 years school transport experience,Royal College,25000,true,"Nugegoda,Kirulapone,Colombo 5"
+sanduni.wijesinghe@eduride.test,Sanduni Wijesinghe,+94771000002,driver,active,true,4.9,312,410,10 years school transport experience,Visakha Vidyalaya,26000,true,"Maharagama,Nawala,Rajagiriya"
+nuwan.rajapaksa@eduride.test,Nuwan Rajapaksa,+94771000003,driver,active,false,3.8,45,67,2 years school transport experience,Nalanda College,20000,false,"Borella,Maradana,Dematagoda"
+chamara.silva@eduride.test,Chamara Silva,+94771000004,driver,pending,false,0,0,0,1 year school transport experience,Ladies' College,22000,true,"Colombo 4,Pamankade"
+dilshan.mendis@eduride.test,Dilshan Mendis,+94771000005,driver,pending,false,0,0,0,New driver,Dharmaraja College,18000,false,Kandy
+nimalka.perera@eduride.test,Nimalka Perera,+94772000001,parent,active,,,,,,,,
+dilini.fernando@eduride.test,Dilini Fernando,+94772000002,parent,active,,,,,,,,
+ravi.jayasinghe@eduride.test,Ravi Jayasinghe,+94772000003,parent,active,,,,,,,,
+amali.wickramasinghe@eduride.test,Amali Wickramasinghe,+94772000004,parent,active,,,,,,,,
+thilina.senaratne@eduride.test,Thilina Senaratne,+94772000005,parent,active,,,,,,,,

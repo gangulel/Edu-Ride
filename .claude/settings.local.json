@@ -5,7 +5,14 @@
       "Bash(grep -oE \"\\(md\\\\\\\\\\\\\\\\:grid-cols-[0-9]+|lg\\\\\\\\\\\\\\\\:grid-cols-[0-9]+|lg\\\\\\\\\\\\\\\\:col-span-[0-9]+|animate-spin|sm\\\\\\\\\\\\\\\\:max-w|min-w-0|min-w-\\\\[\\)\" /c/Project/Edu-Ride/admin/src/index.css)",
       "Bash(npx vite *)",
       "Read(//c/c/Project/Edu-Ride/**)",
-      "Read(//c/c/Project/Edu-Ride/backend/**)"
+      "Read(//c/c/Project/Edu-Ride/backend/**)",
+      "Bash(xargs grep -l \"fetch\\\\|apiFetch\")",
+      "Bash(xargs grep -l \"fetch\")",
+      "Bash(xargs grep -l \"apiRequest\\\\|fetch\")",
+      "Bash(node -e \"require\\('@babel/parser'\\).parse\\(require\\('fs'\\).readFileSync\\('C:/Project/Edu-Ride/mobile/app/contexts/ThemeContext.jsx', 'utf8'\\), { sourceType: 'module', plugins: ['jsx'] }\\); console.log\\('OK ThemeContext'\\)\")",
+      "Bash(node --input-type=module -e \"import\\('./src/index.js'\\).then\\(\\(\\)=>console.log\\('imports resolve OK'\\)\\).catch\\(e=>{console.log\\('IMPORT FAIL:', e.message\\); process.exit\\(0\\);}\\)\")",
+      "Bash(pkill -f \"node --input-type=module\")",
+      "Bash(node -e \"require\\('dotenv/config'\\); const url = process.env.MONGO_URL; console.log\\('MONGO_URL:', url ? url.replace\\(/:[^@]*@/, ':***@'\\) : 'NOT SET'\\)\")"
     ]
   }
 }

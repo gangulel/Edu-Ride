@@ -24,6 +24,13 @@ import bookingRoutes from "./routes/bookingRoutes.js";
 import tripRoutes from "./routes/tripRoutes.js";
 import adminRoutes from "./routes/adminRoutes.js";
 import contentRoutes from "./routes/contentRoutes.js";
+import paymentMethodRoutes from "./routes/paymentMethodRoutes.js";
+import paymentRoutes from "./routes/paymentRoutes.js";
+import subscriptionRoutes from "./routes/subscriptionRoutes.js";
+import reviewRoutes from "./routes/reviewRoutes.js";
+import chatRoutes from "./routes/chatRoutes.js";
+import notificationRoutes from "./routes/notificationRoutes.js";
+import earningRoutes from "./routes/earningRoutes.js";
 import { initSocket } from "./socket/index.js";
 
 const app = express();
@@ -107,12 +114,21 @@ app.use("/api/public", contentRoutes);
 // Mixed auth routes (GET is public, mutations need auth — handled in route files)
 app.use("/api/routes", routeRoutes);
 
+// Reviews — driver listing is public; mutations are auth'd inside the file.
+app.use("/api/reviews", reviewRoutes);
+
 // Protected routes
 app.use("/api/users", authenticate, userRoutes);
 app.use("/api/children", authenticate, requireRole("parent"), childRoutes);
 app.use("/api/vehicles", authenticate, requireRole("driver"), vehicleRoutes);
 app.use("/api/bookings", authenticate, bookingRoutes);
 app.use("/api/trips", authenticate, tripRoutes);
+app.use("/api/payment-methods", authenticate, requireRole("parent"), paymentMethodRoutes);
+app.use("/api/payments", authenticate, paymentRoutes);
+app.use("/api/subscriptions", authenticate, subscriptionRoutes);
+app.use("/api/conversations", authenticate, chatRoutes);
+app.use("/api/notifications", authenticate, notificationRoutes);
+app.use("/api/earnings", authenticate, earningRoutes);
 app.use("/api/admin", authenticate, requireRole("admin"), adminRoutes);
 
 if (fs.existsSync(adminBuildPath)) {
