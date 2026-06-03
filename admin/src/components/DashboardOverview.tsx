@@ -29,6 +29,7 @@ import {
 } from "recharts"
 import { toast } from "sonner"
 import { apiRequest } from "../lib/api"
+import { fetchAdminAnalytics, type AdminAnalyticsPayload } from "../lib/adminContent"
 
 const authErrorPattern = /no token provided|unauthorized|forbidden|authentication required|invalid or expired token/i
 
@@ -66,66 +67,69 @@ interface StatCardConfig {
 
 export function DashboardOverview() {
   const [data, setData] = useState<DashboardPayload | null>(null)
+  const [analytics, setAnalytics] = useState<AdminAnalyticsPayload | null>(null)
   const [error, setError] = useState("")
   const [loading, setLoading] = useState(true)
   const [refreshing, setRefreshing] = useState(false)
   const shouldShowError = Boolean(error) && !authErrorPattern.test(error)
 
   const loadDashboard = useCallback(async () => {
-    try {
-      const payload = await apiRequest<DashboardPayload>("/admin/dashboard")
-      setData(payload)
-      setError("")
-      return
-    } catch (err) {
-      const message = err instanceof Error ? err.message : String(err)
-      if (!authErrorPattern.test(message)) {
-        setError(message)
-        return
+    // Fetch stats + analytics in parallel; stats degrade gracefully to public endpoint
+    const statsPromise = (async () => {
+      try {
+        const payload = await apiRequest<DashboardPayload>("/admin/dashboard")
+        setData(payload)
+        setError("")
+      } catch (err) {
+        const message = err instanceof Error ? err.message : String(err)
+        if (!authErrorPattern.test(message)) {
+          setError(message)
+          return
+        }
+        // Fallback: public endpoint (no auth required)
+        try {
+          const [
+            totalParents, activeParents, pendingParents,
+            totalDrivers, activeDrivers, pendingDrivers, suspendedDrivers,
+          ] = await Promise.all([
+            apiRequest<PublicUsersResponse>("/public/users?role=parent&limit=1"),
+            apiRequest<PublicUsersResponse>("/public/users?role=parent&status=active&limit=1"),
+            apiRequest<PublicUsersResponse>("/public/users?role=parent&status=pending&limit=1"),
+            apiRequest<PublicUsersResponse>("/public/users?role=driver&limit=1"),
+            apiRequest<PublicUsersResponse>("/public/users?role=driver&status=active&limit=1"),
+            apiRequest<PublicUsersResponse>("/public/users?role=driver&status=pending&limit=1"),
+            apiRequest<PublicUsersResponse>("/public/users?role=driver&status=suspended&limit=1"),
+          ])
+          setData({
+            stats: {
+              users: {
+                totalParents: totalParents.pagination?.total || 0,
+                activeParents: activeParents.pagination?.total || 0,
+                pendingParents: pendingParents.pagination?.total || 0,
+                totalDrivers: totalDrivers.pagination?.total || 0,
+                activeDrivers: activeDrivers.pagination?.total || 0,
+                pendingDrivers: pendingDrivers.pagination?.total || 0,
+                suspendedDrivers: suspendedDrivers.pagination?.total || 0,
+              },
+              routes: { total: 0, active: 0 },
+              bookings: { total: 0, pending: 0, accepted: 0 },
+              trips: { total: 0, completed: 0, active: 0 },
+              recentRegistrations: 0,
+            },
+            pendingVerifications: [],
+          })
+          setError("")
+        } catch (err2) {
+          setError(err2 instanceof Error ? err2.message : "Failed to load dashboard")
+        }
       }
-    }
+    })()
 
-    try {
-      const [
-        totalParents,
-        activeParents,
-        pendingParents,
-        totalDrivers,
-        activeDrivers,
-        pendingDrivers,
-        suspendedDrivers,
-      ] = await Promise.all([
-        apiRequest<PublicUsersResponse>("/public/users?role=parent&limit=1"),
-        apiRequest<PublicUsersResponse>("/public/users?role=parent&status=active&limit=1"),
-        apiRequest<PublicUsersResponse>("/public/users?role=parent&status=pending&limit=1"),
-        apiRequest<PublicUsersResponse>("/public/users?role=driver&limit=1"),
-        apiRequest<PublicUsersResponse>("/public/users?role=driver&status=active&limit=1"),
-        apiRequest<PublicUsersResponse>("/public/users?role=driver&status=pending&limit=1"),
-        apiRequest<PublicUsersResponse>("/public/users?role=driver&status=suspended&limit=1"),
-      ])
+    const analyticsPromise = fetchAdminAnalytics()
+      .then((a) => setAnalytics(a))
+      .catch(() => { /* analytics failing silently is OK — charts fall back to estimates */ })
 
-      setData({
-        stats: {
-          users: {
-            totalParents: totalParents.pagination?.total || 0,
-            activeParents: activeParents.pagination?.total || 0,
-            pendingParents: pendingParents.pagination?.total || 0,
-            totalDrivers: totalDrivers.pagination?.total || 0,
-            activeDrivers: activeDrivers.pagination?.total || 0,
-            pendingDrivers: pendingDrivers.pagination?.total || 0,
-            suspendedDrivers: suspendedDrivers.pagination?.total || 0,
-          },
-          routes: { total: 0, active: 0 },
-          bookings: { total: 0, pending: 0, accepted: 0 },
-          trips: { total: 0, completed: 0, active: 0 },
-          recentRegistrations: 0,
-        },
-        pendingVerifications: [],
-      })
-      setError("")
-    } catch (err) {
-      setError(err instanceof Error ? err.message : "Failed to load dashboard")
-    }
+    await Promise.all([statsPromise, analyticsPromise])
   }, [])
 
   useEffect(() => {
@@ -156,18 +160,26 @@ export function DashboardOverview() {
   }
 
   const stats = data?.stats
-  const estimatedRevenue = (stats?.bookings.accepted || 0) * 25000
+  const estimatedRevenue = analytics?.paymentTrendData.reduce((s, d) => s + (d.revenue || 0), 0)
+    ?? (stats?.bookings.accepted || 0) * 25000
 
   const monthlyData = useMemo(() => {
+    if (analytics?.paymentTrendData.length) {
+      return analytics.paymentTrendData.slice(-6).map((d) => ({
+        month: d.month,
+        transactions: d.totalBookings || 0,
+        revenue: d.revenue || 0,
+      }))
+    }
+    // Fallback estimate when analytics haven't loaded
     if (!stats) return []
-    const routeRatio = stats.routes.total > 0 ? stats.routes.active / stats.routes.total : 0
     const bookingRatio = stats.bookings.total > 0 ? stats.bookings.accepted / stats.bookings.total : 0
     return ["Jan", "Feb", "Mar", "Apr", "May", "Jun"].map((month, index) => ({
       month,
       transactions: Math.round(stats.bookings.total * (0.55 + index * 0.08) * (bookingRatio || 1)),
-      revenue: Math.round(stats.bookings.accepted * 25000 * (0.45 + index * 0.1) * (routeRatio || 1)),
+      revenue: Math.round(stats.bookings.accepted * 25000 * (0.45 + index * 0.1)),
     }))
-  }, [stats])
+  }, [stats, analytics])
 
   const statusData = useMemo(() => {
     if (!stats) return []
@@ -552,14 +564,14 @@ export function DashboardOverview() {
 
         <Card className="animate-fade-up er-hover-lift">
           <CardHeader>
-            <CardTitle>Active complaints</CardTitle>
+            <CardTitle>Trips completed</CardTitle>
           </CardHeader>
           <CardContent>
-            <div className="text-3xl font-bold" style={{ color: "var(--er-danger)" }}>
-              {stats?.bookings.pending || 0}
+            <div className="text-3xl font-bold" style={{ color: "var(--er-info)" }}>
+              {(analytics?.tripSummary.completed ?? stats?.trips.completed ?? 0).toLocaleString()}
             </div>
             <p className="text-sm mt-2" style={{ color: "var(--er-text-muted)" }}>
-              Pending booking requests requiring attention
+              {analytics?.tripSummary.active ?? stats?.trips.active ?? 0} currently in progress
             </p>
           </CardContent>
         </Card>

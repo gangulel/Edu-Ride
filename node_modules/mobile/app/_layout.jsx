@@ -12,6 +12,8 @@ import {
 } from '@expo-google-fonts/roboto';
 import * as SplashScreen from 'expo-splash-screen';
 import { AuthProvider } from '../contexts/AuthContext';
+import { LanguageProvider } from '../contexts/LanguageContext';
+import '../src/services/i18n'; // initialise i18next before any screen renders
 
 SplashScreen.preventAutoHideAsync();
 
@@ -36,18 +38,21 @@ export default function RootLayout() {
   }
 
   return (
-    <AuthProvider>
-      <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
-        <Stack screenOptions={{ headerShown: false }}>
-          <Stack.Screen name="index" options={{ headerShown: false }} />
-          <Stack.Screen name="onboarding" options={{ headerShown: false }} />
-          <Stack.Screen name="login" options={{ headerShown: false }} />
-          <Stack.Screen name="home" options={{ headerShown: false }} />
-          <Stack.Screen name="driver" options={{ headerShown: false }} />
-          <Stack.Screen name="parent" options={{ headerShown: false }} />
-          <Stack.Screen name="trips" options={{ headerShown: false }} />
-        </Stack>
-      </View>
-    </AuthProvider>
+    <LanguageProvider>
+      <AuthProvider>
+        <View style={{ flex: 1 }} onLayout={onLayoutRootView}>
+          <Stack screenOptions={{ headerShown: false }}>
+            <Stack.Screen name="index" options={{ headerShown: false }} />
+            <Stack.Screen name="onboarding" options={{ headerShown: false }} />
+            <Stack.Screen name="login" options={{ headerShown: false }} />
+            <Stack.Screen name="home" options={{ headerShown: false }} />
+            <Stack.Screen name="driver" options={{ headerShown: false }} />
+            <Stack.Screen name="parent" options={{ headerShown: false }} />
+            <Stack.Screen name="trips" options={{ headerShown: false }} />
+            <Stack.Screen name="settings" options={{ headerShown: false }} />
+          </Stack>
+        </View>
+      </AuthProvider>
+    </LanguageProvider>
   );
 }

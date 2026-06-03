@@ -1,4 +1,4 @@
-import React, { useMemo, useState } from 'react';
+﻿import React, { useMemo, useState } from 'react';
 import {
   View,
   Text,
@@ -13,45 +13,32 @@ import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
 import { Bus, ArrowRight2, ArrowLeft2 } from 'iconsax-react-native';
 
+import { useTranslation } from 'react-i18next';
 import { colors, palette } from './theme';
 import Hero1Tracking from './components/onboarding/Hero1Tracking';
 import Hero2Safety from './components/onboarding/Hero2Safety';
 import Hero3Payments from './components/onboarding/Hero3Payments';
 
-const SCREENS = [
-  {
-    eyebrow: 'Live tracking',
-    headline: 'Track every ride in',
-    headlineAccent: 'real-time',
-    desc:
-      'Monitor your child’s school bus live with GPS tracking, ETA updates, and instant arrival alerts.',
-    Hero: Hero1Tracking,
-    cta: 'Next',
-  },
-  {
-    eyebrow: 'Safety & alerts',
-    headline: 'Stay updated &',
-    headlineAccent: 'feel secure',
-    desc:
-      'Receive instant notifications for pickups, drop-offs, delays, and emergency alerts — all in one place.',
-    Hero: Hero2Safety,
-    cta: 'Next',
-  },
-  {
-    eyebrow: 'All in one place',
-    headline: 'Simple payments,',
-    headlineAccent: 'easy chats',
-    desc:
-      'Pay transport fees securely, chat with drivers, and manage school trips effortlessly.',
-    Hero: Hero3Payments,
-    cta: 'Get started',
-  },
+const SCREEN_CONFIGS = [
+  { key: 'tracking', Hero: Hero1Tracking },
+  { key: 'safety', Hero: Hero2Safety },
+  { key: 'payments', Hero: Hero3Payments },
 ];
 
 export default function Onboarding() {
   const router = useRouter();
+  const { t } = useTranslation();
   const { width, height } = useWindowDimensions();
   const [index, setIndex] = useState(0);
+
+  const SCREENS = SCREEN_CONFIGS.map((s) => ({
+    ...s,
+    eyebrow: t(`onboarding.screens.${s.key}.eyebrow`),
+    headline: t(`onboarding.screens.${s.key}.headline`),
+    headlineAccent: t(`onboarding.screens.${s.key}.headlineAccent`),
+    desc: t(`onboarding.screens.${s.key}.desc`),
+    cta: s.key === 'payments' ? t('onboarding.getStarted') : t('onboarding.next'),
+  }));
 
   const styles = useMemo(() => createStyles(width, height), [width, height]);
   const screen = SCREENS[index];
@@ -98,14 +85,14 @@ export default function Onboarding() {
           </View>
           {!isLast ? (
             <TouchableOpacity onPress={skip} style={styles.skip} activeOpacity={0.8}>
-              <Text style={styles.skipText}>Skip</Text>
+              <Text style={styles.skipText}>{t('onboarding.skip')}</Text>
             </TouchableOpacity>
           ) : (
             <View style={{ width: 64 }} />
           )}
         </View>
 
-        {/* Hero area — keyed so each screen remounts cleanly */}
+        {/* Hero area â€” keyed so each screen remounts cleanly */}
         <View style={styles.heroFrame}>
           <View style={styles.heroInner} key={`hero-${index}`}>
             <Hero />
@@ -173,9 +160,9 @@ export default function Onboarding() {
 
           {isLast ? (
             <View style={styles.signin}>
-              <Text style={styles.signinText}>Already have an account?</Text>
+              <Text style={styles.signinText}>{t('onboarding.alreadyHaveAccount')}</Text>
               <TouchableOpacity onPress={() => router.push('/login/login')}>
-                <Text style={styles.signinLink}> Sign in</Text>
+                <Text style={styles.signinLink}>{t('onboarding.signIn')}</Text>
               </TouchableOpacity>
             </View>
           ) : null}

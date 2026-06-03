@@ -1,13 +1,13 @@
-import { useEffect, useMemo, useState } from "react"
+import { useCallback, useEffect, useMemo, useState } from "react"
 import { Card, CardContent, CardHeader, CardTitle } from "./ui/card"
 import { Button } from "./ui/button"
 import { Input } from "./ui/input"
 import { Select } from "./ui/select"
 import { Badge } from "./ui/badge"
 import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from "./ui/table"
-import { Shield, AlertTriangle, User, Activity, Download } from "lucide-react"
+import { Shield, AlertTriangle, User, Activity, Download, RefreshCw } from "lucide-react"
 import { toast } from "sonner"
-import { fetchAdminContent } from "../lib/adminContent"
+import { fetchAdminAuditLogs } from "../lib/adminContent"
 
 function downloadCsv<T extends Record<string, any>>(rows: T[], filename: string) {
   if (!rows.length) {
@@ -40,20 +40,28 @@ export function AuditLogs() {
   const [loginStatusFilter, setLoginStatusFilter] = useState("")
   const [actionSearch, setActionSearch] = useState("")
   const [resolvedAlerts, setResolvedAlerts] = useState<Set<string>>(new Set())
+  const [loading, setLoading] = useState(true)
+  const [error, setError] = useState("")
 
-  useEffect(() => {
-    fetchAdminContent()
-      .then((payload) => {
-        setLoginHistory(payload.audit?.loginHistory || [])
-        setAdminActions(payload.audit?.adminActions || [])
-        setSuspiciousActivity(payload.audit?.suspiciousActivity || [])
-      })
-      .catch(() => {
-        setLoginHistory([])
-        setAdminActions([])
-        setSuspiciousActivity([])
-      })
+  const load = useCallback(async () => {
+    setLoading(true)
+    setError("")
+    try {
+      const payload = await fetchAdminAuditLogs(200)
+      setLoginHistory(payload.loginHistory || [])
+      setAdminActions(payload.adminActions || [])
+      setSuspiciousActivity(payload.suspiciousActivity || [])
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to load audit logs")
+      setLoginHistory([])
+      setAdminActions([])
+      setSuspiciousActivity([])
+    } finally {
+      setLoading(false)
+    }
   }, [])
+
+  useEffect(() => { load() }, [load])
 
   const failedAttempts = useMemo(() => loginHistory.filter((item) => item.status === "failed").length, [loginHistory])
   const activeAlerts = useMemo(() => suspiciousActivity.filter((item) => item.status === "investigating").length, [suspiciousActivity])
@@ -96,27 +104,51 @@ export function AuditLogs() {
 
   const isAlertResolved = (id: any) => resolvedAlerts.has(String(id))
 
+  if (loading) {
+    return (
+      <div className="space-y-6">
+        <div className="grid grid-cols-1 md:grid-cols-4 gap-6">
+          {Array.from({ length: 4 }).map((_, i) => (
+            <Card key={i}><CardContent className="pt-6">
+              <span className="er-skeleton" style={{ height: 32, width: "50%", display: "block" }} />
+              <span className="er-skeleton" style={{ height: 14, width: "70%", display: "block", marginTop: 10 }} />
+            </CardContent></Card>
+          ))}
+        </div>
+        <Card><CardContent className="pt-6">
+          <span className="er-skeleton" style={{ height: 200, display: "block", borderRadius: 8 }} />
+        </CardContent></Card>
+      </div>
+    )
+  }
+
   return (
     <div className="space-y-6">
       <div className="flex flex-wrap items-center justify-between gap-3">
         <div className="text-sm" style={{ color: "var(--er-text-muted)" }}>
           {loginHistory.length + adminActions.length + suspiciousActivity.length} total log entries
+          {error && <span className="ml-2 text-red-500">· {error}</span>}
         </div>
-        <Button
-          onClick={() =>
-            downloadCsv(
-              [
-                ...loginHistory.map((row) => ({ kind: "login", ...row })),
-                ...adminActions.map((row) => ({ kind: "admin", ...row })),
-                ...suspiciousActivity.map((row) => ({ kind: "suspicious", ...row })),
-              ],
-              "audit-logs.csv"
-            )
-          }
-        >
-          <Download className="h-4 w-4 mr-2" />
-          Export Logs
-        </Button>
+        <div className="flex gap-2">
+          <Button variant="outline" size="sm" onClick={load} disabled={loading}>
+            <RefreshCw className="h-4 w-4 mr-2" />Refresh
+          </Button>
+          <Button
+            onClick={() =>
+              downloadCsv(
+                [
+                  ...loginHistory.map((row) => ({ kind: "login", ...row })),
+                  ...adminActions.map((row) => ({ kind: "admin", ...row })),
+                  ...suspiciousActivity.map((row) => ({ kind: "suspicious", ...row })),
+                ],
+                "audit-logs.csv"
+              )
+            }
+          >
+            <Download className="h-4 w-4 mr-2" />
+            Export Logs
+          </Button>
+        </div>
       </div>
 
       {/* Security Overview */}

@@ -1,27 +1,15 @@
-import React, { useState } from 'react';
-import {
-  View,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  ActivityIndicator,
-  StyleSheet,
-  StatusBar,
-} from 'react-native';
-import { useRouter } from 'expo-router';
-import { LinearGradient } from 'expo-linear-gradient';
-import { ArrowLeft, Sms, InfoCircle, TickCircle } from 'iconsax-react-native';
-import { useTheme } from '../contexts/ThemeContext';
-import { wp, hp, fs } from '../utils/responsive';
-import { useAuth } from '../contexts/AuthContext';
-import { isValidEmail } from '../utils/validation';
+import React, { useState } from "react";
+import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from "react-native";
+import { useRouter } from "expo-router";
+import { LinearGradient } from "expo-linear-gradient";
+import { responsive, wp, hp } from "../utils/responsive";
+import { apiFetch } from "../../services/api";
 
 export default function Forgot() {
   const theme = useTheme();
   const styles = useStyles(theme);
   const router = useRouter();
-  const { sendPasswordReset } = useAuth();
-  const [email, setEmail] = useState('');
+  const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState('');
   const [error, setError] = useState('');
@@ -30,23 +18,22 @@ export default function Forgot() {
     setError('');
     setMessage('');
     if (!email) {
-      setError('Please enter your email address.');
-      return;
+      setError("Please enter your email address.");
+      return false;
     }
-    if (!isValidEmail(email)) {
-      setError('Please enter a valid email address.');
-      return;
+    if (!re.test(email)) {
+      setError("Please enter a valid email address.");
+      return false;
     }
     setLoading(true);
     try {
-      await sendPasswordReset(email);
-      // Identical message whether the email exists or not — prevents account
-      // enumeration via the reset endpoint.
-      setMessage('If an account with that email exists, a reset link was sent.');
+      await apiFetch("/auth/forgot", {
+        method: "POST",
+        body: JSON.stringify({ email }),
+      });
+      setMessage("If an account with that email exists, a reset link was sent.");
     } catch (err) {
-      // Even on failure, surface a generic message (but log the real error).
-      console.warn('Password reset failed:', err.message);
-      setMessage('If an account with that email exists, a reset link was sent.');
+      setError(err.message || "Unable to contact server. Please try again later.");
     } finally {
       setLoading(false);
     }
@@ -54,82 +41,32 @@ export default function Forgot() {
 
   return (
     <View style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      <TouchableOpacity
-        style={styles.backButton}
-        onPress={() => router.back()}
-        activeOpacity={0.7}
-      >
-        <View style={styles.backButtonCircle}>
-          <ArrowLeft size={20} color={theme.colors.textPrimary} />
-        </View>
+      <Text style={styles.title}>Forgot password</Text>
+
+      <Text style={styles.info}>Enter the email associated with your account and we'll send a reset link.</Text>
+
+      <TextInput
+        placeholder="Email"
+        value={email}
+        onChangeText={setEmail}
+        keyboardType="email-address"
+        autoCapitalize="none"
+        style={styles.input}
+        placeholderTextColor="#999"
+      />
+
+      {error ? <Text style={styles.error}>{error}</Text> : null}
+      {message ? <Text style={styles.message}>{message}</Text> : null}
+
+      <TouchableOpacity onPress={onSubmit} activeOpacity={0.9} style={{ marginTop: responsive.paddingSM }} disabled={loading}>
+        <LinearGradient colors={["#3A7BD5", "#007AFF"]} style={styles.button} start={[0, 0]} end={[1, 1]}>
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Send reset link</Text>}
+        </LinearGradient>
       </TouchableOpacity>
 
-      <View style={styles.content}>
-        <Text style={styles.title}>Forgot Password?</Text>
-        <Text style={styles.subtitle}>
-          Enter the email associated with your account and we'll send you a reset link.
-        </Text>
-
-        <View style={styles.inputContainer}>
-          <Text style={styles.label}>Email address</Text>
-          <View style={styles.inputWrapper}>
-            <Sms size={20} color={theme.colors.textMuted} variant="Outline" />
-            <TextInput
-              placeholder="you@example.com"
-              placeholderTextColor={theme.colors.inputPlaceholder}
-              value={email}
-              onChangeText={setEmail}
-              keyboardType="email-address"
-              autoCapitalize="none"
-              autoCorrect={false}
-              style={styles.input}
-            />
-          </View>
-        </View>
-
-        {error ? (
-          <View style={styles.errorContainer}>
-            <InfoCircle size={18} color={theme.colors.danger} variant="Bold" />
-            <Text style={styles.errorText}>{error}</Text>
-          </View>
-        ) : null}
-
-        {message ? (
-          <View style={styles.successContainer}>
-            <TickCircle size={18} color={theme.colors.success} variant="Bold" />
-            <Text style={styles.successText}>{message}</Text>
-          </View>
-        ) : null}
-
-        <TouchableOpacity
-          onPress={onSubmit}
-          activeOpacity={0.85}
-          disabled={loading}
-          style={styles.button}
-        >
-          <LinearGradient
-            colors={theme.colors.primaryGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.buttonGradient}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.buttonText}>Send reset link</Text>
-            )}
-          </LinearGradient>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          onPress={() => router.replace('/login/login')}
-          style={styles.link}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.linkText}>Back to sign in</Text>
-        </TouchableOpacity>
-      </View>
+      <TouchableOpacity onPress={() => router.replace("/login/login")} style={styles.link}>
+        <Text style={styles.linkText}>Back to login</Text>
+      </TouchableOpacity>
     </View>
   );
 }

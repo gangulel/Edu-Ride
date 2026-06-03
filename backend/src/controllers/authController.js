@@ -3,6 +3,7 @@ import bcrypt from "bcryptjs";
 import User from "../models/User.js";
 import { createAdminSessionToken } from "../lib/adminSessionToken.js";
 import { createMobileSessionToken } from "../lib/mobileSessionToken.js";
+import { writeAuditLog } from "../lib/auditLog.js";
 
 const FIREBASE_AUTH_URL = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword";
 
@@ -306,6 +307,16 @@ export const adminLogin = async (req, res) => {
 
     const token = createAdminSessionToken(internalAdminUser);
 
+    writeAuditLog({
+      type: "login",
+      user: internalAdminUser.email,
+      role: "admin",
+      ip: req.ip || req.headers["x-forwarded-for"] || "unknown",
+      location: "Admin Portal",
+      action: "admin_login",
+      status: "success",
+    });
+
     return res.json({
       message: "Admin login successful",
       token,
@@ -376,6 +387,16 @@ export const adminLogin = async (req, res) => {
       status: user.status,
     });
   }
+
+  writeAuditLog({
+    type: "login",
+    user: user.email,
+    role: "admin",
+    ip: req.ip || req.headers["x-forwarded-for"] || "unknown",
+    location: "Admin Portal",
+    action: "admin_login",
+    status: "success",
+  });
 
   res.json({
     message: "Admin login successful",

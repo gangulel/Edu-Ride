@@ -3,20 +3,24 @@ import { View, TouchableOpacity, Text, StyleSheet, Platform } from 'react-native
 import { Ionicons } from '@expo/vector-icons';
 import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import { responsive } from '../../utils/responsive';
+
+const TAB_CONFIG = [
+    { key: 'home',     icon: 'home-outline',       iconActive: 'home',             route: '/parent' },
+    { key: 'search',   icon: 'search-outline',     iconActive: 'search',           route: '/parent/search' },
+    { key: 'bookings', icon: 'calendar-outline',   iconActive: 'calendar',         route: '/parent/my-bookings' },
+    { key: 'messages', icon: 'chatbubble-outline', iconActive: 'chatbubble-outline', route: '/parent/messages' },
+    { key: 'profile',  icon: 'person-outline',     iconActive: 'person',           route: '/parent/profile' },
+];
 
 const ParentBottomNav = () => {
     const router = useRouter();
     const pathname = usePathname();
     const insets = useSafeAreaInsets();
+    const { t } = useTranslation();
 
-    const tabs = [
-        { name: 'Home', icon: 'home-outline', iconActive: 'home', route: '/parent' },
-        { name: 'Search', icon: 'search-outline', iconActive: 'search', route: '/parent/search' },
-        { name: 'Bookings', icon: 'calendar-outline', iconActive: 'calendar', route: '/parent/my-bookings' },
-        { name: 'Messages', icon: 'chatbubble-outline', iconActive: 'chatbubble-outline', route: '/parent/messages' },
-        { name: 'Profile', icon: 'person-outline', iconActive: 'person', route: '/parent/profile' },
-    ];
+    const tabs = TAB_CONFIG.map((tab) => ({ ...tab, name: t(`nav.${tab.key}`) }));
 
     const isActive = (route) => {
         if (route === '/parent') {

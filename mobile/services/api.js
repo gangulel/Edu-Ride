@@ -3,6 +3,7 @@ import { Platform } from "react-native";
 const explicitBase = process.env.EXPO_PUBLIC_API_BASE_URL;
 
 function getDefaultBaseUrl() {
+  // Android emulator routes localhost through 10.0.2.2; iOS simulator uses localhost.
   if (Platform.OS === "android") {
     return "http://10.0.2.2:3000/api";
   }
@@ -32,6 +33,8 @@ async function parseJsonSafe(response) {
   }
 }
 
+const REQUEST_TIMEOUT_MS = 15000;
+
 export async function apiFetch(path, options = {}) {
   const headers = {
     "Content-Type": "application/json",
@@ -42,10 +45,32 @@ export async function apiFetch(path, options = {}) {
     headers["Authorization"] = `Bearer ${_authToken}`;
   }
 
-  const response = await fetch(`${API_BASE_URL}${path}`, {
-    ...options,
-    headers,
-  });
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), REQUEST_TIMEOUT_MS);
+
+  let response;
+  try {
+    response = await fetch(`${API_BASE_URL}${path}`, {
+      ...options,
+      headers,
+      signal: controller.signal,
+    });
+  } catch (err) {
+    if (err.name === "AbortError") {
+      throw new Error(
+        "Request timed out. Please check your internet connection and try again."
+      );
+    }
+    // TypeError: Network request failed / Failed to fetch — server is unreachable.
+    // This means the backend URL is wrong, the server is down, or the device has
+    // no network access. Surface a clear, actionable message instead of the raw
+    // platform error string.
+    throw new Error(
+      "Unable to connect to the server. Please check your internet connection and ensure the backend is running."
+    );
+  } finally {
+    clearTimeout(timeoutId);
+  }
 
   const payload = await parseJsonSafe(response);
 
@@ -54,9 +79,10 @@ export async function apiFetch(path, options = {}) {
     if (payload && typeof payload === "object") {
       if (payload.error) {
         // Append Zod field-level details when present so the UI shows a useful message
-        const detail = Array.isArray(payload.details) && payload.details.length > 0
-          ? payload.details.map((d) => d.message || d).join(", ")
-          : null;
+        const detail =
+          Array.isArray(payload.details) && payload.details.length > 0
+            ? payload.details.map((d) => d.message || d).join(", ")
+            : null;
         errorMessage = detail ? `${payload.error}: ${detail}` : payload.error;
       }
     }
