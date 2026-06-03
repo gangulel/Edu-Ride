@@ -1,6 +1,7 @@
 import User from "../models/User.js";
 import Child from "../models/Child.js";
 import { escapeRegex, parsePagination } from "../utils/validation.js";
+import { writeAuditLog } from "../lib/auditLog.js";
 
 // GET /api/users — List users (admin)
 export const listUsers = async (req, res) => {
@@ -128,6 +129,15 @@ export const updateUserStatus = async (req, res) => {
     return res.status(404).json({ error: "User not found" });
   }
 
+  writeAuditLog({
+    type: "admin_action",
+    admin: req.user?.email || req.user?.fullName || "admin",
+    action: `User ${updates.status || "verified"}`,
+    target: `${user.fullName} (${user.role})`,
+    details: updates.status ? `Status changed to "${updates.status}"` : "Verification status updated",
+    severity: updates.status === "suspended" ? "medium" : "low",
+  });
+
   res.json({ message: "User status updated", user });
 };
 
@@ -151,6 +161,15 @@ export const deleteUser = async (req, res) => {
   }
 
   await User.findByIdAndDelete(req.params.id);
+
+  writeAuditLog({
+    type: "admin_action",
+    admin: req.user?.email || req.user?.fullName || "admin",
+    action: "User deleted",
+    target: `${user.fullName} (${user.role})`,
+    details: `User account permanently removed: ${user.email}`,
+    severity: "high",
+  });
 
   res.json({ message: "User deleted" });
 };
