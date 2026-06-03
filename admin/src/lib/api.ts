@@ -1,6 +1,9 @@
+import { mockAdminLogin, mockFetchCurrentAdmin } from "./mockApi";
+
 interface AdminImportMetaEnv {
   VITE_API_BASE_URL?: string;
   VITE_ADMIN_TOKEN?: string;
+  VITE_USE_BACKEND?: string;
 }
 
 interface AdminImportMeta {
@@ -11,6 +14,10 @@ const adminImportMeta = import.meta as unknown as AdminImportMeta;
 const env = adminImportMeta.env || {};
 
 export const API_BASE_URL = (env.VITE_API_BASE_URL || "/api").replace(/\/$/, "");
+// Phase 1: backend is offline. Set VITE_USE_BACKEND=1 in .env to talk to the
+// real API; otherwise the mock layer responds with seed data.
+export const IS_MOCK_MODE = env.VITE_USE_BACKEND !== "1";
+
 const ADMIN_TOKEN_KEY = "adminToken";
 const ADMIN_USER_KEY = "adminUser";
 
@@ -145,10 +152,17 @@ export function hasAdminToken() {
 }
 
 export async function adminLogin(email: string, password: string) {
+  if (IS_MOCK_MODE) {
+    return mockAdminLogin(email, password);
+  }
   return apiRequest<AdminLoginResponse>("/auth/admin/login", "POST", { email, password });
 }
 
 export async function fetchCurrentAdmin() {
+  if (IS_MOCK_MODE) {
+    return mockFetchCurrentAdmin();
+  }
+
   const response = await apiRequest<{ user: AdminAuthUser }>("/auth/me");
 
   if (!response.user || response.user.role !== "admin") {

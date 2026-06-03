@@ -1,153 +1,103 @@
 import React from 'react';
 import { View, Text, StyleSheet } from 'react-native';
-import { responsive, wp } from '../../utils/responsive';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const Badge = ({
     label,
-    variant = 'primary', // primary, success, warning, danger, info, neutral
+    variant = 'primary', // primary, success, warning, danger, info, neutral, accent
+    tone = 'solid', // solid, soft
     size = 'medium', // small, medium, large
     dot = false,
+    icon,
     style,
     textStyle,
 }) => {
-    const getBadgeStyle = () => {
-        const baseStyle = [styles.badge, styles[`badge_${size}`]];
+    const theme = useTheme();
+    const styles = useStyles(theme);
 
-        switch (variant) {
-            case 'success':
-                baseStyle.push(styles.badgeSuccess);
-                break;
-            case 'warning':
-                baseStyle.push(styles.badgeWarning);
-                break;
-            case 'danger':
-                baseStyle.push(styles.badgeDanger);
-                break;
-            case 'info':
-                baseStyle.push(styles.badgeInfo);
-                break;
-            case 'neutral':
-                baseStyle.push(styles.badgeNeutral);
-                break;
-            default:
-                baseStyle.push(styles.badgePrimary);
+    const colorFor = (key) => {
+        const c = theme.colors;
+        switch (key) {
+            case 'success': return { bg: c.success, soft: c.successSoft, text: c.success, solidText: c.textOnPrimary };
+            case 'warning': return { bg: c.warning, soft: c.warningSoft, text: c.warningDark, solidText: c.textOnPrimary };
+            case 'danger':  return { bg: c.danger, soft: c.dangerSoft, text: c.danger, solidText: c.textOnPrimary };
+            case 'info':    return { bg: c.info, soft: c.infoSoft, text: c.info, solidText: c.textOnPrimary };
+            case 'accent':  return { bg: c.accent, soft: c.accentSoft, text: c.accent, solidText: c.textOnPrimary };
+            case 'neutral': return { bg: c.surfaceMuted, soft: c.surfaceMuted, text: c.textSecondary, solidText: c.textPrimary };
+            default:        return { bg: c.primary, soft: c.primarySoft, text: c.primary, solidText: c.textOnPrimary };
         }
-
-        return baseStyle;
     };
 
-    const getTextStyle = () => {
-        const baseStyle = [styles.text, styles[`text_${size}`]];
-
-        if (variant === 'neutral') {
-            baseStyle.push(styles.textDark);
-        } else {
-            baseStyle.push(styles.textWhite);
-        }
-
-        return baseStyle;
-    };
+    const palette = colorFor(variant);
 
     if (dot) {
         return (
             <View
                 style={[
                     styles.dot,
-                    variant === 'success' ? styles.dotSuccess :
-                        variant === 'warning' ? styles.dotWarning :
-                            variant === 'danger' ? styles.dotDanger : styles.dotPrimary,
-                    style
+                    styles[`dot_${size}`],
+                    { backgroundColor: palette.bg },
+                    style,
                 ]}
             />
         );
     }
 
+    const bg = tone === 'soft' ? palette.soft : palette.bg;
+    const color = tone === 'soft' ? palette.text : palette.solidText;
+
     return (
-        <View style={[...getBadgeStyle(), style]}>
-            <Text style={[...getTextStyle(), textStyle]}>{label}</Text>
+        <View style={[styles.badge, styles[`badge_${size}`], { backgroundColor: bg }, style]}>
+            {icon && <View style={styles.iconWrap}>{icon}</View>}
+            <Text style={[styles.text, styles[`text_${size}`], { color }, textStyle]}>{label}</Text>
         </View>
     );
 };
 
-const styles = StyleSheet.create({
-    badge: {
-        borderRadius: responsive.radiusFull,
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    // Sizes
-    badge_small: {
-        paddingHorizontal: responsive.paddingSM,
-        paddingVertical: 2,
-        minWidth: wp(20),
-    },
-    badge_medium: {
-        paddingHorizontal: responsive.paddingMD,
-        paddingVertical: responsive.paddingXS,
-        minWidth: wp(28),
-    },
-    badge_large: {
-        paddingHorizontal: responsive.paddingLG,
-        paddingVertical: responsive.paddingSM,
-        minWidth: wp(36),
-    },
-    // Variants
-    badgePrimary: {
-        backgroundColor: '#007AFF',
-    },
-    badgeSuccess: {
-        backgroundColor: '#34C759',
-    },
-    badgeWarning: {
-        backgroundColor: '#FF9500',
-    },
-    badgeDanger: {
-        backgroundColor: '#FF3B30',
-    },
-    badgeInfo: {
-        backgroundColor: '#5856D6',
-    },
-    badgeNeutral: {
-        backgroundColor: '#F2F2F7',
-    },
-    // Text
-    text: {
-        fontWeight: '600',
-        textAlign: 'center',
-    },
-    text_small: {
-        fontSize: responsive.fontXS,
-    },
-    text_medium: {
-        fontSize: responsive.fontSM,
-    },
-    text_large: {
-        fontSize: responsive.fontMD,
-    },
-    textWhite: {
-        color: '#fff',
-    },
-    textDark: {
-        color: '#000',
-    },
-    // Dot variants
-    dot: {
-        width: wp(10),
-        height: wp(10),
-        borderRadius: wp(5),
-    },
-    dotPrimary: {
-        backgroundColor: '#007AFF',
-    },
-    dotSuccess: {
-        backgroundColor: '#34C759',
-    },
-    dotWarning: {
-        backgroundColor: '#FF9500',
-    },
-    dotDanger: {
-        backgroundColor: '#FF3B30',
-    },
-});
+const useStyles = (theme) =>
+    StyleSheet.create({
+        badge: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            justifyContent: 'center',
+            borderRadius: theme.radius.pill,
+            gap: 4,
+        },
+        badge_small: {
+            paddingHorizontal: theme.spacing.sm,
+            paddingVertical: 2,
+        },
+        badge_medium: {
+            paddingHorizontal: theme.spacing.md,
+            paddingVertical: theme.spacing.xs,
+        },
+        badge_large: {
+            paddingHorizontal: theme.spacing.lg,
+            paddingVertical: theme.spacing.sm,
+        },
+        text: {
+            fontFamily: theme.fontFamily.medium,
+            textAlign: 'center',
+        },
+        text_small: {
+            fontSize: theme.fontSize.xs,
+        },
+        text_medium: {
+            fontSize: theme.fontSize.xs,
+        },
+        text_large: {
+            fontSize: theme.fontSize.sm,
+        },
+        iconWrap: {
+            justifyContent: 'center',
+            alignItems: 'center',
+        },
+        dot: {
+            borderRadius: 999,
+        },
+        dot_small: { width: 6, height: 6 },
+        dot_medium: { width: 8, height: 8 },
+        dot_large: { width: 10, height: 10 },
+    });
 
 export default Badge;

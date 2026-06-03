@@ -1,7 +1,8 @@
 import React, { useState } from 'react';
 import { View, TextInput, Text, TouchableOpacity, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { responsive, wp, hp } from '../../utils/responsive';
+import { Eye, EyeSlash } from 'iconsax-react-native';
+import { useTheme } from '../../contexts/ThemeContext';
+import { hp } from '../../utils/responsive';
 
 const Input = ({
     label,
@@ -22,6 +23,8 @@ const Input = ({
     inputStyle,
     ...props
 }) => {
+    const theme = useTheme();
+    const styles = useStyles(theme);
     const [isFocused, setIsFocused] = useState(false);
     const [isSecure, setIsSecure] = useState(secureTextEntry);
 
@@ -38,15 +41,7 @@ const Input = ({
                     multiline && styles.inputMultiline,
                 ]}
             >
-                {leftIcon && (
-                    <View style={styles.leftIcon}>
-                        {typeof leftIcon === 'string' ? (
-                            <Ionicons name={leftIcon} size={20} color="#8E8E93" />
-                        ) : (
-                            leftIcon
-                        )}
-                    </View>
-                )}
+                {leftIcon && <View style={styles.leftIcon}>{leftIcon}</View>}
 
                 <TextInput
                     style={[
@@ -57,7 +52,7 @@ const Input = ({
                         inputStyle,
                     ]}
                     placeholder={placeholder}
-                    placeholderTextColor="#C7C7CC"
+                    placeholderTextColor={theme.colors.inputPlaceholder}
                     value={value}
                     onChangeText={onChangeText}
                     onFocus={() => setIsFocused(true)}
@@ -75,101 +70,99 @@ const Input = ({
                     <TouchableOpacity
                         style={styles.rightIcon}
                         onPress={() => setIsSecure(!isSecure)}
+                        activeOpacity={0.7}
                     >
-                        <Ionicons
-                            name={isSecure ? 'eye-outline' : 'eye-off-outline'}
-                            size={20}
-                            color="#8E8E93"
-                        />
+                        {isSecure ? (
+                            <Eye size={20} color={theme.colors.textMuted} variant="Outline" />
+                        ) : (
+                            <EyeSlash size={20} color={theme.colors.textMuted} variant="Outline" />
+                        )}
                     </TouchableOpacity>
                 )}
 
-                {rightIcon && !secureTextEntry && (
-                    <View style={styles.rightIcon}>
-                        {typeof rightIcon === 'string' ? (
-                            <Ionicons name={rightIcon} size={20} color="#8E8E93" />
-                        ) : (
-                            rightIcon
-                        )}
-                    </View>
-                )}
+                {rightIcon && !secureTextEntry && <View style={styles.rightIcon}>{rightIcon}</View>}
             </View>
 
             {(error || helperText) && (
-                <Text style={[styles.helperText, error && styles.errorText]}>
-                    {error || helperText}
-                </Text>
+                <Text style={[styles.helperText, error && styles.errorText]}>{error || helperText}</Text>
             )}
         </View>
     );
 };
 
-const styles = StyleSheet.create({
-    container: {
-        marginBottom: responsive.paddingMD,
-    },
-    label: {
-        fontSize: responsive.fontMD,
-        fontWeight: '600',
-        color: '#000',
-        marginBottom: responsive.paddingSM,
-    },
-    inputContainer: {
-        flexDirection: 'row',
-        alignItems: 'center',
-        backgroundColor: '#F2F2F7',
-        borderRadius: responsive.radiusMD,
-        borderWidth: 1.5,
-        borderColor: 'transparent',
-        minHeight: hp(52),
-    },
-    inputFocused: {
-        borderColor: '#007AFF',
-        backgroundColor: '#fff',
-    },
-    inputError: {
-        borderColor: '#FF3B30',
-    },
-    inputDisabled: {
-        backgroundColor: '#E5E5EA',
-        opacity: 0.6,
-    },
-    inputMultiline: {
-        minHeight: hp(100),
-        alignItems: 'flex-start',
-        paddingVertical: responsive.paddingMD,
-    },
-    input: {
-        flex: 1,
-        fontSize: responsive.fontMD,
-        color: '#000',
-        paddingHorizontal: responsive.paddingLG,
-        paddingVertical: responsive.paddingMD,
-    },
-    inputWithLeftIcon: {
-        paddingLeft: responsive.paddingSM,
-    },
-    inputWithRightIcon: {
-        paddingRight: responsive.paddingSM,
-    },
-    inputMultilineText: {
-        textAlignVertical: 'top',
-        paddingTop: 0,
-    },
-    leftIcon: {
-        paddingLeft: responsive.paddingMD,
-    },
-    rightIcon: {
-        paddingRight: responsive.paddingMD,
-    },
-    helperText: {
-        fontSize: responsive.fontSM,
-        color: '#8E8E93',
-        marginTop: responsive.paddingXS,
-    },
-    errorText: {
-        color: '#FF3B30',
-    },
-});
+const useStyles = (theme) =>
+    StyleSheet.create({
+        container: {
+            marginBottom: theme.spacing.md,
+        },
+        label: {
+            fontFamily: theme.fontFamily.medium,
+            fontSize: theme.fontSize.sm,
+            color: theme.colors.textPrimary,
+            marginBottom: theme.spacing.sm,
+        },
+        inputContainer: {
+            flexDirection: 'row',
+            alignItems: 'center',
+            backgroundColor: theme.colors.inputBackground,
+            borderRadius: theme.radius.lg,
+            borderWidth: 1.5,
+            borderColor: theme.colors.inputBorder,
+            minHeight: hp(54),
+        },
+        inputFocused: {
+            borderColor: theme.colors.inputBorderFocused,
+            backgroundColor: theme.colors.surface,
+        },
+        inputError: {
+            borderColor: theme.colors.danger,
+        },
+        inputDisabled: {
+            backgroundColor: theme.colors.surfaceMuted,
+            opacity: 0.6,
+        },
+        inputMultiline: {
+            minHeight: hp(110),
+            alignItems: 'flex-start',
+            paddingVertical: theme.spacing.md,
+        },
+        input: {
+            flex: 1,
+            fontFamily: theme.fontFamily.regular,
+            fontSize: theme.fontSize.md,
+            color: theme.colors.textPrimary,
+            paddingHorizontal: theme.spacing.lg,
+            paddingVertical: theme.spacing.md,
+        },
+        inputWithLeftIcon: {
+            paddingLeft: theme.spacing.sm,
+        },
+        inputWithRightIcon: {
+            paddingRight: theme.spacing.sm,
+        },
+        inputMultilineText: {
+            textAlignVertical: 'top',
+            paddingTop: 0,
+        },
+        leftIcon: {
+            paddingLeft: theme.spacing.lg,
+            justifyContent: 'center',
+        },
+        rightIcon: {
+            paddingRight: theme.spacing.lg,
+            paddingLeft: theme.spacing.xs,
+            justifyContent: 'center',
+        },
+        helperText: {
+            fontFamily: theme.fontFamily.regular,
+            fontSize: theme.fontSize.xs,
+            color: theme.colors.textMuted,
+            marginTop: theme.spacing.xs,
+            marginLeft: theme.spacing.xs,
+        },
+        errorText: {
+            color: theme.colors.danger,
+        },
+    });
 
 export default Input;

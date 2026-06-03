@@ -1,51 +1,42 @@
 import React from 'react';
 import { Text as RNText, StyleSheet } from 'react-native';
-import { responsive } from '../../utils/responsive';
+import { useTheme } from '../../contexts/ThemeContext';
 
 const Text = ({
     children,
-    variant = 'body', // heading, subheading, body, caption, label
-    weight = 'regular', // regular, medium, semibold, bold
-    color = '#000',
+    variant = 'body', // display, h1, h2, h3, bodyLg, body, bodySm, label, caption, button
+    weight, // overrides variant weight: regular, medium, bold
+    color, // theme key or hex
     align = 'left',
     numberOfLines,
     style,
     ...props
 }) => {
-    const getVariantStyle = () => {
-        switch (variant) {
-            case 'heading':
-                return styles.heading;
-            case 'subheading':
-                return styles.subheading;
-            case 'caption':
-                return styles.caption;
-            case 'label':
-                return styles.label;
-            default:
-                return styles.body;
-        }
+    const theme = useTheme();
+
+    const resolveVariant = () => {
+        const variantStyle = theme.textStyles[variant] || theme.textStyles.body;
+        return variantStyle;
     };
 
-    const getWeightStyle = () => {
-        switch (weight) {
-            case 'medium':
-                return styles.medium;
-            case 'semibold':
-                return styles.semibold;
-            case 'bold':
-                return styles.bold;
-            default:
-                return styles.regular;
-        }
+    const resolveWeight = () => {
+        if (!weight) return null;
+        return { fontFamily: theme.fontFamily[weight] || theme.fontFamily.regular };
+    };
+
+    const resolveColor = () => {
+        if (!color) return { color: theme.colors.textPrimary };
+        if (color.startsWith && color.startsWith('#')) return { color };
+        return { color: theme.colors[color] || theme.colors.textPrimary };
     };
 
     return (
         <RNText
             style={[
-                getVariantStyle(),
-                getWeightStyle(),
-                { color, textAlign: align },
+                resolveVariant(),
+                resolveWeight(),
+                resolveColor(),
+                { textAlign: align },
                 style,
             ]}
             numberOfLines={numberOfLines}
@@ -55,44 +46,5 @@ const Text = ({
         </RNText>
     );
 };
-
-const styles = StyleSheet.create({
-    // Variants
-    heading: {
-        fontSize: responsive.font2XL,
-        lineHeight: responsive.font2XL * 1.3,
-    },
-    subheading: {
-        fontSize: responsive.fontXL,
-        lineHeight: responsive.fontXL * 1.3,
-    },
-    body: {
-        fontSize: responsive.fontMD,
-        lineHeight: responsive.fontMD * 1.5,
-    },
-    caption: {
-        fontSize: responsive.fontSM,
-        lineHeight: responsive.fontSM * 1.4,
-    },
-    label: {
-        fontSize: responsive.fontXS,
-        lineHeight: responsive.fontXS * 1.4,
-        textTransform: 'uppercase',
-        letterSpacing: 0.5,
-    },
-    // Weights
-    regular: {
-        fontWeight: '400',
-    },
-    medium: {
-        fontWeight: '500',
-    },
-    semibold: {
-        fontWeight: '600',
-    },
-    bold: {
-        fontWeight: '700',
-    },
-});
 
 export default Text;

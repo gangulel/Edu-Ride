@@ -1,41 +1,41 @@
 import React from 'react';
 import { View, Image, Text, StyleSheet } from 'react-native';
-import { Ionicons } from '@expo/vector-icons';
-import { responsive, wp } from '../../utils/responsive';
+import { User, TickCircle } from 'iconsax-react-native';
+import { useTheme } from '../../contexts/ThemeContext';
+import { wp } from '../../utils/responsive';
 
 const Avatar = ({
     source,
     name,
+    initials: initialsProp,
     size = 'medium', // small, medium, large, xlarge
     showBadge = false,
-    badgeColor = '#34C759',
+    badgeColor,
     verified = false,
+    backgroundColor,
     style,
 }) => {
-    const getSizeValue = () => {
-        switch (size) {
-            case 'small':
-                return wp(32);
-            case 'large':
-                return wp(64);
-            case 'xlarge':
-                return wp(96);
-            default:
-                return wp(48);
-        }
-    };
+    const theme = useTheme();
+    const styles = useStyles(theme);
 
-    const getInitials = (name) => {
-        if (!name) return '?';
-        const names = name.trim().split(' ');
-        if (names.length >= 2) {
-            return `${names[0][0]}${names[1][0]}`.toUpperCase();
+    const sizeValue = (() => {
+        switch (size) {
+            case 'small': return wp(32);
+            case 'large': return wp(64);
+            case 'xlarge': return wp(96);
+            default: return wp(48);
         }
+    })();
+
+    const fontSize = sizeValue * 0.38;
+
+    const computeInitials = () => {
+        if (initialsProp) return initialsProp.slice(0, 2).toUpperCase();
+        if (!name) return '?';
+        const parts = name.trim().split(/\s+/);
+        if (parts.length >= 2) return `${parts[0][0]}${parts[1][0]}`.toUpperCase();
         return name[0].toUpperCase();
     };
-
-    const sizeValue = getSizeValue();
-    const fontSize = sizeValue * 0.4;
 
     return (
         <View style={[{ position: 'relative' }, style]}>
@@ -43,7 +43,7 @@ const Avatar = ({
                 <Image
                     source={typeof source === 'string' ? { uri: source } : source}
                     style={[
-                        styles.avatar,
+                        styles.image,
                         {
                             width: sizeValue,
                             height: sizeValue,
@@ -59,13 +59,16 @@ const Avatar = ({
                             width: sizeValue,
                             height: sizeValue,
                             borderRadius: sizeValue / 2,
+                            backgroundColor: backgroundColor || theme.colors.primarySoft,
                         },
                     ]}
                 >
-                    {name ? (
-                        <Text style={[styles.initials, { fontSize }]}>{getInitials(name)}</Text>
+                    {name || initialsProp ? (
+                        <Text style={[styles.initials, { fontSize, color: theme.colors.primary }]}>
+                            {computeInitials()}
+                        </Text>
                     ) : (
-                        <Ionicons name="person" size={sizeValue * 0.5} color="#007AFF" />
+                        <User size={sizeValue * 0.5} color={theme.colors.primary} variant="Bold" />
                     )}
                 </View>
             )}
@@ -73,14 +76,12 @@ const Avatar = ({
             {showBadge && (
                 <View
                     style={[
-                        styles.badge,
+                        styles.statusBadge,
                         {
-                            width: sizeValue * 0.3,
-                            height: sizeValue * 0.3,
-                            borderRadius: sizeValue * 0.15,
-                            backgroundColor: badgeColor,
-                            right: 0,
-                            bottom: 0,
+                            width: sizeValue * 0.28,
+                            height: sizeValue * 0.28,
+                            borderRadius: sizeValue * 0.14,
+                            backgroundColor: badgeColor || theme.colors.success,
                         },
                     ]}
                 />
@@ -89,47 +90,45 @@ const Avatar = ({
             {verified && (
                 <View
                     style={[
-                        styles.verifiedBadge,
-                        {
-                            width: sizeValue * 0.35,
-                            height: sizeValue * 0.35,
-                            borderRadius: sizeValue * 0.175,
-                            right: -2,
-                            bottom: -2,
-                        },
+                        styles.verifiedWrap,
+                        { right: -2, bottom: -2 },
                     ]}
                 >
-                    <Ionicons name="checkmark-circle" size={sizeValue * 0.35} color="#007AFF" />
+                    <TickCircle
+                        size={sizeValue * 0.36}
+                        color={theme.colors.primary}
+                        variant="Bold"
+                    />
                 </View>
             )}
         </View>
     );
 };
 
-const styles = StyleSheet.create({
-    avatar: {
-        backgroundColor: '#E5E5EA',
-    },
-    placeholder: {
-        backgroundColor: '#E3F2FD',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-    initials: {
-        color: '#007AFF',
-        fontWeight: '600',
-    },
-    badge: {
-        position: 'absolute',
-        borderWidth: 2,
-        borderColor: '#fff',
-    },
-    verifiedBadge: {
-        position: 'absolute',
-        backgroundColor: '#fff',
-        alignItems: 'center',
-        justifyContent: 'center',
-    },
-});
+const useStyles = (theme) =>
+    StyleSheet.create({
+        image: {
+            backgroundColor: theme.colors.surfaceMuted,
+        },
+        placeholder: {
+            alignItems: 'center',
+            justifyContent: 'center',
+        },
+        initials: {
+            fontFamily: theme.fontFamily.bold,
+        },
+        statusBadge: {
+            position: 'absolute',
+            right: 0,
+            bottom: 0,
+            borderWidth: 2,
+            borderColor: theme.colors.surface,
+        },
+        verifiedWrap: {
+            position: 'absolute',
+            backgroundColor: theme.colors.surface,
+            borderRadius: 999,
+        },
+    });
 
 export default Avatar;
