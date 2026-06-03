@@ -12,9 +12,11 @@ import {
 import { SafeAreaView } from 'react-native-safe-area-context';
 import { useRouter } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
+import { useTranslation } from 'react-i18next';
 import { wp, hp, fs } from '../../utils/responsive';
 import { Header, ParentBottomNav } from '../../components/organisms';
 import { useAuth } from '../../../contexts/AuthContext';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import { getMe } from '../../../services/parentApi';
 
 // ─── small helpers ────────────────────────────────────────────────────────────
@@ -51,6 +53,8 @@ function InfoRow({ icon, label }) {
 
 export default function ProfileScreen() {
     const router   = useRouter();
+    const { t } = useTranslation();
+    const { language, languages } = useLanguage();
     const { user, token, loading: authLoading, logout, updateUser } = useAuth();
 
     const [refreshing,  setRefreshing]  = useState(false);
@@ -92,10 +96,10 @@ export default function ProfileScreen() {
     if (authLoading) {
         return (
             <SafeAreaView edges={['top']} style={styles.container}>
-                <Header title="Profile" showBack />
+                <Header title={t('profile.title')} showBack />
                 <View style={styles.center}>
                     <ActivityIndicator size="large" color="#3B82F6" />
-                    <Text style={styles.centerText}>Loading…</Text>
+                    <Text style={styles.centerText}>{t('profile.loading')}</Text>
                 </View>
                 <ParentBottomNav />
             </SafeAreaView>
@@ -106,17 +110,17 @@ export default function ProfileScreen() {
     if (!token && !user) {
         return (
             <SafeAreaView edges={['top']} style={styles.container}>
-                <Header title="Profile" showBack />
+                <Header title={t('profile.title')} showBack />
                 <View style={styles.center}>
                     <Ionicons name="person-circle-outline" size={72} color="#CBD5E1" />
-                    <Text style={styles.notSignedInTitle}>You're not signed in</Text>
-                    <Text style={styles.notSignedInSub}>Please log in to view your profile.</Text>
+                    <Text style={styles.notSignedInTitle}>{t('profile.notSignedIn')}</Text>
+                    <Text style={styles.notSignedInSub}>{t('profile.notSignedInSub')}</Text>
                     <TouchableOpacity
                         style={styles.loginBtn}
                         onPress={() => router.replace('/login/login')}
                         activeOpacity={0.85}
                     >
-                        <Text style={styles.loginBtnText}>Go to Login</Text>
+                        <Text style={styles.loginBtnText}>{t('profile.goToLogin')}</Text>
                     </TouchableOpacity>
                 </View>
                 <ParentBottomNav />
@@ -128,10 +132,10 @@ export default function ProfileScreen() {
     if (!user && fetchLoading) {
         return (
             <SafeAreaView edges={['top']} style={styles.container}>
-                <Header title="Profile" showBack />
+                <Header title={t('profile.title')} showBack />
                 <View style={styles.center}>
                     <ActivityIndicator size="large" color="#3B82F6" />
-                    <Text style={styles.centerText}>Loading profile…</Text>
+                    <Text style={styles.centerText}>{t('profile.loadingProfile')}</Text>
                 </View>
                 <ParentBottomNav />
             </SafeAreaView>
@@ -145,19 +149,22 @@ export default function ProfileScreen() {
     const displayEmail = user?.email     || '';
     const displayPhone = user?.phone     || '';
 
+    const currentLangLabel = languages.find((l) => l.code === language)?.nativeLabel || 'English';
+
     const menuItems = [
-        { icon: 'create-outline',        label: 'Edit Profile',      route: '/parent/profile/edit'     },
-        { icon: 'people-outline',         label: 'Manage Children',   route: '/parent/profile/children' },
-        { icon: 'calendar-outline',       label: 'My Subscriptions',  route: '/parent/my-bookings'      },
-        { icon: 'card-outline',           label: 'Payment Methods',   route: '/parent/payments'         },
-        { icon: 'notifications-outline',  label: 'Notifications',     route: '/parent/notifications'    },
-        { icon: 'help-circle-outline',    label: 'Help & FAQ',        route: null                       },
-        { icon: 'shield-outline',         label: 'Privacy & Security',route: null                       },
+        { icon: 'create-outline',        label: t('profile.editProfile'),     route: '/parent/profile/edit'     },
+        { icon: 'people-outline',        label: t('profile.manageChildren'),  route: '/parent/profile/children' },
+        { icon: 'calendar-outline',      label: t('profile.mySubscriptions'), route: '/parent/my-bookings'      },
+        { icon: 'card-outline',          label: t('profile.paymentMethods'),  route: '/parent/payments'         },
+        { icon: 'notifications-outline', label: t('profile.notifications'),   route: '/parent/notifications'    },
+        { icon: 'language-outline',      label: `${t('profile.language')} · ${currentLangLabel}`, route: '/settings/language' },
+        { icon: 'help-circle-outline',   label: t('profile.helpFaq'),         route: null                       },
+        { icon: 'shield-outline',        label: t('profile.privacySecurity'), route: null                       },
     ];
 
     return (
         <SafeAreaView edges={['top']} style={styles.container}>
-            <Header title="Profile" showBack />
+            <Header title={t('profile.title')} showBack />
 
             <ScrollView
                 style={styles.scroll}
@@ -207,7 +214,7 @@ export default function ProfileScreen() {
                     {/* Role badge */}
                     <View style={styles.roleBadge}>
                         <Ionicons name="people" size={13} color="#3B82F6" />
-                        <Text style={styles.roleText}>Parent</Text>
+                        <Text style={styles.roleText}>{t('profile.parent')}</Text>
                     </View>
 
                     {/* Contact / membership info */}
@@ -215,7 +222,7 @@ export default function ProfileScreen() {
                         <InfoRow icon="mail-outline"     label={displayEmail} />
                         <InfoRow icon="call-outline"     label={displayPhone} />
                         {memberSince && (
-                            <InfoRow icon="calendar-outline" label={`Member since ${memberSince}`} />
+                            <InfoRow icon="calendar-outline" label={t('profile.memberSince', { date: memberSince })} />
                         )}
                     </View>
 
@@ -223,7 +230,7 @@ export default function ProfileScreen() {
                     <View style={[styles.statusBadge, isActive ? styles.statusActive : styles.statusPending]}>
                         <View style={[styles.statusDot, { backgroundColor: isActive ? '#10B981' : '#F59E0B' }]} />
                         <Text style={[styles.statusText, { color: isActive ? '#10B981' : '#F59E0B' }]}>
-                            {isActive ? 'Active Account' : (user?.status || 'Pending')}
+                            {isActive ? t('profile.activeAccount') : (user?.status || 'Pending')}
                         </Text>
                     </View>
                 </View>
@@ -235,7 +242,7 @@ export default function ProfileScreen() {
                     onPress={() => router.push('/parent/profile/edit')}
                 >
                     <Ionicons name="create-outline" size={18} color="#3B82F6" />
-                    <Text style={styles.editBtnText}>Edit Profile</Text>
+                    <Text style={styles.editBtnText}>{t('profile.editProfile')}</Text>
                 </TouchableOpacity>
 
                 {/* ── Menu list ────────────────────────────────────────── */}
@@ -268,10 +275,10 @@ export default function ProfileScreen() {
                     activeOpacity={0.85}
                 >
                     <Ionicons name="log-out-outline" size={20} color="#EF4444" />
-                    <Text style={styles.logoutText}>Log Out</Text>
+                    <Text style={styles.logoutText}>{t('profile.logOut')}</Text>
                 </TouchableOpacity>
 
-                <Text style={styles.version}>Edu-Ride v1.0.0</Text>
+                <Text style={styles.version}>{t('profile.version')}</Text>
                 <View style={{ height: hp(100) }} />
             </ScrollView>
 

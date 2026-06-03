@@ -32,6 +32,7 @@ import {
   Edit,
 } from 'iconsax-react-native';
 
+import { useTranslation } from 'react-i18next';
 import ScreenContainer from '../../components/driver/ScreenContainer';
 import Card from '../../components/driver/Card';
 import MenuListItem from '../../components/driver/MenuListItem';
@@ -46,23 +47,32 @@ import {
   wp,
   fs,
 } from '../../theme';
+import { useLanguage } from '../../../contexts/LanguageContext';
 import { getDriverProfile } from '../../../services/mock/driver';
 
 export default function DriverProfile() {
   const router = useRouter();
+  const { t } = useTranslation();
+  const { language, languages } = useLanguage();
   const profile = useMemo(() => getDriverProfile(), []);
   const [notifEnabled, setNotifEnabled] = useState(true);
   const [locEnabled, setLocEnabled] = useState(true);
 
+  const currentLangLabel = languages.find((l) => l.code === language)?.nativeLabel || 'English';
+
   const handleLogout = () => {
-    Alert.alert('Log out?', 'You will need to sign in again to access your trips.', [
-      { text: 'Cancel', style: 'cancel' },
-      {
-        text: 'Log Out',
-        style: 'destructive',
-        onPress: () => router.replace('/onboarding'),
-      },
-    ]);
+    Alert.alert(
+      t('driver.profile.logoutConfirmTitle'),
+      t('driver.profile.logoutConfirmMessage'),
+      [
+        { text: t('driver.profile.cancel'), style: 'cancel' },
+        {
+          text: t('driver.profile.logOut'),
+          style: 'destructive',
+          onPress: () => router.replace('/onboarding'),
+        },
+      ]
+    );
   };
 
   return (
@@ -102,14 +112,14 @@ export default function DriverProfile() {
           <Text style={styles.heroEmail}>{profile.email}</Text>
           <View style={styles.heroBadges}>
             <Badge
-              label={`${profile.yearsActive} yrs active`}
+              label={t('driver.profile.yrsActive', { count: profile.yearsActive })}
               tone="primary"
               variant="soft"
               textColor="#fff"
               style={{ backgroundColor: 'rgba(255,255,255,0.22)' }}
             />
             <Badge
-              label="Verified driver"
+              label={t('driver.profile.verifiedDriver')}
               tone="success"
               variant="soft"
               textColor="#fff"
@@ -118,54 +128,54 @@ export default function DriverProfile() {
           </View>
 
           <Card padding="lg" style={styles.statsCard} tone="elevated">
-            <ProfileStat icon={Star1} label="Rating" value={String(profile.rating)} color={colors.warning} />
+            <ProfileStat icon={Star1} label={t('driver.profile.rating')} value={String(profile.rating)} color={colors.warning} />
             <View style={styles.statsDivider} />
-            <ProfileStat icon={Routing2} label="Trips" value={String(profile.totalTrips)} color={colors.primary} />
+            <ProfileStat icon={Routing2} label={t('driver.profile.trips')} value={String(profile.totalTrips)} color={colors.primary} />
             <View style={styles.statsDivider} />
-            <ProfileStat icon={Award} label="Acceptance" value={`${profile.acceptanceRate}%`} color={colors.success} />
+            <ProfileStat icon={Award} label={t('driver.profile.acceptance')} value={`${profile.acceptanceRate}%`} color={colors.success} />
           </Card>
         </LinearGradient>
 
         {/* Account */}
-        <SectionGroup title="Account">
+        <SectionGroup title={t('driver.profile.account')}>
           <MenuListItem
             icon={ProfileIcon}
             iconColor={colors.primary}
-            label="Edit Profile"
-            description="Name, contact details, address"
+            label={t('driver.profile.editProfile')}
+            description={t('driver.profile.editProfileDesc')}
             onPress={() => router.push('/driver/Profile/edit-profile')}
           />
           <MenuListItem
             icon={Car}
             iconColor={colors.success}
-            label="Vehicle Information"
-            description={`${profile.fullName ? '' : ''}Toyota HiAce • CAB-1234`}
+            label={t('driver.profile.vehicleInfo')}
+            description="Toyota HiAce • CAB-1234"
             onPress={() => router.push('/driver/Profile/vehicle-info')}
           />
           <MenuListItem
             icon={DocumentText}
             iconColor={colors.warning}
-            label="Documents"
-            description="License, insurance, certificates"
+            label={t('driver.profile.documents')}
+            description={t('driver.profile.documentsDesc')}
             onPress={() => router.push('/driver/Profile/documents')}
           />
           <MenuListItem
             icon={CardIcon}
             iconColor={colors.info}
-            label="Payment Methods"
-            description="Bank, cards & wallets"
+            label={t('driver.profile.paymentMethods')}
+            description={t('driver.profile.paymentMethodsDesc')}
             divider={false}
             onPress={() => router.push('/driver/Profile/payment-methods')}
           />
         </SectionGroup>
 
         {/* Preferences */}
-        <SectionGroup title="Preferences">
+        <SectionGroup title={t('driver.profile.preferences')}>
           <MenuListItem
             icon={NotificationIcon}
             iconColor={colors.danger}
-            label="Push Notifications"
-            description="Trip reminders & messages"
+            label={t('driver.profile.pushNotifications')}
+            description={t('driver.profile.pushNotificationsDesc')}
             showChevron={false}
             rightSlot={
               <Switch
@@ -179,8 +189,8 @@ export default function DriverProfile() {
           <MenuListItem
             icon={Location}
             iconColor={colors.primary}
-            label="Location Services"
-            description="Required to start trips"
+            label={t('driver.profile.locationServices')}
+            description={t('driver.profile.locationServicesDesc')}
             showChevron={false}
             rightSlot={
               <Switch
@@ -194,45 +204,46 @@ export default function DriverProfile() {
           <MenuListItem
             icon={Global}
             iconColor={colors.textSecondary}
-            label="Language"
-            value="English"
+            label={t('driver.profile.language')}
+            value={currentLangLabel}
             divider={false}
+            onPress={() => router.push('/settings/language')}
           />
         </SectionGroup>
 
         {/* Support */}
-        <SectionGroup title="Support">
+        <SectionGroup title={t('driver.profile.support')}>
           <MenuListItem
             icon={Message}
             iconColor={colors.primary}
-            label="Help Center"
-            description="FAQs & contact us"
+            label={t('driver.profile.helpCenter')}
+            description={t('driver.profile.helpCenterDesc')}
           />
           <MenuListItem
             icon={SecurityUser}
             iconColor={colors.success}
-            label="Safety Centre"
-            description="Emergency contacts & tips"
+            label={t('driver.profile.safetyCentre')}
+            description={t('driver.profile.safetyCentreDesc')}
           />
           <MenuListItem
             icon={Information}
             iconColor={colors.textSecondary}
-            label="About Edu-Ride"
+            label={t('driver.profile.aboutEduRide')}
             divider={false}
           />
         </SectionGroup>
 
         {/* Legal */}
-        <SectionGroup title="Legal">
+        <SectionGroup title={t('driver.profile.legal')}>
           <MenuListItem
             icon={DocumentText}
             iconColor={colors.textSecondary}
-            label="Terms of Service"
+            label={t('driver.profile.termsOfService')}
           />
           <MenuListItem
             icon={Lock1}
             iconColor={colors.textSecondary}
-            label="Privacy Policy"
+            label={t('driver.profile.privacyPolicy')}
             divider={false}
           />
         </SectionGroup>
@@ -241,9 +252,9 @@ export default function DriverProfile() {
         <View style={styles.logoutSection}>
           <TouchableOpacity style={styles.logoutBtn} activeOpacity={0.85} onPress={handleLogout}>
             <Logout size={fs(20)} color={colors.danger} variant="Bold" />
-            <Text style={styles.logoutText}>Log Out</Text>
+            <Text style={styles.logoutText}>{t('driver.profile.logOut')}</Text>
           </TouchableOpacity>
-          <Text style={styles.version}>Version 1.0.0 • Phase 1 build</Text>
+          <Text style={styles.version}>{t('driver.profile.version')}</Text>
         </View>
       </ScrollView>
     </ScreenContainer>
@@ -256,6 +267,7 @@ const SectionGroup = ({ title, children }) => (
     <Card padding="none">{children}</Card>
   </View>
 );
+
 
 const ProfileStat = ({ icon: Icon, label, value, color }) => (
   <View style={styles.statItem}>

@@ -2,11 +2,13 @@ import React, { useState } from "react";
 import { View, Text, TextInput, TouchableOpacity, ActivityIndicator, StyleSheet } from "react-native";
 import { useRouter } from "expo-router";
 import { LinearGradient } from "expo-linear-gradient";
+import { useTranslation } from "react-i18next";
 import { responsive, wp, hp } from "../utils/responsive";
 import { apiFetch } from "../../services/api";
 
 export default function Forgot() {
   const router = useRouter();
+  const { t } = useTranslation();
   const [email, setEmail] = useState("");
   const [loading, setLoading] = useState(false);
   const [message, setMessage] = useState("");
@@ -16,11 +18,11 @@ export default function Forgot() {
 
   const validate = () => {
     if (!email) {
-      setError("Please enter your email address.");
+      setError(t('validation.enterEmail'));
       return false;
     }
     if (!re.test(email)) {
-      setError("Please enter a valid email address.");
+      setError(t('validation.invalidEmail'));
       return false;
     }
     return true;
@@ -37,9 +39,9 @@ export default function Forgot() {
         method: "POST",
         body: JSON.stringify({ email }),
       });
-      setMessage("If an account with that email exists, a reset link was sent.");
+      setMessage(t('auth.resetEmailSent'));
     } catch (err) {
-      setError(err.message || "Unable to contact server. Please try again later.");
+      setError(err.message || t('errors.serverError'));
     } finally {
       setLoading(false);
     }
@@ -47,12 +49,12 @@ export default function Forgot() {
 
   return (
     <View style={styles.container}>
-      <Text style={styles.title}>Forgot password</Text>
+      <Text style={styles.title}>{t('auth.forgotPasswordTitle')}</Text>
 
-      <Text style={styles.info}>Enter the email associated with your account and we'll send a reset link.</Text>
+      <Text style={styles.info}>{t('auth.forgotPasswordInfo')}</Text>
 
       <TextInput
-        placeholder="Email"
+        placeholder={t('auth.email')}
         value={email}
         onChangeText={setEmail}
         keyboardType="email-address"
@@ -66,12 +68,12 @@ export default function Forgot() {
 
       <TouchableOpacity onPress={onSubmit} activeOpacity={0.9} style={{ marginTop: responsive.paddingSM }} disabled={loading}>
         <LinearGradient colors={["#3A7BD5", "#007AFF"]} style={styles.button} start={[0, 0]} end={[1, 1]}>
-          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>Send reset link</Text>}
+          {loading ? <ActivityIndicator color="#fff" /> : <Text style={styles.buttonText}>{t('auth.sendResetLink')}</Text>}
         </LinearGradient>
       </TouchableOpacity>
 
       <TouchableOpacity onPress={() => router.replace("/login/login")} style={styles.link}>
-        <Text style={styles.linkText}>Back to login</Text>
+        <Text style={styles.linkText}>{t('auth.backToLogin')}</Text>
       </TouchableOpacity>
     </View>
   );

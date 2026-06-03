@@ -27,6 +27,7 @@ import {
   Car,
   TickCircle,
 } from "iconsax-react-native";
+import { useTranslation } from "react-i18next";
 import { responsive, wp, hp, fs } from "../utils/responsive";
 import { apiFetch } from "../../services/api";
 import { useAuth } from "../../contexts/AuthContext";
@@ -34,6 +35,7 @@ import { useAuth } from "../../contexts/AuthContext";
 export default function Register() {
   const router = useRouter();
   const { login } = useAuth();
+  const { t } = useTranslation();
   const id = useId();
   const scrollRef = useRef(null);
   const [name, setName] = useState("");
@@ -51,23 +53,23 @@ export default function Register() {
 
   const validate = () => {
     if (!name || !email || !mobile || !password || !userType) {
-      setError("All fields are required.");
+      setError(t('validation.allFieldsRequired'));
       return false;
     }
     if (!re.test(email)) {
-      setError("Please enter a valid email address.");
+      setError(t('validation.invalidEmail'));
       return false;
     }
     if (!/^\+?\d{7,15}$/.test(mobile)) {
-      setError("Please enter a valid mobile number.");
+      setError(t('validation.invalidMobile'));
       return false;
     }
     if (password.length < 8) {
-      setError("Password should be at least 8 characters.");
+      setError(t('validation.passwordMinLength'));
       return false;
     }
     if (!termsChecked) {
-      setError("You must agree to the terms of service.");
+      setError(t('validation.agreeToTerms'));
       return false;
     }
     return true;
@@ -123,7 +125,7 @@ export default function Register() {
       }
     } catch (err) {
       setLoading(false);
-      setError(err.message || "Registration failed. Please try again.");
+      setError(err.message || t('errors.registrationFailed'));
     }
   };
 
@@ -162,14 +164,14 @@ export default function Register() {
             </View>
 
             {/* Title */}
-            <Text style={styles.title}>Create Account</Text>
-            <Text style={styles.subtitle}>Join Edu-Ride today</Text>
+            <Text style={styles.title}>{t('auth.createAccount')}</Text>
+            <Text style={styles.subtitle}>{t('auth.joinToday')}</Text>
           </View>
 
           {/* Form Section */}
           <View style={styles.formSection}>
             {/* User Type Selection */}
-            <Text style={[styles.label, { marginBottom: 12 }]}>I am a</Text>
+            <Text style={[styles.label, { marginBottom: 12 }]}>{t('auth.iAm')}</Text>
             <View style={styles.userTypeContainer}>
               <TouchableOpacity
                 style={[
@@ -190,7 +192,7 @@ export default function Register() {
                     userType === "parent" && styles.userTypeTextActive,
                   ]}
                 >
-                  Parent
+                  {t('auth.parent')}
                 </Text>
               </TouchableOpacity>
               <TouchableOpacity
@@ -212,19 +214,19 @@ export default function Register() {
                     userType === "driver" && styles.userTypeTextActive,
                   ]}
                 >
-                  Driver
+                  {t('auth.driver')}
                 </Text>
               </TouchableOpacity>
             </View>
 
             {/* Full Name Input */}
             <View style={styles.inputContainer}>
-              <Text style={[styles.label, { marginBottom: 8 }]}>Full Name</Text>
+              <Text style={[styles.label, { marginBottom: 8 }]}>{t('auth.fullName')}</Text>
               <View style={styles.inputWrapper}>
                 <User size={20} color="#666" variant="Outline" />
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your full name"
+                  placeholder={t('auth.fullNamePlaceholder')}
                   placeholderTextColor="#999"
                   value={name}
                   onChangeText={setName}
@@ -236,9 +238,9 @@ export default function Register() {
             {/* Email Input */}
             <View style={styles.inputContainer}>
               <View style={styles.labelRow}>
-                <Text style={styles.label}>Email</Text>
+                <Text style={styles.label}>{t('auth.email')}</Text>
                 {emailTouched && !re.test(email) && email.length > 0 ? (
-                  <Text style={styles.errorInline}>Invalid email</Text>
+                  <Text style={styles.errorInline}>{t('auth.invalidEmail')}</Text>
                 ) : null}
               </View>
               <View
@@ -250,7 +252,7 @@ export default function Register() {
                 <Sms size={20} color="#666" variant="Outline" />
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your email"
+                  placeholder={t('auth.emailPlaceholder')}
                   placeholderTextColor="#999"
                   value={email}
                   onChangeText={setEmail}
@@ -264,12 +266,12 @@ export default function Register() {
 
             {/* Mobile Input */}
             <View style={styles.inputContainer}>
-              <Text style={[styles.label, { marginBottom: 8 }]}>Mobile Number</Text>
+              <Text style={[styles.label, { marginBottom: 8 }]}>{t('auth.mobileNumber')}</Text>
               <View style={styles.inputWrapper}>
                 <Call size={20} color="#666" variant="Outline" />
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your mobile number"
+                  placeholder={t('auth.mobileNumberPlaceholder')}
                   placeholderTextColor="#999"
                   value={mobile}
                   onChangeText={setMobile}
@@ -281,12 +283,12 @@ export default function Register() {
 
             {/* Password Input */}
             <View style={styles.inputContainer}>
-              <Text style={[styles.label, { marginBottom: 8 }]}>Password</Text>
+              <Text style={[styles.label, { marginBottom: 8 }]}>{t('auth.password')}</Text>
               <View style={styles.inputWrapper}>
                 <Lock size={20} color="#666" variant="Outline" />
                 <TextInput
                   style={styles.input}
-                  placeholder="Create a password"
+                  placeholder={t('auth.createPassword')}
                   placeholderTextColor="#999"
                   value={password}
                   onChangeText={setPassword}
@@ -305,7 +307,7 @@ export default function Register() {
                   )}
                 </TouchableOpacity>
               </View>
-              <Text style={styles.passwordHint}>Minimum 6 characters</Text>
+              <Text style={styles.passwordHint}>{t('auth.passwordHint')}</Text>
             </View>
 
             {/* Terms of Service Checkbox */}
@@ -325,19 +327,19 @@ export default function Register() {
                 )}
               </View>
               <Text style={styles.termsText}>
-                I agree to the{" "}
+                {t('auth.agreeToTerms')}
                 <Text
                   style={styles.termsLink}
                   onPress={() => Linking.openURL("https://eduride.com/terms")}
                 >
-                  Terms of Service
-                </Text>{" "}
-                and{" "}
+                  {t('auth.termsOfService')}
+                </Text>
+                {t('auth.and')}
                 <Text
                   style={styles.termsLink}
                   onPress={() => Linking.openURL("https://eduride.com/privacy")}
                 >
-                  Privacy Policy
+                  {t('auth.privacyPolicy')}
                 </Text>
               </Text>
             </TouchableOpacity>
@@ -360,18 +362,18 @@ export default function Register() {
               {loading ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.signUpButtonText}>Create Account</Text>
+                <Text style={styles.signUpButtonText}>{t('auth.createAccount')}</Text>
               )}
             </TouchableOpacity>
 
             {/* Login Link */}
             <View style={styles.loginContainer}>
-              <Text style={styles.loginText}>Already have an account? </Text>
+              <Text style={styles.loginText}>{t('auth.alreadyHaveAccount')}</Text>
               <TouchableOpacity
                 onPress={() => router.replace("/login/login")}
                 activeOpacity={0.7}
               >
-                <Text style={styles.loginLink}>Sign In</Text>
+                <Text style={styles.loginLink}>{t('auth.signInLink')}</Text>
               </TouchableOpacity>
             </View>
           </View>

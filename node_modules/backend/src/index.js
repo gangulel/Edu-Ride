@@ -40,6 +40,10 @@ function getCorsOrigins() {
       "http://localhost:3000",
       "http://localhost:3001",
       "http://localhost:8081",
+      // Expo dev client ports
+      "http://localhost:19000",
+      "http://localhost:19001",
+      "http://localhost:19006",
     ];
   }
 
@@ -47,6 +51,24 @@ function getCorsOrigins() {
     .split(",")
     .map((origin) => origin.trim())
     .filter(Boolean);
+}
+
+// In development, allow any origin on a private/local network so Expo running
+// on a physical device or a non-default localhost port is never blocked.
+// Native React Native fetch() sends no Origin header and always passes; this
+// helper only matters for Expo Web or browser-based testing.
+function isLocalNetworkOrigin(origin) {
+  if (!origin) return false;
+  if (
+    origin.startsWith("http://localhost:") ||
+    origin.startsWith("http://127.0.0.1:")
+  ) {
+    return true;
+  }
+  // RFC-1918 private ranges: 10.x, 172.16-31.x, 192.168.x
+  return /^https?:\/\/(10\.|192\.168\.|172\.(1[6-9]|2[0-9]|3[01])\.)/.test(
+    origin
+  );
 }
 
 async function findAvailablePort(startPort, host = "::") {
@@ -77,7 +99,17 @@ app.use(helmet());
 app.use(
   cors({
     origin(origin, callback) {
-      if (!origin || allowedOrigins.includes(origin)) {
+      // No Origin header = native app / server-to-server — always allow.
+      if (!origin) return callback(null, true);
+
+      if (allowedOrigins.includes(origin)) return callback(null, true);
+
+      // In development, permit any private-network or localhost origin so an
+      // Expo dev client on a physical device is never blocked by CORS.
+      if (
+        process.env.NODE_ENV !== "production" &&
+        isLocalNetworkOrigin(origin)
+      ) {
         return callback(null, true);
       }
 

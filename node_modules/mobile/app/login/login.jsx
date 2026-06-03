@@ -25,6 +25,7 @@ import {
 } from "iconsax-react-native";
 import * as Google from "expo-auth-session/providers/google";
 import * as WebBrowser from "expo-web-browser";
+import { useTranslation } from "react-i18next";
 import GoogleLogo from "../components/icons/GoogleLogo";
 import { responsive, wp, hp, fs } from "../utils/responsive";
 import { apiFetch } from "../../services/api";
@@ -49,6 +50,7 @@ const isValidClientId = (id) =>
 export default function Login() {
   const router = useRouter();
   const { login } = useAuth();
+  const { t } = useTranslation();
   const scrollRef = useRef(null);
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
@@ -125,11 +127,11 @@ export default function Login() {
 
   const validate = () => {
     if (!email || !password) {
-      setError("Please enter email and password.");
+      setError(t('validation.enterEmailAndPassword'));
       return false;
     }
     if (!re.test(email)) {
-      setError("Please enter a valid email address.");
+      setError(t('validation.invalidEmail'));
       return false;
     }
     return true;
@@ -158,10 +160,10 @@ export default function Login() {
       } else if (role === "driver") {
         router.replace("/driver");
       } else {
-        setError("Your account role is not supported in mobile app.");
+        setError(t('errors.unsupportedRole'));
       }
     } catch (err) {
-      setError(err.message || "Login failed. Please try again.");
+      setError(err.message || t('errors.loginFailed'));
     } finally {
       setLoading(false);
     }
@@ -170,13 +172,11 @@ export default function Login() {
   const handleGoogleLogin = async () => {
     setError("");
     if (!googleConfigured) {
-      setError(
-        "Google sign-in is not configured. Set EXPO_PUBLIC_GOOGLE_WEB_CLIENT_ID in mobile/.env — see GOOGLE_LOGIN_SETUP.md."
-      );
+      setError(t('errors.googleNotConfigured'));
       return;
     }
     if (!request) {
-      setError("Google sign-in is still loading. Please try again in a moment.");
+      setError(t('errors.googleLoading'));
       return;
     }
     setGoogleLoading(true);
@@ -184,14 +184,13 @@ export default function Login() {
       await promptAsync();
     } catch (err) {
       console.error("Google Sign-In Error:", err);
-      setError(err?.message || "Google sign-in failed. Please try again.");
+      setError(err?.message || t('errors.googleSignInFailed'));
       setGoogleLoading(false);
     }
   };
 
   const handleAppleLogin = () => {
-    // Handle Apple login
-    Alert.alert("Coming Soon", "Apple Sign-In will be available soon!");
+    Alert.alert(t('auth.comingSoon'), t('auth.appleComingSoon'));
   };
 
   return (
@@ -230,20 +229,20 @@ export default function Login() {
             </View>
 
             {/* Title */}
-            <Text style={styles.title}>Welcome Back!</Text>
-            <Text style={styles.subtitle}>Sign in to continue</Text>
+            <Text style={styles.title}>{t('auth.welcomeBack')}</Text>
+            <Text style={styles.subtitle}>{t('auth.signInToContinue')}</Text>
           </View>
 
           {/* Form Section */}
           <View style={styles.formSection}>
             {/* Email Input */}
             <View style={styles.inputContainer}>
-              <Text style={[styles.label, { marginBottom: 8 }]}>Email</Text>
+              <Text style={[styles.label, { marginBottom: 8 }]}>{t('auth.email')}</Text>
               <View style={styles.inputWrapper}>
                 <Sms size={20} color="#666" variant="Outline" />
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your email"
+                  placeholder={t('auth.emailPlaceholder')}
                   placeholderTextColor="#999"
                   value={email}
                   onChangeText={setEmail}
@@ -257,19 +256,19 @@ export default function Login() {
             {/* Password Input */}
             <View style={styles.inputContainer}>
               <View style={styles.labelRow}>
-                <Text style={styles.label}>Password</Text>
+                <Text style={styles.label}>{t('auth.password')}</Text>
                 <TouchableOpacity
                   onPress={() => router.push("/login/forgot")}
                   activeOpacity={0.7}
                 >
-                  <Text style={styles.forgotPasswordText}>Forgot password?</Text>
+                  <Text style={styles.forgotPasswordText}>{t('auth.forgotPassword')}</Text>
                 </TouchableOpacity>
               </View>
               <View style={styles.inputWrapper}>
                 <Lock size={20} color="#666" variant="Outline" />
                 <TextInput
                   style={styles.input}
-                  placeholder="Enter your password"
+                  placeholder={t('auth.passwordPlaceholder')}
                   placeholderTextColor="#999"
                   value={password}
                   onChangeText={setPassword}
@@ -308,14 +307,14 @@ export default function Login() {
               {loading ? (
                 <ActivityIndicator color="#fff" size="small" />
               ) : (
-                <Text style={styles.continueButtonText}>Continue</Text>
+                <Text style={styles.continueButtonText}>{t('auth.continueBtn')}</Text>
               )}
             </TouchableOpacity>
 
             {/* Divider */}
             <View style={styles.divider}>
               <View style={styles.dividerLine} />
-              <Text style={styles.dividerText}>or</Text>
+              <Text style={styles.dividerText}>{t('auth.or')}</Text>
               <View style={styles.dividerLine} />
             </View>
 
@@ -331,7 +330,7 @@ export default function Login() {
               ) : (
                 <>
                   <GoogleLogo size={20} />
-                  <Text style={styles.socialButtonText}>Continue with Google</Text>
+                  <Text style={styles.socialButtonText}>{t('auth.continueWithGoogle')}</Text>
                 </>
               )}
             </TouchableOpacity>
@@ -342,17 +341,17 @@ export default function Login() {
               activeOpacity={0.7}
             >
               <Apple size={22} color="#000" variant="Bold" />
-              <Text style={styles.socialButtonText}>Continue with Apple</Text>
+              <Text style={styles.socialButtonText}>{t('auth.continueWithApple')}</Text>
             </TouchableOpacity>
 
             {/* Sign Up Link */}
             <View style={styles.signupContainer}>
-              <Text style={styles.signupText}>Don't have an account? </Text>
+              <Text style={styles.signupText}>{t('auth.noAccount')}</Text>
               <TouchableOpacity
                 onPress={() => router.replace("/login/register")}
                 activeOpacity={0.7}
               >
-                <Text style={styles.signupLink}>Sign Up</Text>
+                <Text style={styles.signupLink}>{t('auth.signUp')}</Text>
               </TouchableOpacity>
             </View>
           </View>

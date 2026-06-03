@@ -9,6 +9,7 @@ import {
 } from 'react-native';
 import { useRouter, usePathname } from 'expo-router';
 import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import { useTranslation } from 'react-i18next';
 import {
   Home2,
   Routing2,
@@ -25,12 +26,12 @@ import {
   layout,
 } from '../theme';
 
-const NAV_ITEMS = [
-  { name: 'Home', icon: Home2, route: '/driver', match: (p) => p === '/driver' },
-  { name: 'Trips', icon: Routing2, route: '/driver/rides', match: (p) => p?.startsWith('/driver/rides') || p?.startsWith('/driver/route-management') || p?.startsWith('/driver/active-trip') },
-  { name: 'Messages', icon: MessageText1, route: '/driver/messages', match: (p) => p?.startsWith('/driver/messages') || p?.startsWith('/driver/chat') },
-  { name: 'Earnings', icon: Wallet3, route: '/driver/earnings', match: (p) => p?.startsWith('/driver/earnings') },
-  { name: 'Profile', icon: User, route: '/driver/Profile/profile', match: (p) => p?.toLowerCase().startsWith('/driver/profile') },
+const NAV_CONFIG = [
+  { key: 'home',     icon: Home2,        route: '/driver',                match: (p) => p === '/driver' },
+  { key: 'routes',   icon: Routing2,     route: '/driver/rides',          match: (p) => p?.startsWith('/driver/rides') || p?.startsWith('/driver/route-management') || p?.startsWith('/driver/active-trip') },
+  { key: 'messages', icon: MessageText1, route: '/driver/messages',       match: (p) => p?.startsWith('/driver/messages') || p?.startsWith('/driver/chat') },
+  { key: 'earnings', icon: Wallet3,      route: '/driver/earnings',       match: (p) => p?.startsWith('/driver/earnings') },
+  { key: 'profile',  icon: User,         route: '/driver/Profile/profile', match: (p) => p?.toLowerCase().startsWith('/driver/profile') },
 ];
 
 // Routes where the bottom tab bar should be visible. Detail screens
@@ -53,8 +54,14 @@ const DriverBottomNav = () => {
   const router = useRouter();
   const pathname = usePathname();
   const insets = useSafeAreaInsets();
+  const { t } = useTranslation();
 
   if (!isTabRoot(pathname)) return null;
+
+  const NAV_ITEMS = NAV_CONFIG.map((item) => ({
+    ...item,
+    name: t(`nav.${item.key}`),
+  }));
 
   return (
     <View
@@ -71,7 +78,7 @@ const DriverBottomNav = () => {
           const active = item.match(pathname ?? '');
           return (
             <NavTab
-              key={item.name}
+              key={item.key}
               item={item}
               active={active}
               onPress={() => router.push(item.route)}
