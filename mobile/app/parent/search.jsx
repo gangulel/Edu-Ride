@@ -1,4 +1,4 @@
-import React, { useState, useCallback, useEffect } from 'react';
+import React, { useState, useCallback, useEffect, useRef } from 'react';
 import {
     View,
     Text,
@@ -10,9 +10,8 @@ import {
     FlatList,
     ActivityIndicator,
     StatusBar,
-    Modal,
 } from 'react-native';
-import { useRouter } from 'expo-router';
+import { useRouter, useLocalSearchParams } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
     SearchNormal1,
@@ -30,47 +29,105 @@ import {
     Truck,
 } from 'iconsax-react-native';
 import { responsive, wp, hp, fs } from '../utils/responsive';
-import { searchDrivers } from '../../services/mock';
+import { searchRoutes } from '../../services/parentApi';
 import { ParentBottomNav } from '../components/organisms';
 
-// Maps mock driver shape to the legacy UI shape used by this screen.
-const driverToService = (d, idx) => ({
-    id: d.id || idx + 1,
-    name: d.name,
-    verified: !!d.verified,
-    rating: d.rating ?? 0,
-    reviewCount: d.totalReviews ?? d.reviewCount ?? 0,
-    monthlyFee: d.monthlyFee ?? 0,
-    areasServed: d.areas || d.areasServed || [],
-    school: d.school || 'Royal College',
-    availableSeats: Math.max(0, Math.floor((d.seats || 0) / 3)),
-    totalSeats: d.seats ?? 0,
-    experience: d.yearsOfExperience ? `${d.yearsOfExperience} years` : '—',
-    vehicleType: d.vehicleModel || d.vehicleType || 'Van',
-    category: (d.vehicleType || 'van').toLowerCase(),
-    isAC: !!d.hasAC,
-});
+const VEHICLE_TYPE_MAP = { 'van': 'van', 'bus': 'bus', 'mini-bus': 'bus', 'sedan': 'car' };
 
-const FALLBACK_SERVICES = [];
+function mapRouteToService(route) {
+    const driver = route.driver || {};
+    const vehicle = route.vehicle || {};
+    const capacity = vehicle.capacity || 0;
+    const occupied = route.studentCount || 0;
+    const available = Math.max(0, capacity - occupied);
+    const category = VEHICLE_TYPE_MAP[vehicle.vehicleType] || 'van';
+    const stopLocations = (route.stops || []).slice(0, 3).map(s => s.location).filter(Boolean);
+    const areasServed = stopLocations.length ? stopLocations : (driver.areasServed || []);
+    const vehicleLabel = vehicle.make
+        ? `${vehicle.make} ${vehicle.model || ''}`.trim()
+        : (vehicle.vehicleType || 'Vehicle');
+
+    return {
+        id: driver._id || route._id,
+        driverId: driver._id || null,
+        routeId: route._id,
+        name: driver.fullName || 'Driver',
+        verified: driver.isVerified || false,
+        rating: driver.rating || 0,
+        reviewCount: driver.reviewCount || 0,
+        monthlyFee: driver.monthlyFee || 0,
+        areasServed,
+        school: route.school || driver.school || '',
+        availableSeats: available,
+        totalSeats: capacity,
+        experience: driver.experience || '',
+        vehicleType: vehicleLabel,
+        category,
+        isAC: vehicle.isAC || false,
+    };
+}
 
 export default function SearchScreen() {
     const router = useRouter();
-    const [searchQuery, setSearchQuery] = useState('');
-    const [loading, setLoading] = useState(true);
-    const [activeFilter, setActiveFilter] = useState('all');
-    const [services, setServices] = useState(FALLBACK_SERVICES);
+    const params = useLocalSearchParams();
 
-    useEffect(() => {
-        let cancelled = false;
-        (async () => {
-            const drivers = await searchDrivers({});
-            if (!cancelled) {
-                setServices(drivers.map(driverToService));
-                setLoading(false);
-            }
-        })();
-        return () => { cancelled = true; };
+    // Smart-match params passed from add-child or home screen
+    const incomingChild    = params.childName    || '';
+    const incomingSchool   = params.school       || '';
+    const incomingAddress  = params.homeAddress  || '';
+    const shouldAutoSearch = params.autoSearch   === '1';
+
+    const [searchQuery,        setSearchQuery]        = useState('');
+    const [loading,            setLoading]            = useState(true);
+    const [activeFilter,       setActiveFilter]       = useState('all');
+    const [allRoutes,          setAllRoutes]          = useState([]);
+    const [error,              setError]              = useState(null);
+
+    // Smart-match (child-aware) state
+    const [smartPickup,        setSmartPickup]        = useState(incomingAddress);
+    const [smartDrop,          setSmartDrop]          = useState(incomingSchool);
+    const [smartChildName,     setSmartChildName]     = useState(incomingChild);
+    const [showSmartBanner,    setShowSmartBanner]    = useState(shouldAutoSearch);
+    const [smartPickupFocused, setSmartPickupFocused] = useState(false);
+    const [smartDropFocused,   setSmartDropFocused]   = useState(false);
+    const didAutoSearch = useRef(false);
+
+    const loadRoutes = useCallback(async (query = '') => {
+        try {
+            setLoading(true);
+            setError(null);
+            const reqParams = { status: 'active' };
+            if (query) reqParams.search = query;
+            const res = await searchRoutes(reqParams);
+            const routes = (res?.routes || []).map(mapRouteToService);
+            setAllRoutes(routes);
+        } catch (err) {
+            setError(err.message || 'Failed to load services');
+        } finally {
+            setLoading(false);
+        }
     }, []);
+
+    // Auto-trigger search using child's school / address when navigated from add-child
+    useEffect(() => {
+        if (shouldAutoSearch && !didAutoSearch.current) {
+            didAutoSearch.current = true;
+            const query = incomingSchool || incomingAddress;
+            if (query) {
+                loadRoutes(query);
+                return;
+            }
+        }
+        loadRoutes();
+    }, [loadRoutes]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // Re-run search when smart pickup / drop values change
+    useEffect(() => {
+        const query = smartDrop || smartPickup;
+        if (query && didAutoSearch.current) {
+            loadRoutes(query);
+        }
+    }, [smartPickup, smartDrop, loadRoutes]);
 
     const quickFilters = [
         { key: 'all', label: 'All', icon: Bus },
@@ -261,58 +318,29 @@ export default function SearchScreen() {
     const handleSuggestionPress = (suggestion) => {
         setSearchQuery(suggestion.name);
         setShowSuggestions(false);
-        handleSearch();
+        loadRoutes(suggestion.name);
     };
 
     const handleSearch = useCallback(() => {
-        setLoading(true);
         setShowSuggestions(false);
-        setTimeout(() => setLoading(false), 1000);
-    }, [searchQuery]);
+        loadRoutes(searchQuery);
+    }, [searchQuery, loadRoutes]);
 
     const handleServicePress = (service) => {
-        router.push(`/parent/service-detail?id=${service.id}`);
+        router.push(`/parent/service-detail?id=${service.driverId || service.id}&routeId=${service.routeId}`);
     };
 
-    const sortBy = 'rating';
-
-    const filteredServices = services
+    const filteredServices = allRoutes
         .filter(service => {
             if (activeFilter === 'verified' && !service.verified) return false;
             if (activeFilter === 'top_rated' && service.rating < 4.5) return false;
             if (activeFilter === 'available' && service.availableSeats === 0) return false;
-
-            // Vehicle Type Filter
             if (selectedVehicleType !== 'all' && service.category !== selectedVehicleType) return false;
-
-            // AC Filter
             if (selectedACType === 'ac' && !service.isAC) return false;
             if (selectedACType === 'non-ac' && service.isAC) return false;
-
-            if (searchQuery) {
-                const query = searchQuery.toLowerCase();
-                return (
-                    service.name.toLowerCase().includes(query) ||
-                    service.areasServed.some(area => area.toLowerCase().includes(query)) ||
-                    service.school.toLowerCase().includes(query)
-                );
-            }
             return true;
         })
-        .sort((a, b) => {
-            switch (sortBy) {
-                case 'rating':
-                    return b.rating - a.rating;
-                case 'price_low':
-                    return a.monthlyFee - b.monthlyFee;
-                case 'price_high':
-                    return b.monthlyFee - a.monthlyFee;
-                case 'seats':
-                    return b.availableSeats - a.availableSeats;
-                default:
-                    return 0;
-            }
-        });
+        .sort((a, b) => b.rating - a.rating);
 
     const getInitials = (name) => {
         return name.split(' ').map(n => n[0]).join('').toUpperCase().slice(0, 2);
@@ -572,6 +600,89 @@ export default function SearchScreen() {
                 </SafeAreaView>
             </LinearGradient>
 
+            {/* ── Smart Match Banner ─────────────────────────────────────────── */}
+            {showSmartBanner && (
+                <View style={styles.smartBanner}>
+                    {/* Header row */}
+                    <View style={styles.smartBannerHeader}>
+                        <View style={styles.smartBannerTitleRow}>
+                            <Location size={15} color="#3B82F6" variant="Bold" />
+                            <Text style={styles.smartBannerTitle}>
+                                {smartChildName
+                                    ? `Smart Match for ${smartChildName}`
+                                    : 'Smart Vehicle Match'}
+                            </Text>
+                        </View>
+                        <TouchableOpacity
+                            onPress={() => setShowSmartBanner(false)}
+                            hitSlop={{ top: 8, bottom: 8, left: 8, right: 8 }}
+                        >
+                            <CloseCircle size={18} color="#94A3B8" variant="Bold" />
+                        </TouchableOpacity>
+                    </View>
+
+                    {/* Pickup row */}
+                    <View style={styles.smartRow}>
+                        <View style={styles.smartIconWrap}>
+                            <Location size={14} color="#3B82F6" variant="Bold" />
+                        </View>
+                        <Text style={styles.smartLabel}>Pickup</Text>
+                        <View style={[
+                            styles.smartInputWrap,
+                            smartPickupFocused && styles.smartInputFocused,
+                        ]}>
+                            <TextInput
+                                style={styles.smartInput}
+                                value={smartPickup}
+                                onChangeText={setSmartPickup}
+                                placeholder="Home / boarding address"
+                                placeholderTextColor="#CBD5E1"
+                                onFocus={() => setSmartPickupFocused(true)}
+                                onBlur={() => setSmartPickupFocused(false)}
+                                returnKeyType="done"
+                            />
+                            {smartPickup.length > 0 && (
+                                <TouchableOpacity onPress={() => setSmartPickup('')}>
+                                    <CloseCircle size={14} color="#94A3B8" variant="Bold" />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
+
+                    {/* Drop-off row */}
+                    <View style={styles.smartRow}>
+                        <View style={[styles.smartIconWrap, { backgroundColor: '#ECFDF5' }]}>
+                            <Bus size={14} color="#10B981" variant="Bold" />
+                        </View>
+                        <Text style={styles.smartLabel}>Drop</Text>
+                        <View style={[
+                            styles.smartInputWrap,
+                            smartDropFocused && styles.smartInputFocused,
+                        ]}>
+                            <TextInput
+                                style={styles.smartInput}
+                                value={smartDrop}
+                                onChangeText={setSmartDrop}
+                                placeholder="School name"
+                                placeholderTextColor="#CBD5E1"
+                                onFocus={() => setSmartDropFocused(true)}
+                                onBlur={() => setSmartDropFocused(false)}
+                                returnKeyType="done"
+                            />
+                            {smartDrop.length > 0 && (
+                                <TouchableOpacity onPress={() => setSmartDrop('')}>
+                                    <CloseCircle size={14} color="#94A3B8" variant="Bold" />
+                                </TouchableOpacity>
+                            )}
+                        </View>
+                    </View>
+
+                    <Text style={styles.smartHint}>
+                        ✨ Vehicle list updates automatically when you edit these fields.
+                    </Text>
+                </View>
+            )}
+
             {/* Results Section */}
             <View style={styles.resultsHeader}>
                 <Text style={styles.resultsCount}>
@@ -584,6 +695,13 @@ export default function SearchScreen() {
                 <View style={styles.loadingContainer}>
                     <ActivityIndicator size="large" color="#3B82F6" />
                     <Text style={styles.loadingText}>Finding services...</Text>
+                </View>
+            ) : error ? (
+                <View style={styles.loadingContainer}>
+                    <Text style={[styles.loadingText, { color: '#EF4444' }]}>{error}</Text>
+                    <TouchableOpacity style={styles.clearBtn} onPress={() => loadRoutes(searchQuery)}>
+                        <Text style={styles.clearBtnText}>Retry</Text>
+                    </TouchableOpacity>
                 </View>
             ) : filteredServices.length === 0 ? (
                 <View style={styles.emptyContainer}>
@@ -989,5 +1107,86 @@ const styles = StyleSheet.create({
         fontSize: fs(14),
         fontFamily: 'Roboto-Medium',
         color: '#fff',
+    },
+
+    // ── Smart Match Banner ────────────────────────────────────────────────────
+    smartBanner: {
+        marginHorizontal: wp(16),
+        marginTop: hp(12),
+        backgroundColor: '#fff',
+        borderRadius: 16,
+        padding: 14,
+        borderWidth: 1.5,
+        borderColor: '#BFDBFE',
+        shadowColor: '#3B82F6',
+        shadowOffset: { width: 0, height: 4 },
+        shadowOpacity: 0.08,
+        shadowRadius: 12,
+        elevation: 3,
+    },
+    smartBannerHeader: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        justifyContent: 'space-between',
+        marginBottom: 10,
+    },
+    smartBannerTitleRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 6,
+    },
+    smartBannerTitle: {
+        fontSize: fs(13),
+        fontFamily: 'Roboto-Bold',
+        color: '#1E293B',
+    },
+    smartRow: {
+        flexDirection: 'row',
+        alignItems: 'center',
+        gap: 8,
+        marginBottom: 8,
+    },
+    smartIconWrap: {
+        width: 26,
+        height: 26,
+        borderRadius: 8,
+        backgroundColor: '#EFF6FF',
+        alignItems: 'center',
+        justifyContent: 'center',
+    },
+    smartLabel: {
+        fontSize: fs(11),
+        fontFamily: 'Roboto-Bold',
+        color: '#94A3B8',
+        width: 38,
+    },
+    smartInputWrap: {
+        flex: 1,
+        flexDirection: 'row',
+        alignItems: 'center',
+        backgroundColor: '#F8FAFC',
+        borderRadius: 8,
+        borderWidth: 1,
+        borderColor: '#E2E8F0',
+        paddingHorizontal: 10,
+        paddingVertical: 6,
+        gap: 6,
+    },
+    smartInputFocused: {
+        borderColor: '#3B82F6',
+        backgroundColor: '#fff',
+    },
+    smartInput: {
+        flex: 1,
+        fontSize: fs(13),
+        fontFamily: 'Roboto-Regular',
+        color: '#1E293B',
+    },
+    smartHint: {
+        fontSize: fs(11),
+        fontFamily: 'Roboto-Regular',
+        color: '#94A3B8',
+        marginTop: 4,
+        textAlign: 'center',
     },
 });

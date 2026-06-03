@@ -1,380 +1,399 @@
-import React, { useMemo, useRef, useState } from 'react';
+import React, { useMemo, useState } from 'react';
 import {
-  useWindowDimensions,
   View,
-  Image,
-  StyleSheet,
-  SafeAreaView,
-  TouchableOpacity,
   Text,
-  FlatList,
-  Animated,
+  StyleSheet,
+  TouchableOpacity,
   StatusBar,
+  useWindowDimensions,
+  Platform,
 } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 import { LinearGradient } from 'expo-linear-gradient';
 import { useRouter } from 'expo-router';
-import { ArrowRight, ShieldTick, NotificationStatus, RouteSquare } from 'iconsax-react-native';
-import { useTheme } from './contexts/ThemeContext';
+import { Bus, ArrowRight2, ArrowLeft2 } from 'iconsax-react-native';
 
-const slidesContent = [
+import { colors, palette } from './theme';
+import Hero1Tracking from './components/onboarding/Hero1Tracking';
+import Hero2Safety from './components/onboarding/Hero2Safety';
+import Hero3Payments from './components/onboarding/Hero3Payments';
+
+const SCREENS = [
   {
-    id: 1,
-    image: require('../assets/images/school_bus.png'),
-    title: 'Safe School Transport',
-    subtitle: "Track your child's journey to school in real-time with our verified drivers.",
-    Icon: ShieldTick,
-    chip: 'Verified Drivers',
+    eyebrow: 'Live tracking',
+    headline: 'Track every ride in',
+    headlineAccent: 'real-time',
+    desc:
+      'Monitor your child’s school bus live with GPS tracking, ETA updates, and instant arrival alerts.',
+    Hero: Hero1Tracking,
+    cta: 'Next',
   },
   {
-    id: 2,
-    image: require('../assets/images/parent_child.png'),
-    title: 'Peace of Mind',
-    subtitle: 'Get instant notifications when your child boards and arrives safely.',
-    Icon: NotificationStatus,
-    chip: 'Live Updates',
+    eyebrow: 'Safety & alerts',
+    headline: 'Stay updated &',
+    headlineAccent: 'feel secure',
+    desc:
+      'Receive instant notifications for pickups, drop-offs, delays, and emergency alerts — all in one place.',
+    Hero: Hero2Safety,
+    cta: 'Next',
   },
   {
-    id: 3,
-    image: require('../assets/images/school_bus.png'),
-    title: 'Easy Booking',
-    subtitle: 'Find and book reliable school transport services near you in a few taps.',
-    Icon: RouteSquare,
-    chip: 'Instant Booking',
+    eyebrow: 'All in one place',
+    headline: 'Simple payments,',
+    headlineAccent: 'easy chats',
+    desc:
+      'Pay transport fees securely, chat with drivers, and manage school trips effortlessly.',
+    Hero: Hero3Payments,
+    cta: 'Get started',
   },
 ];
 
 export default function Onboarding() {
-  const theme = useTheme();
   const router = useRouter();
   const { width, height } = useWindowDimensions();
-  const [currentIndex, setCurrentIndex] = useState(0);
-  const scrollX = useRef(new Animated.Value(0)).current;
-  const slidesRef = useRef(null);
-  const styles = useMemo(() => createStyles(theme, width, height), [theme, width, height]);
+  const [index, setIndex] = useState(0);
 
-  const viewableItemsChanged = useRef(({ viewableItems }) => {
-    if (viewableItems[0]) setCurrentIndex(viewableItems[0].index);
-  }).current;
+  const styles = useMemo(() => createStyles(width, height), [width, height]);
+  const screen = SCREENS[index];
+  const isLast = index === SCREENS.length - 1;
+  const Hero = screen.Hero;
 
-  const viewConfig = useRef({ viewAreaCoveragePercentThreshold: 50 }).current;
-
-  const scrollToNext = () => {
-    if (currentIndex < slidesContent.length - 1) {
-      slidesRef.current.scrollToIndex({ index: currentIndex + 1 });
-    } else {
+  const goNext = () => {
+    if (isLast) {
       router.push('/login/login');
+    } else {
+      setIndex((i) => Math.min(SCREENS.length - 1, i + 1));
     }
   };
-
-  const renderSlide = ({ item }) => {
-    const SlideIcon = item.Icon;
-    return (
-      <View style={[styles.slide, { width }]}>
-        <View style={styles.slideContent}>
-          <View style={styles.imageCard}>
-            <LinearGradient
-              colors={[theme.colors.palette.blue[50], '#FFFFFF']}
-              start={{ x: 0.05, y: 0 }}
-              end={{ x: 0.95, y: 1 }}
-              style={styles.imageCardGradient}
-            >
-              <View style={styles.accentChip}>
-                <SlideIcon size={14} color={theme.colors.primary} variant="Bold" />
-                <Text style={styles.accentChipText}>{item.chip}</Text>
-              </View>
-              <Image source={item.image} style={styles.image} resizeMode="contain" />
-            </LinearGradient>
-          </View>
-        </View>
-        <View style={styles.textContainer}>
-          <Text style={styles.eyebrow}>Edu Ride</Text>
-          <Text style={styles.title}>{item.title}</Text>
-          <Text style={styles.subtitle}>{item.subtitle}</Text>
-        </View>
-      </View>
-    );
-  };
-
-  const Paginator = () => (
-    <View style={styles.paginatorContainer}>
-      {slidesContent.map((_, index) => {
-        const inputRange = [(index - 1) * width, index * width, (index + 1) * width];
-        const dotWidth = scrollX.interpolate({ inputRange, outputRange: [8, 28, 8], extrapolate: 'clamp' });
-        const opacity = scrollX.interpolate({ inputRange, outputRange: [0.3, 1, 0.3], extrapolate: 'clamp' });
-        return <Animated.View key={index} style={[styles.dot, { width: dotWidth, opacity }]} />;
-      })}
-    </View>
-  );
+  const goBack = () => setIndex((i) => Math.max(0, i - 1));
+  const skip = () => setIndex(SCREENS.length - 1);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
+    <View style={styles.root}>
+      <StatusBar barStyle="dark-content" backgroundColor="transparent" translucent />
+
+      {/* Layered gradient background */}
       <LinearGradient
-        colors={[theme.colors.palette.blue[50], '#FFFFFF', theme.colors.palette.blue[50]]}
-        start={{ x: 0, y: 0 }}
-        end={{ x: 1, y: 1 }}
-        style={styles.backgroundGradient}
+        colors={['#EFF5FF', palette.slate[50], '#FFFFFF']}
+        start={{ x: 0.5, y: 0 }}
+        end={{ x: 0.5, y: 1 }}
+        style={StyleSheet.absoluteFill}
       />
+      <View style={styles.bgBlobTopLeft} />
+      <View style={styles.bgBlobTopRight} />
 
-      <View style={styles.bgDecoration} pointerEvents="none">
-        <View style={[styles.bgCircle, styles.bgCircle1]} />
-        <View style={[styles.bgCircle, styles.bgCircle2]} />
-      </View>
+      <SafeAreaView style={styles.safe} edges={['top', 'bottom']}>
+        {/* Top bar */}
+        <View style={styles.topbar}>
+          <View style={styles.brand}>
+            <LinearGradient
+              colors={[colors.primary, palette.cyan[500]]}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.brandMark}
+            >
+              <Bus size={16} color="#FFFFFF" variant="Bold" />
+            </LinearGradient>
+            <Text style={styles.brandText}>Edu-Ride</Text>
+          </View>
+          {!isLast ? (
+            <TouchableOpacity onPress={skip} style={styles.skip} activeOpacity={0.8}>
+              <Text style={styles.skipText}>Skip</Text>
+            </TouchableOpacity>
+          ) : (
+            <View style={{ width: 64 }} />
+          )}
+        </View>
 
-      <TouchableOpacity
-        style={styles.skipButton}
-        onPress={() => router.push('/login/login')}
-        activeOpacity={0.7}
-      >
-        <Text style={styles.skipText}>Skip</Text>
-      </TouchableOpacity>
+        {/* Hero area — keyed so each screen remounts cleanly */}
+        <View style={styles.heroFrame}>
+          <View style={styles.heroInner} key={`hero-${index}`}>
+            <Hero />
+          </View>
+        </View>
 
-      <FlatList
-        ref={slidesRef}
-        data={slidesContent}
-        renderItem={renderSlide}
-        horizontal
-        showsHorizontalScrollIndicator={false}
-        pagingEnabled
-        bounces={false}
-        keyExtractor={(item) => item.id.toString()}
-        getItemLayout={(_, index) => ({ length: width, offset: width * index, index })}
-        initialNumToRender={1}
-        maxToRenderPerBatch={1}
-        windowSize={2}
-        extraData={width}
-        onScroll={Animated.event(
-          [{ nativeEvent: { contentOffset: { x: scrollX } } }],
-          { useNativeDriver: false }
-        )}
-        onViewableItemsChanged={viewableItemsChanged}
-        viewabilityConfig={viewConfig}
-        scrollEventThrottle={32}
-      />
-
-      <View style={styles.bottomContainer}>
-        <Text style={styles.progressText}>{`0${currentIndex + 1} / 0${slidesContent.length}`}</Text>
-        <Paginator />
-
-        <TouchableOpacity style={styles.nextButton} onPress={scrollToNext} activeOpacity={0.9}>
-          <LinearGradient
-            colors={theme.colors.primaryGradient}
-            start={{ x: 0, y: 0 }}
-            end={{ x: 1, y: 0 }}
-            style={styles.nextButtonGradient}
-          >
-            <Text style={styles.nextButtonText}>
-              {currentIndex === slidesContent.length - 1 ? 'Get Started' : 'Next'}
-            </Text>
-            <ArrowRight size={20} color="#fff" variant="Linear" />
-          </LinearGradient>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={styles.loginLink}
-          onPress={() => router.push('/login/login')}
-          activeOpacity={0.7}
-        >
-          <Text style={styles.loginLinkText}>
-            Already have an account? <Text style={styles.loginLinkBold}>Sign In</Text>
+        {/* Text block */}
+        <View style={styles.textBlock}>
+          <View style={styles.eyebrow}>
+            <View style={styles.eyebrowDot} />
+            <Text style={styles.eyebrowText}>{screen.eyebrow}</Text>
+          </View>
+          <Text style={styles.headline}>
+            {screen.headline}{' '}
+            <Text style={styles.headlineAccent}>{screen.headlineAccent}</Text>
           </Text>
-        </TouchableOpacity>
-      </View>
-    </SafeAreaView>
+          <Text style={styles.desc}>{screen.desc}</Text>
+        </View>
+
+        {/* Footer */}
+        <View style={styles.footer}>
+          <View style={styles.dots}>
+            {SCREENS.map((_, i) => (
+              <View
+                key={i}
+                style={[
+                  styles.dot,
+                  i === index && styles.dotActive,
+                ]}
+              />
+            ))}
+          </View>
+
+          <View style={styles.actions}>
+            {index > 0 ? (
+              <TouchableOpacity
+                onPress={goBack}
+                style={styles.back}
+                activeOpacity={0.8}
+                accessibilityLabel="Back"
+              >
+                <ArrowLeft2 size={22} color={colors.primaryDark} variant="Linear" />
+              </TouchableOpacity>
+            ) : null}
+
+            <TouchableOpacity
+              onPress={goNext}
+              activeOpacity={0.9}
+              style={styles.ctaShadow}
+            >
+              <LinearGradient
+                colors={[palette.blue[500], palette.blue[600]]}
+                start={{ x: 0, y: 0 }}
+                end={{ x: 0, y: 1 }}
+                style={styles.cta}
+              >
+                <View style={styles.ctaSheen} />
+                <Text style={styles.ctaText}>{screen.cta}</Text>
+                <View style={styles.ctaArrow}>
+                  <ArrowRight2 size={18} color="#FFFFFF" variant="Linear" />
+                </View>
+              </LinearGradient>
+            </TouchableOpacity>
+          </View>
+
+          {isLast ? (
+            <View style={styles.signin}>
+              <Text style={styles.signinText}>Already have an account?</Text>
+              <TouchableOpacity onPress={() => router.push('/login/login')}>
+                <Text style={styles.signinLink}> Sign in</Text>
+              </TouchableOpacity>
+            </View>
+          ) : null}
+        </View>
+      </SafeAreaView>
+    </View>
   );
 }
 
-const clamp = (value, min, max) => Math.max(min, Math.min(max, value));
+const clamp = (v, min, max) => Math.max(min, Math.min(max, v));
 
-const createStyles = (theme, width, height) => {
-  const isSmallPhone = width < 360 || height < 700;
-  const horizontalPadding = clamp(width * 0.07, 20, 34);
-  const topOffset = clamp(height * 0.055, 36, 64);
-  const imageCardWidth = clamp(Math.min(width * 0.84, 440), 260, 420);
-  const imageCardHeight = clamp(imageCardWidth * 0.95, 240, 380);
-  const imageSize = clamp(imageCardWidth * 0.84, 190, 320);
-  const titleSize = clamp(width * 0.075, 24, 34);
-  const subtitleSize = clamp(width * 0.045, 15, 18);
-  const eyebrowSize = clamp(width * 0.034, 12, 14);
-  const buttonVerticalPadding = isSmallPhone ? 14 : 17;
-  const bottomPadding = clamp(height * 0.04, 20, 42);
+const createStyles = (width, height) => {
+  const isSmall = width < 360 || height < 700;
+  const hPad = clamp(width * 0.06, 18, 26);
 
   return StyleSheet.create({
-    container: { flex: 1, backgroundColor: theme.colors.background },
-    backgroundGradient: { ...StyleSheet.absoluteFillObject },
-    bgDecoration: { position: 'absolute', width: '100%', height: '100%' },
-    bgCircle: { position: 'absolute', borderRadius: 999 },
-    bgCircle1: {
-      width: imageCardWidth,
-      height: imageCardWidth,
-      backgroundColor: 'rgba(37, 99, 235, 0.10)',
-      top: -imageCardWidth * 0.35,
-      right: -imageCardWidth * 0.18,
-    },
-    bgCircle2: {
-      width: imageCardWidth * 0.8,
-      height: imageCardWidth * 0.8,
-      backgroundColor: 'rgba(59, 130, 246, 0.10)',
-      bottom: height * 0.2,
-      left: -imageCardWidth * 0.22,
-    },
-    skipButton: {
+    root: { flex: 1, backgroundColor: '#FFFFFF' },
+    safe: { flex: 1 },
+    bgBlobTopRight: {
       position: 'absolute',
-      top: topOffset,
-      right: horizontalPadding,
-      zIndex: 10,
-      paddingHorizontal: 14,
-      paddingVertical: 8,
+      top: -60,
+      right: -80,
+      width: 280,
+      height: 280,
       borderRadius: 999,
-      backgroundColor: 'rgba(255,255,255,0.92)',
+      backgroundColor: 'rgba(59,130,246,0.28)',
+      opacity: 0.55,
+    },
+    bgBlobTopLeft: {
+      position: 'absolute',
+      top: -40,
+      left: -60,
+      width: 220,
+      height: 220,
+      borderRadius: 999,
+      backgroundColor: 'rgba(6,182,212,0.22)',
+      opacity: 0.5,
+    },
+
+    topbar: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      justifyContent: 'space-between',
+      paddingHorizontal: hPad,
+      paddingTop: Platform.OS === 'android' ? 8 : 4,
+      paddingBottom: 4,
+    },
+    brand: { flexDirection: 'row', alignItems: 'center', gap: 8 },
+    brandMark: {
+      width: 26,
+      height: 26,
+      borderRadius: 8,
+      alignItems: 'center',
+      justifyContent: 'center',
+      shadowColor: colors.primary,
+      shadowOffset: { width: 0, height: 4 },
+      shadowOpacity: 0.35,
+      shadowRadius: 8,
+      elevation: 4,
+    },
+    brandText: {
+      fontSize: 16,
+      fontWeight: '800',
+      color: colors.textPrimary,
+      letterSpacing: -0.2,
+    },
+    skip: {
+      paddingHorizontal: 14,
+      paddingVertical: 7,
+      borderRadius: 999,
+      backgroundColor: 'rgba(255,255,255,0.7)',
       borderWidth: 1,
-      borderColor: theme.colors.border,
+      borderColor: 'rgba(15,23,42,0.06)',
     },
     skipText: {
-      fontFamily: theme.fontFamily.medium,
-      fontSize: clamp(width * 0.042, 13, 15),
-      color: theme.colors.textSecondary,
+      fontSize: 14,
+      fontWeight: '700',
+      color: colors.textSecondary,
+      letterSpacing: -0.2,
     },
-    slide: {
+
+    heroFrame: {
       flex: 1,
-      paddingTop: topOffset + (isSmallPhone ? 6 : 16),
-      justifyContent: 'space-between',
+      marginHorizontal: hPad,
+      marginTop: 12,
+      minHeight: isSmall ? 280 : 340,
     },
-    slideContent: {
-      flex: 0.58,
-      justifyContent: 'center',
+    heroInner: { flex: 1, position: 'relative' },
+
+    textBlock: {
+      paddingHorizontal: hPad + 6,
+      paddingTop: 22,
+      paddingBottom: 6,
       alignItems: 'center',
-      paddingHorizontal: horizontalPadding,
-    },
-    imageCard: {
-      width: imageCardWidth,
-      height: imageCardHeight,
-      borderRadius: clamp(width * 0.085, 22, 30),
-      overflow: 'hidden',
-      shadowColor: theme.colors.palette.blue[700],
-      shadowOffset: { width: 0, height: 16 },
-      shadowOpacity: 0.22,
-      shadowRadius: 24,
-      elevation: 10,
-    },
-    imageCardGradient: {
-      flex: 1,
-      justifyContent: 'center',
-      alignItems: 'center',
-      paddingTop: clamp(height * 0.02, 12, 22),
-      paddingHorizontal: clamp(width * 0.045, 14, 24),
-    },
-    accentChip: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      borderRadius: 999,
-      backgroundColor: theme.colors.palette.blue[100],
-      paddingHorizontal: 12,
-      paddingVertical: 6,
-      marginBottom: clamp(height * 0.014, 8, 14),
-      gap: 6,
-    },
-    accentChipText: {
-      fontFamily: theme.fontFamily.bold,
-      fontSize: clamp(width * 0.03, 11, 13),
-      color: theme.colors.primaryDark,
-      letterSpacing: 0.2,
-    },
-    image: { width: imageSize, height: imageSize },
-    textContainer: {
-      flex: 0.42,
-      alignItems: 'center',
-      paddingHorizontal: horizontalPadding,
-      paddingTop: isSmallPhone ? 8 : 12,
     },
     eyebrow: {
-      fontFamily: theme.fontFamily.bold,
-      fontSize: eyebrowSize,
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 6,
+      paddingHorizontal: 12,
+      paddingVertical: 6,
+      borderRadius: 999,
+      backgroundColor: 'rgba(37,99,235,0.08)',
+      marginBottom: 12,
+    },
+    eyebrowDot: {
+      width: 6,
+      height: 6,
+      borderRadius: 999,
+      backgroundColor: colors.primaryDark,
+    },
+    eyebrowText: {
+      fontSize: 11,
+      fontWeight: '800',
+      color: colors.primaryDark,
+      letterSpacing: 1.2,
       textTransform: 'uppercase',
-      letterSpacing: 1.4,
-      color: theme.colors.primary,
-      marginBottom: isSmallPhone ? 7 : 9,
     },
-    title: {
-      fontFamily: theme.fontFamily.bold,
-      fontSize: titleSize,
-      color: theme.colors.textPrimary,
+    headline: {
+      fontSize: isSmall ? 26 : 30,
+      fontWeight: '800',
+      color: colors.textPrimary,
       textAlign: 'center',
-      marginBottom: isSmallPhone ? 8 : 12,
-      lineHeight: titleSize * 1.18,
+      letterSpacing: -0.6,
+      lineHeight: isSmall ? 32 : 36,
     },
-    subtitle: {
-      fontFamily: theme.fontFamily.regular,
-      fontSize: subtitleSize,
-      color: theme.colors.textSecondary,
+    headlineAccent: { color: palette.cyan[500] },
+    desc: {
+      fontSize: isSmall ? 14.5 : 15.5,
+      lineHeight: isSmall ? 22 : 23,
+      color: colors.textSecondary,
       textAlign: 'center',
-      lineHeight: subtitleSize * 1.45,
-      maxWidth: 500,
+      marginTop: 10,
+      maxWidth: 320,
     },
-    bottomContainer: {
-      paddingHorizontal: horizontalPadding,
-      paddingBottom: bottomPadding,
-      paddingTop: clamp(height * 0.01, 8, 14),
-      backgroundColor: 'rgba(255,255,255,0.85)',
-      borderTopLeftRadius: 30,
-      borderTopRightRadius: 30,
-      borderWidth: 1,
-      borderColor: theme.colors.border,
-      ...theme.shadows.lg,
+
+    footer: {
+      paddingHorizontal: hPad,
+      paddingTop: 16,
+      paddingBottom: isSmall ? 18 : 26,
+      gap: 16,
     },
-    progressText: {
-      alignSelf: 'center',
-      fontFamily: theme.fontFamily.bold,
-      fontSize: clamp(width * 0.032, 12, 13),
-      color: theme.colors.textMuted,
-      letterSpacing: 0.6,
-      marginBottom: 8,
-    },
-    paginatorContainer: {
+    dots: {
       flexDirection: 'row',
       justifyContent: 'center',
       alignItems: 'center',
-      marginBottom: isSmallPhone ? 16 : 22,
+      gap: 6,
     },
     dot: {
-      height: 8,
+      width: 6,
+      height: 6,
       borderRadius: 999,
-      marginHorizontal: 4,
-      backgroundColor: theme.colors.primary,
+      backgroundColor: 'rgba(37,99,235,0.2)',
     },
-    nextButton: {
-      marginBottom: isSmallPhone ? 10 : 14,
+    dotActive: {
+      width: 24,
+      backgroundColor: colors.primaryDark,
+    },
+    actions: {
+      flexDirection: 'row',
+      alignItems: 'center',
+      gap: 12,
+    },
+    back: {
+      width: 56,
+      height: 56,
       borderRadius: 999,
-      overflow: 'hidden',
-      ...theme.shadows.primaryMd,
+      borderWidth: 1.5,
+      borderColor: 'rgba(37,99,235,0.18)',
+      backgroundColor: 'rgba(255,255,255,0.7)',
+      alignItems: 'center',
+      justifyContent: 'center',
     },
-    nextButtonGradient: {
+    ctaShadow: {
+      flex: 1,
+      borderRadius: 18,
+      shadowColor: palette.blue[600],
+      shadowOffset: { width: 0, height: 10 },
+      shadowOpacity: 0.45,
+      shadowRadius: 20,
+      elevation: 10,
+    },
+    cta: {
+      height: 56,
+      borderRadius: 18,
       flexDirection: 'row',
       alignItems: 'center',
       justifyContent: 'center',
-      paddingVertical: buttonVerticalPadding,
-      paddingHorizontal: clamp(width * 0.16, 40, 72),
-      gap: 8,
+      gap: 10,
+      overflow: 'hidden',
     },
-    nextButtonText: {
-      fontFamily: theme.fontFamily.bold,
+    ctaSheen: {
+      position: 'absolute',
+      top: 0,
+      left: 0,
+      right: 0,
+      height: '50%',
+      backgroundColor: 'rgba(255,255,255,0.18)',
+      borderTopLeftRadius: 18,
+      borderTopRightRadius: 18,
+    },
+    ctaText: {
+      fontSize: 16,
+      fontWeight: '700',
       color: '#FFFFFF',
-      fontSize: clamp(width * 0.048, 16, 19),
-      letterSpacing: 0.2,
+      letterSpacing: -0.2,
     },
-    loginLink: {
+    ctaArrow: { alignItems: 'center', justifyContent: 'center' },
+    signin: {
+      flexDirection: 'row',
+      justifyContent: 'center',
       alignItems: 'center',
-      paddingVertical: isSmallPhone ? 4 : 8,
     },
-    loginLinkText: {
-      fontFamily: theme.fontFamily.regular,
-      fontSize: clamp(width * 0.041, 14, 16),
-      color: theme.colors.textMuted,
-      textAlign: 'center',
-    },
-    loginLinkBold: {
-      fontFamily: theme.fontFamily.bold,
-      color: theme.colors.primary,
+    signinText: { fontSize: 13.5, color: colors.textSecondary },
+    signinLink: {
+      fontSize: 13.5,
+      fontWeight: '700',
+      color: colors.primaryDark,
     },
   });
 };

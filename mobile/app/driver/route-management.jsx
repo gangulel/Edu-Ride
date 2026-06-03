@@ -1,539 +1,441 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, StatusBar, TextInput, Modal } from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { responsive, wp, hp } from "../utils/responsive";
+import React, { useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Modal,
+  TextInput,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import {
+  Add,
+  AddCircle,
+  Calendar,
+  Clock,
+  CloseSquare,
+  Flag,
+  Location,
+  Map1,
+  People,
+  Routing2,
+  Buildings2,
+  Trash,
+  TickCircle,
+} from 'iconsax-react-native';
 
-export default function RouteManagement() {
+import ScreenContainer from '../components/driver/ScreenContainer';
+import PageHeader from '../components/driver/PageHeader';
+import SectionHeader from '../components/driver/SectionHeader';
+import Card from '../components/driver/Card';
+import Badge from '../components/driver/Badge';
+import PrimaryButton from '../components/driver/PrimaryButton';
+import {
+  colors,
+  spacing,
+  typography,
+  radii,
+  shadows,
+  fs,
+} from '../theme';
+import { getRoute } from '../../services/mock/driver';
+
+const ALL_DAYS = ['Mon', 'Tue', 'Wed', 'Thu', 'Fri', 'Sat', 'Sun'];
+
+export default function RouteManagementScreen() {
   const router = useRouter();
+  const initial = useMemo(() => getRoute(), []);
+  const [route, setRoute] = useState(initial);
   const [showAddStop, setShowAddStop] = useState(false);
-  const [newStopName, setNewStopName] = useState("");
-  const [newStopTime, setNewStopTime] = useState("");
-  
-  const [routeStops, setRouteStops] = useState([
-    { id: 1, location: "Colombo 07", pickupTime: "6:45 AM", dropoffTime: "3:30 PM" },
-    { id: 2, location: "Dehiwala", pickupTime: "7:10 AM", dropoffTime: "3:05 PM" },
-    { id: 3, location: "Bambalapitiya", pickupTime: "7:25 AM", dropoffTime: "2:50 PM" },
-    { id: 4, location: "Mount Lavinia", pickupTime: "7:40 AM", dropoffTime: "2:35 PM" },
-  ]);
+  const [newStop, setNewStop] = useState({ location: '', pickupTime: '' });
 
-  const [routeDetails, setRouteDetails] = useState({
-    school: "Royal College",
-    schoolArrival: "8:00 AM",
-    schoolDeparture: "2:15 PM",
-    daysOfOperation: ["Mon", "Tue", "Wed", "Thu", "Fri"],
-  });
+  const toggleDay = (day) => {
+    setRoute((r) => ({
+      ...r,
+      daysOfOperation: r.daysOfOperation.includes(day)
+        ? r.daysOfOperation.filter((d) => d !== day)
+        : [...r.daysOfOperation, day],
+    }));
+  };
 
   const addStop = () => {
-    if (newStopName && newStopTime) {
-      const newStop = {
-        id: routeStops.length + 1,
-        location: newStopName,
-        pickupTime: newStopTime,
-        dropoffTime: "TBD",
-      };
-      setRouteStops([...routeStops, newStop]);
-      setNewStopName("");
-      setNewStopTime("");
-      setShowAddStop(false);
-    }
+    if (!newStop.location.trim()) return;
+    setRoute((r) => ({
+      ...r,
+      stops: [
+        ...r.stops,
+        {
+          id: `s${r.stops.length + 1}`,
+          location: newStop.location,
+          address: newStop.location,
+          pickupTime: newStop.pickupTime || 'TBD',
+          dropoffTime: 'TBD',
+          studentCount: 0,
+        },
+      ],
+    }));
+    setNewStop({ location: '', pickupTime: '' });
+    setShowAddStop(false);
   };
 
   const removeStop = (id) => {
-    setRouteStops(routeStops.filter(stop => stop.id !== id));
+    setRoute((r) => ({ ...r, stops: r.stops.filter((s) => s.id !== id) }));
   };
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-      
-      {/* Header */}
-      <View style={styles.header}>
-        <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-          <Ionicons name="arrow-back" size={24} color="#000" />
-        </TouchableOpacity>
-        <Text style={styles.headerTitle}>Route Management</Text>
-        <TouchableOpacity style={styles.saveButton}>
-          <Text style={styles.saveButtonText}>Save</Text>
-        </TouchableOpacity>
-      </View>
+    <ScreenContainer>
+      <PageHeader
+        title="Route Management"
+        subtitle={route.name}
+        onBack={() => router.back()}
+        rightSlot={
+          <PrimaryButton
+            title="Save"
+            variant="primary"
+            size="sm"
+            onPress={() => router.back()}
+          />
+        }
+      />
 
       <ScrollView
-        style={styles.scrollView}
         showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
+        contentContainerStyle={{ paddingBottom: spacing['3xl'] }}
       >
-        {/* Route Summary Card */}
+        {/* Summary */}
         <View style={styles.section}>
-          <View style={styles.summaryCard}>
+          <Card padding="lg" tone="elevated">
             <View style={styles.summaryHeader}>
-              <Ionicons name="school" size={24} color="#007AFF" />
-              <View style={styles.summaryTextContainer}>
-                <Text style={styles.summarySchool}>{routeDetails.school}</Text>
-                <Text style={styles.summarySubtext}>{routeStops.length} pickup points</Text>
+              <View style={styles.summarySchoolIcon}>
+                <Buildings2 size={fs(22)} color={colors.primary} variant="Bold" />
+              </View>
+              <View style={{ flex: 1 }}>
+                <Text style={styles.summarySchool}>{route.school}</Text>
+                <Text style={styles.summaryRouteName}>{route.name}</Text>
+              </View>
+              <Badge label="Active" tone="success" variant="soft" />
+            </View>
+
+            <View style={styles.summaryStats}>
+              <SummaryStat icon={Routing2} label="Stops" value={String(route.stops.length)} />
+              <View style={styles.summaryDivider} />
+              <SummaryStat icon={People} label="Students" value={String(route.totalStudents)} />
+              <View style={styles.summaryDivider} />
+              <SummaryStat icon={Map1} label="Distance" value={`${route.totalDistanceKm} km`} />
+            </View>
+
+            <View style={styles.summaryTimes}>
+              <View style={styles.summaryTimeItem}>
+                <Text style={styles.summaryTimeLabel}>Morning arrival</Text>
+                <Text style={styles.summaryTimeValue}>{route.schoolArrival}</Text>
+              </View>
+              <View style={styles.summaryTimeDivider} />
+              <View style={styles.summaryTimeItem}>
+                <Text style={styles.summaryTimeLabel}>Afternoon departure</Text>
+                <Text style={styles.summaryTimeValue}>{route.schoolDeparture}</Text>
               </View>
             </View>
-            <View style={styles.summaryDivider} />
-            <View style={styles.summaryDetails}>
-              <View style={styles.summaryDetailItem}>
-                <Text style={styles.summaryDetailLabel}>Morning Arrival</Text>
-                <Text style={styles.summaryDetailValue}>{routeDetails.schoolArrival}</Text>
-              </View>
-              <View style={styles.summaryDetailItem}>
-                <Text style={styles.summaryDetailLabel}>Afternoon Departure</Text>
-                <Text style={styles.summaryDetailValue}>{routeDetails.schoolDeparture}</Text>
-              </View>
-            </View>
+          </Card>
+        </View>
+
+        {/* Days */}
+        <View style={styles.section}>
+          <SectionHeader title="Days of Operation" />
+          <View style={styles.daysRow}>
+            {ALL_DAYS.map((day) => {
+              const active = route.daysOfOperation.includes(day);
+              return (
+                <TouchableOpacity
+                  key={day}
+                  style={[styles.dayBtn, active && styles.dayBtnActive]}
+                  onPress={() => toggleDay(day)}
+                  activeOpacity={0.85}
+                >
+                  <Text
+                    style={[styles.dayBtnText, active && styles.dayBtnTextActive]}
+                  >
+                    {day}
+                  </Text>
+                </TouchableOpacity>
+              );
+            })}
           </View>
         </View>
 
-        {/* Days of Operation */}
+        {/* Stops Timeline */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Days of Operation</Text>
-          <View style={styles.daysContainer}>
-            {["Mon", "Tue", "Wed", "Thu", "Fri", "Sat", "Sun"].map((day) => (
-              <TouchableOpacity
-                key={day}
-                style={[
-                  styles.dayButton,
-                  routeDetails.daysOfOperation.includes(day) && styles.dayButtonActive
-                ]}
-              >
-                <Text style={[
-                  styles.dayButtonText,
-                  routeDetails.daysOfOperation.includes(day) && styles.dayButtonTextActive
-                ]}>
-                  {day}
-                </Text>
-              </TouchableOpacity>
-            ))}
-          </View>
-        </View>
+          <SectionHeader
+            title="Route Stops"
+            action="Add stop"
+            onActionPress={() => setShowAddStop(true)}
+          />
 
-        {/* Route Stops */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Route Stops</Text>
-            <TouchableOpacity 
-              style={styles.addButton}
-              onPress={() => setShowAddStop(true)}
-            >
-              <Ionicons name="add-circle" size={24} color="#007AFF" />
-              <Text style={styles.addButtonText}>Add Stop</Text>
-            </TouchableOpacity>
-          </View>
-
-          {/* Route Timeline */}
-          <View style={styles.routeTimeline}>
-            {/* Start Point */}
-            <View style={styles.timelineItem}>
-              <View style={styles.timelineIconContainer}>
-                <View style={[styles.timelineIcon, styles.timelineIconStart]}>
-                  <Ionicons name="flag" size={16} color="#fff" />
-                </View>
-                <View style={styles.timelineLine} />
-              </View>
-              <View style={styles.timelineContent}>
-                <Text style={styles.timelineLabel}>Route Start</Text>
-                <Text style={styles.timelineTime}>{routeStops[0]?.pickupTime || "N/A"}</Text>
-              </View>
-            </View>
-
-            {/* Stops */}
-            {routeStops.map((stop, index) => (
-              <View key={stop.id} style={styles.timelineItem}>
-                <View style={styles.timelineIconContainer}>
-                  <View style={styles.timelineIcon}>
-                    <Ionicons name="location" size={16} color="#007AFF" />
-                  </View>
-                  {index < routeStops.length - 1 && <View style={styles.timelineLine} />}
-                </View>
-                <View style={styles.timelineContent}>
-                  <View style={styles.stopHeader}>
-                    <View style={styles.stopInfo}>
-                      <Text style={styles.stopLocation}>{stop.location}</Text>
-                      <Text style={styles.stopTime}>Pickup: {stop.pickupTime}</Text>
-                      <Text style={styles.stopTime}>Drop-off: {stop.dropoffTime}</Text>
-                    </View>
-                    <TouchableOpacity 
-                      style={styles.deleteButton}
-                      onPress={() => removeStop(stop.id)}
+          <Card padding="lg">
+            {route.stops.map((stop, idx) => {
+              const isFirst = idx === 0;
+              const isLast = idx === route.stops.length - 1;
+              return (
+                <View key={stop.id} style={styles.stopRow}>
+                  <View style={styles.stopMarkerCol}>
+                    <View
+                      style={[
+                        styles.stopMarker,
+                        isFirst && styles.stopMarkerStart,
+                        isLast && styles.stopMarkerEnd,
+                      ]}
                     >
-                      <Ionicons name="trash-outline" size={20} color="#FF3B30" />
-                    </TouchableOpacity>
+                      {isFirst ? (
+                        <Flag size={fs(14)} color="#fff" variant="Bold" />
+                      ) : isLast ? (
+                        <Buildings2 size={fs(14)} color="#fff" variant="Bold" />
+                      ) : (
+                        <Location size={fs(14)} color="#fff" variant="Bold" />
+                      )}
+                    </View>
+                    {isLast ? null : <View style={styles.stopLine} />}
+                  </View>
+
+                  <View style={styles.stopContent}>
+                    <View style={styles.stopHeaderRow}>
+                      <Text style={styles.stopLocation} numberOfLines={1}>
+                        {stop.location}
+                      </Text>
+                      {!isFirst && !isLast ? (
+                        <TouchableOpacity
+                          onPress={() => removeStop(stop.id)}
+                          hitSlop={6}
+                        >
+                          <Trash size={fs(16)} color={colors.danger} variant="Bold" />
+                        </TouchableOpacity>
+                      ) : null}
+                    </View>
+                    {stop.address ? (
+                      <Text style={styles.stopAddress}>{stop.address}</Text>
+                    ) : null}
+                    <View style={styles.stopMeta}>
+                      <View style={styles.stopMetaItem}>
+                        <Clock size={fs(13)} color={colors.textSecondary} variant="Bold" />
+                        <Text style={styles.stopMetaText}>{stop.pickupTime}</Text>
+                      </View>
+                      <View style={styles.stopMetaItem}>
+                        <Calendar size={fs(13)} color={colors.textSecondary} variant="Bold" />
+                        <Text style={styles.stopMetaText}>Return {stop.dropoffTime}</Text>
+                      </View>
+                      <View style={styles.stopMetaItem}>
+                        <People size={fs(13)} color={colors.textSecondary} variant="Bold" />
+                        <Text style={styles.stopMetaText}>{stop.studentCount}</Text>
+                      </View>
+                    </View>
                   </View>
                 </View>
-              </View>
-            ))}
+              );
+            })}
 
-            {/* School Arrival */}
-            <View style={styles.timelineItem}>
-              <View style={styles.timelineIconContainer}>
-                <View style={[styles.timelineIcon, styles.timelineIconEnd]}>
-                  <Ionicons name="school" size={16} color="#fff" />
-                </View>
-              </View>
-              <View style={styles.timelineContent}>
-                <Text style={styles.timelineLabel}>{routeDetails.school}</Text>
-                <Text style={styles.timelineTime}>Arrival: {routeDetails.schoolArrival}</Text>
-              </View>
-            </View>
-          </View>
+            <TouchableOpacity
+              style={styles.addStopBtn}
+              onPress={() => setShowAddStop(true)}
+              activeOpacity={0.85}
+            >
+              <AddCircle size={fs(18)} color={colors.primary} variant="Bold" />
+              <Text style={styles.addStopText}>Add Stop</Text>
+            </TouchableOpacity>
+          </Card>
         </View>
 
-        {/* Route Statistics */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Route Statistics</Text>
-          <View style={styles.statsGrid}>
-            <View style={styles.statCard}>
-              <Ionicons name="people" size={24} color="#007AFF" />
-              <Text style={styles.statValue}>24</Text>
-              <Text style={styles.statLabel}>Students</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Ionicons name="time" size={24} color="#34C759" />
-              <Text style={styles.statValue}>1h 15m</Text>
-              <Text style={styles.statLabel}>Duration</Text>
-            </View>
-            <View style={styles.statCard}>
-              <Ionicons name="navigation" size={24} color="#FF9500" />
-              <Text style={styles.statValue}>18 km</Text>
-              <Text style={styles.statLabel}>Distance</Text>
-            </View>
-          </View>
+          <PrimaryButton
+            title="Save Route"
+            variant="gradient"
+            size="lg"
+            fullWidth
+            iconLeft={<TickCircle size={fs(20)} color="#fff" variant="Bold" />}
+            onPress={() => router.back()}
+          />
         </View>
-
       </ScrollView>
 
-      {/* Add Stop Modal */}
       <Modal
         visible={showAddStop}
         animationType="slide"
-        transparent={true}
+        transparent
         onRequestClose={() => setShowAddStop(false)}
       >
         <View style={styles.modalOverlay}>
-          <View style={styles.modalContent}>
-            <View style={styles.modalHeader}>
-              <Text style={styles.modalTitle}>Add Route Stop</Text>
-              <TouchableOpacity onPress={() => setShowAddStop(false)}>
-                <Ionicons name="close" size={24} color="#000" />
+          <View style={styles.sheet}>
+            <View style={styles.sheetHandle} />
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Add Stop</Text>
+              <TouchableOpacity onPress={() => setShowAddStop(false)} hitSlop={6}>
+                <CloseSquare size={fs(26)} color={colors.textSecondary} variant="Linear" />
               </TouchableOpacity>
             </View>
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Location Name</Text>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Location name</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g., Colombo 07"
-                value={newStopName}
-                onChangeText={setNewStopName}
+                value={newStop.location}
+                onChangeText={(t) => setNewStop((s) => ({ ...s, location: t }))}
+                placeholder="e.g. Mount Lavinia Junction"
+                placeholderTextColor={colors.textTertiary}
               />
             </View>
 
-            <View style={styles.inputContainer}>
-              <Text style={styles.inputLabel}>Pickup Time</Text>
+            <View style={styles.fieldGroup}>
+              <Text style={styles.fieldLabel}>Pickup time</Text>
               <TextInput
                 style={styles.input}
-                placeholder="e.g., 7:00 AM"
-                value={newStopTime}
-                onChangeText={setNewStopTime}
+                value={newStop.pickupTime}
+                onChangeText={(t) => setNewStop((s) => ({ ...s, pickupTime: t }))}
+                placeholder="e.g. 7:30 AM"
+                placeholderTextColor={colors.textTertiary}
               />
             </View>
 
-            <TouchableOpacity style={styles.modalButton} onPress={addStop}>
-              <Text style={styles.modalButtonText}>Add Stop</Text>
-            </TouchableOpacity>
+            <PrimaryButton
+              title="Add Stop"
+              variant="gradient"
+              size="lg"
+              fullWidth
+              iconLeft={<Add size={fs(20)} color="#fff" variant="Bold" />}
+              onPress={addStop}
+              style={{ marginTop: spacing.md }}
+            />
           </View>
         </View>
       </Modal>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 
+const SummaryStat = ({ icon: Icon, label, value }) => (
+  <View style={styles.summaryStat}>
+    <Icon size={fs(18)} color={colors.primary} variant="Bold" />
+    <Text style={styles.summaryStatValue}>{value}</Text>
+    <Text style={styles.summaryStatLabel}>{label}</Text>
+  </View>
+);
+
 const styles = StyleSheet.create({
-  container: {
+  section: { paddingHorizontal: spacing.lg, marginTop: spacing.lg },
+
+  summaryHeader: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  summarySchoolIcon: {
+    width: 44, height: 44, borderRadius: 22,
+    backgroundColor: colors.primarySurface,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  summarySchool: { fontSize: typography.size.lg, color: colors.textPrimary, fontFamily: typography.fontFamily.bold },
+  summaryRouteName: { fontSize: typography.size.xs, color: colors.textSecondary, marginTop: 2 },
+
+  summaryStats: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    marginTop: spacing.lg,
+    marginBottom: spacing.md,
+  },
+  summaryStat: { flex: 1, alignItems: 'center' },
+  summaryStatValue: { fontSize: typography.size.lg, color: colors.textPrimary, fontFamily: typography.fontFamily.bold, marginTop: spacing.sm - 2 },
+  summaryStatLabel: { fontSize: typography.size.xs, color: colors.textSecondary, marginTop: 2 },
+  summaryDivider: { width: 1, height: 32, backgroundColor: colors.divider },
+
+  summaryTimes: {
+    flexDirection: 'row',
+    paddingTop: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.divider,
+  },
+  summaryTimeItem: { flex: 1 },
+  summaryTimeLabel: { fontSize: typography.size.xs, color: colors.textSecondary },
+  summaryTimeValue: { fontSize: typography.size.md, color: colors.textPrimary, fontFamily: typography.fontFamily.bold, marginTop: 2 },
+  summaryTimeDivider: { width: 1, marginHorizontal: spacing.md, backgroundColor: colors.divider },
+
+  daysRow: { flexDirection: 'row', justifyContent: 'space-between', gap: 6 },
+  dayBtn: {
     flex: 1,
-    backgroundColor: "#F2F2F7",
+    paddingVertical: spacing.md,
+    borderRadius: radii.md,
+    backgroundColor: colors.surface,
+    borderWidth: 1,
+    borderColor: colors.border,
+    alignItems: 'center',
   },
-  header: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    padding: responsive.paddingLG,
-    backgroundColor: "#fff",
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5EA",
+  dayBtnActive: {
+    backgroundColor: colors.primary,
+    borderColor: colors.primary,
   },
-  backButton: {
-    padding: responsive.paddingSM,
+  dayBtnText: { fontSize: typography.size.sm, color: colors.textSecondary, fontFamily: typography.fontFamily.semibold },
+  dayBtnTextActive: { color: colors.onPrimary },
+
+  stopRow: { flexDirection: 'row', gap: spacing.md, marginBottom: spacing.md },
+  stopMarkerCol: { alignItems: 'center' },
+  stopMarker: {
+    width: 28, height: 28, borderRadius: 14,
+    backgroundColor: colors.primary,
+    alignItems: 'center', justifyContent: 'center',
   },
-  headerTitle: {
-    fontSize: responsive.fontXL,
-    fontWeight: "bold",
-    color: "#000",
-  },
-  saveButton: {
-    paddingHorizontal: responsive.paddingLG,
-    paddingVertical: responsive.paddingSM,
-  },
-  saveButtonText: {
-    fontSize: responsive.fontLG,
-    color: "#007AFF",
-    fontWeight: "600",
-  },
-  scrollView: {
+  stopMarkerStart: { backgroundColor: colors.success },
+  stopMarkerEnd: { backgroundColor: colors.info },
+  stopLine: { width: 2, flex: 1, backgroundColor: colors.border, marginTop: 4 },
+
+  stopContent: {
     flex: 1,
+    paddingBottom: spacing.md,
   },
-  scrollContent: {
-    paddingBottom: responsive.tabBarHeight + responsive.paddingLG,
+  stopHeaderRow: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center' },
+  stopLocation: { fontSize: typography.size.md, color: colors.textPrimary, fontFamily: typography.fontFamily.semibold, flex: 1 },
+  stopAddress: { fontSize: typography.size.xs, color: colors.textSecondary, marginTop: 2 },
+  stopMeta: { flexDirection: 'row', gap: spacing.md, marginTop: spacing.sm, flexWrap: 'wrap' },
+  stopMetaItem: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  stopMetaText: { fontSize: typography.size.xs, color: colors.textSecondary },
+
+  addStopBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: colors.primary,
+    borderRadius: radii.md,
+    marginTop: spacing.sm,
   },
-  section: {
-    marginTop: responsive.paddingLG,
-    paddingHorizontal: responsive.paddingLG,
+  addStopText: { color: colors.primary, fontSize: typography.size.md, fontFamily: typography.fontFamily.bold },
+
+  modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
+  sheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
+    padding: spacing.xl,
+    paddingTop: spacing.md,
   },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: responsive.paddingMD,
+  sheetHandle: {
+    alignSelf: 'center', width: 44, height: 5, borderRadius: 3,
+    backgroundColor: colors.border, marginBottom: spacing.md,
   },
-  sectionTitle: {
-    fontSize: responsive.fontXL,
-    fontWeight: "600",
-    color: "#000",
-    marginBottom: responsive.paddingMD,
-  },
-  summaryCard: {
-    backgroundColor: "#fff",
-    borderRadius: responsive.radiusLG,
-    padding: responsive.paddingLG,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  summaryHeader: {
-    flexDirection: "row",
-    alignItems: "center",
-  },
-  summaryTextContainer: {
-    marginLeft: responsive.paddingMD,
-    flex: 1,
-  },
-  summarySchool: {
-    fontSize: responsive.fontXL,
-    fontWeight: "600",
-    color: "#000",
-  },
-  summarySubtext: {
-    fontSize: responsive.fontMD,
-    color: "#8E8E93",
-    marginTop: responsive.paddingXS,
-  },
-  summaryDivider: {
-    height: 1,
-    backgroundColor: "#E5E5EA",
-    marginVertical: responsive.paddingLG,
-  },
-  summaryDetails: {
-    flexDirection: "row",
-    justifyContent: "space-around",
-  },
-  summaryDetailItem: {
-    alignItems: "center",
-  },
-  summaryDetailLabel: {
-    fontSize: responsive.fontSM,
-    color: "#8E8E93",
-    marginBottom: responsive.paddingXS,
-  },
-  summaryDetailValue: {
-    fontSize: responsive.fontLG,
-    fontWeight: "600",
-    color: "#007AFF",
-  },
-  daysContainer: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    flexWrap: "wrap",
-    rowGap: responsive.paddingSM,
-  },
-  dayButton: {
-    width: wp(40),
-    height: wp(40),
-    borderRadius: wp(20),
-    backgroundColor: "#F2F2F7",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  dayButtonActive: {
-    backgroundColor: "#007AFF",
-  },
-  dayButtonText: {
-    fontSize: responsive.fontSM,
-    color: "#8E8E93",
-    fontWeight: "600",
-  },
-  dayButtonTextActive: {
-    color: "#fff",
-  },
-  addButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: responsive.paddingSM,
-  },
-  addButtonText: {
-    fontSize: responsive.fontMD,
-    color: "#007AFF",
-    fontWeight: "600",
-  },
-  routeTimeline: {
-    backgroundColor: "#fff",
-    borderRadius: responsive.radiusLG,
-    padding: responsive.paddingLG,
-  },
-  timelineItem: {
-    flexDirection: "row",
-    marginBottom: responsive.paddingMD,
-  },
-  timelineIconContainer: {
-    alignItems: "center",
-    marginRight: responsive.paddingMD,
-  },
-  timelineIcon: {
-    width: wp(32),
-    height: wp(32),
-    borderRadius: wp(16),
-    backgroundColor: "#E3F2FD",
-    justifyContent: "center",
-    alignItems: "center",
-  },
-  timelineIconStart: {
-    backgroundColor: "#34C759",
-  },
-  timelineIconEnd: {
-    backgroundColor: "#FF9500",
-  },
-  timelineLine: {
-    width: 2,
-    flex: 1,
-    backgroundColor: "#E5E5EA",
-    marginVertical: responsive.paddingSM,
-  },
-  timelineContent: {
-    flex: 1,
-    paddingTop: responsive.paddingXS,
-  },
-  timelineLabel: {
-    fontSize: responsive.fontLG,
-    fontWeight: "600",
-    color: "#000",
-  },
-  timelineTime: {
-    fontSize: responsive.fontMD,
-    color: "#8E8E93",
-    marginTop: 2,
-  },
-  stopHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "flex-start",
-  },
-  stopInfo: {
-    flex: 1,
-  },
-  stopLocation: {
-    fontSize: responsive.fontLG,
-    fontWeight: "600",
-    color: "#000",
-  },
-  stopTime: {
-    fontSize: responsive.fontSM,
-    color: "#8E8E93",
-    marginTop: 2,
-  },
-  deleteButton: {
-    padding: responsive.paddingSM,
-  },
-  statsGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: responsive.paddingMD,
-  },
-  statCard: {
-    flexGrow: 1,
-    flexBasis: wp(96),
-    backgroundColor: "#fff",
-    borderRadius: responsive.radiusLG,
-    padding: responsive.paddingLG,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  statValue: {
-    fontSize: responsive.fontXL,
-    fontWeight: "bold",
-    color: "#000",
-    marginTop: responsive.paddingSM,
-  },
-  statLabel: {
-    fontSize: responsive.fontSM,
-    color: "#8E8E93",
-    marginTop: responsive.paddingXS,
-  },
-  modalOverlay: {
-    flex: 1,
-    backgroundColor: "rgba(0,0,0,0.5)",
-    justifyContent: "flex-end",
-  },
-  modalContent: {
-    backgroundColor: "#fff",
-    borderTopLeftRadius: responsive.radiusXL,
-    borderTopRightRadius: responsive.radiusXL,
-    padding: responsive.paddingXL,
-  },
-  modalHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: responsive.paddingXL,
-  },
-  modalTitle: {
-    fontSize: responsive.font2XL,
-    fontWeight: "bold",
-    color: "#000",
-  },
-  inputContainer: {
-    marginBottom: responsive.paddingLG,
-  },
-  inputLabel: {
-    fontSize: responsive.fontMD,
-    fontWeight: "600",
-    color: "#000",
-    marginBottom: responsive.paddingSM,
+  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.lg },
+  sheetTitle: { fontSize: typography.size.xl, color: colors.textPrimary, fontFamily: typography.fontFamily.bold },
+
+  fieldGroup: { marginBottom: spacing.md },
+  fieldLabel: {
+    fontSize: typography.size.xs,
+    color: colors.textSecondary,
+    fontFamily: typography.fontFamily.semibold,
+    marginBottom: spacing.sm,
+    textTransform: 'uppercase',
+    letterSpacing: 0.5,
   },
   input: {
-    backgroundColor: "#F2F2F7",
-    borderRadius: responsive.radiusMD,
-    padding: responsive.paddingLG,
-    fontSize: responsive.fontLG,
-    color: "#000",
-  },
-  modalButton: {
-    backgroundColor: "#007AFF",
-    borderRadius: responsive.radiusMD,
-    padding: responsive.paddingLG,
-    alignItems: "center",
-    marginTop: responsive.paddingMD,
-  },
-  modalButtonText: {
-    color: "#fff",
-    fontSize: responsive.fontLG,
-    fontWeight: "600",
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    fontSize: typography.size.md,
+    color: colors.textPrimary,
+    borderWidth: 1,
+    borderColor: colors.border,
   },
 });

@@ -4,3 +4,8 @@
 
 expo-env.d.ts
 # @end expo-cli
+
+# Local env (OAuth client IDs, API base URL, etc.) — keep .env.example
+.env
+.env.local
+.env.*.local

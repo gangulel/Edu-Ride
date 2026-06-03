@@ -1,24 +1,21 @@
 import React from 'react';
-import { View, SafeAreaView, StyleSheet, StatusBar } from 'react-native';
-import { useTheme } from '../../contexts/ThemeContext';
+import { View, StyleSheet, StatusBar } from 'react-native';
+import { SafeAreaView } from 'react-native-safe-area-context';
 
 const ScreenTemplate = ({
     children,
-    backgroundColor,
+    backgroundColor = '#F2F2F7',
     statusBarStyle = 'dark-content',
     safeArea = true,
     style,
 }) => {
-    const theme = useTheme();
-    const Container = safeArea ? SafeAreaView : View;
+    // Only apply top safe area inset — the bottom is handled by ParentBottomNav/DriverBottomNav
+    const Container = safeArea
+        ? (props) => <SafeAreaView edges={['top']} {...props} />
+        : View;
+
     return (
-        <Container
-            style={[
-                styles.container,
-                { backgroundColor: backgroundColor || theme.colors.background },
-                style,
-            ]}
-        >
+        <Container style={[styles.container, { backgroundColor }, style]}>
             <StatusBar barStyle={statusBarStyle} />
             {children}
         </Container>
@@ -26,7 +23,9 @@ const ScreenTemplate = ({
 };
 
 const styles = StyleSheet.create({
-    container: { flex: 1 },
+    container: {
+        flex: 1,
+    },
 });
 
 export default ScreenTemplate;

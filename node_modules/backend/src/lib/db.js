@@ -2,6 +2,7 @@ import mongoose from "mongoose";
 import dns from "node:dns";
 
 const PUBLIC_DNS_SERVERS = ["8.8.8.8", "1.1.1.1"];
+const RECONNECT_DELAY_MS = 10_000;
 
 // Fail fast (instead of buffering for 10s) when a query is issued while the
 // connection is down. Combined with our errorHandler this turns into a clean
@@ -10,6 +11,17 @@ mongoose.set("bufferCommands", false);
 
 let connectionPromise = null;
 let lastError = null;
+let reconnectTimer = null;
+
+function scheduleReconnect() {
+  if (reconnectTimer) return;
+  reconnectTimer = setTimeout(() => {
+    reconnectTimer = null;
+    connectDB().catch(() => {});
+  }, RECONNECT_DELAY_MS);
+}
+
+mongoose.connection.on("disconnected", scheduleReconnect);
 
 const isSrvDnsError = (error) => {
   const message = String(error?.message || "");
@@ -71,8 +83,11 @@ export const connectDB = async () => {
   // the connection can recover on the next attempt.
   if (!connectionPromise) {
     connectionPromise = attemptConnect().catch((err) => {
-      // Reset so a later call can retry instead of replaying the rejection.
+      // Reset so a later call can retry instead of replaying the rejection,
+      // then schedule an automatic retry so a transient DNS/network failure
+      // at startup self-heals without needing a server restart.
       connectionPromise = null;
+      scheduleReconnect();
       throw err;
     });
   }

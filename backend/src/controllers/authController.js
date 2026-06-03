@@ -1,12 +1,8 @@
-// Mobile users (parent + driver) authenticate via bcrypt + custom JWT —
-// see lib/userToken.js. The admin panel still supports the legacy Firebase
-// flow + the internal admin password fallback used by the admin web app.
-
-import bcrypt from "bcryptjs";
 import admin from "../config/firebase.js";
+import bcrypt from "bcryptjs";
 import User from "../models/User.js";
-import { createUserToken } from "../lib/userToken.js";
 import { createAdminSessionToken } from "../lib/adminSessionToken.js";
+import { createMobileSessionToken } from "../lib/mobileSessionToken.js";
 
 const FIREBASE_AUTH_URL = "https://identitytoolkit.googleapis.com/v1/accounts:signInWithPassword";
 
@@ -18,10 +14,40 @@ const FIREBASE_LOGIN_ERROR_MESSAGES = {
 };
 
 const DEFAULT_ADMIN_EMAIL = "admin@eduride.com";
-const BCRYPT_ROUNDS = 10;
 
 function normalizeEmail(email) {
   return String(email || "").trim().toLowerCase();
+}
+
+async function createMongoUserFromFirebase(firebaseUser, profile) {
+  const normalizedEmail = normalizeEmail(profile.email || firebaseUser.email);
+
+  return User.create({
+    firebaseUid: firebaseUser.uid,
+    email: normalizedEmail,
+    fullName: profile.fullName,
+    phone: profile.phone,
+    role: profile.role,
+    status: profile.role === "parent" ? "active" : "pending",
+  });
+}
+
+function extractFirebaseErrorCode(payload) {
+  if (!payload || typeof payload !== "object" || !("error" in payload)) {
+    return null;
+  }
+
+  const firebaseError = payload.error;
+  if (!firebaseError || typeof firebaseError !== "object" || !("message" in firebaseError)) {
+    return null;
+  }
+
+  const message = String(firebaseError.message || "");
+  if (!message) {
+    return null;
+  }
+
+  return message.split(" ")[0];
 }
 
 function getInternalAdminCredentialConfig() {
@@ -37,6 +63,9 @@ function getInternalAdminCredentialConfig() {
       compare: async (password) => bcrypt.compare(password, passwordHash),
     };
   }
+
+  // Backward-compatible path for local development environments that still
+  // use ADMIN_PANEL_PASSWORD. Production must use ADMIN_PANEL_PASSWORD_HASH.
   if (!isProduction && legacyPassword) {
     return {
       email,
@@ -44,88 +73,196 @@ function getInternalAdminCredentialConfig() {
       compare: async (password) => password === legacyPassword,
     };
   }
-  return { email, enabled: false, compare: async () => false };
+
+  return {
+    email,
+    enabled: false,
+    compare: async () => false,
+  };
 }
 
-function extractFirebaseErrorCode(payload) {
-  if (!payload || typeof payload !== "object" || !("error" in payload)) return null;
-  const firebaseError = payload.error;
-  if (!firebaseError || typeof firebaseError !== "object" || !("message" in firebaseError)) {
-    return null;
-  }
-  const message = String(firebaseError.message || "");
-  if (!message) return null;
-  return message.split(" ")[0];
-}
-
-// POST /api/auth/register — Parent or driver self-registration.
-// Stores a bcrypt hash and returns a custom JWT.
+// POST /api/auth/register
 export const register = async (req, res) => {
   const { fullName, email, phone, password, role } = req.body;
   const normalizedEmail = normalizeEmail(email);
+
+  if (!fullName || !email || !phone || !password || !role) {
+    return res.status(400).json({ error: "All fields are required: fullName, email, phone, password, role" });
+  }
 
   if (!["parent", "driver"].includes(role)) {
     return res.status(400).json({ error: "Role must be 'parent' or 'driver'" });
   }
 
-  const existing = await User.findOne({ email: normalizedEmail });
-  if (existing) {
-    return res.status(409).json({ error: "An account with this email already exists." });
+  let firebaseUser;
+  let recoveredMissingMongoProfile = false;
+
+  try {
+    // Create user in Firebase Auth.
+    firebaseUser = await admin.auth().createUser({
+      email: normalizedEmail,
+      password,
+      displayName: fullName,
+    });
+  } catch (error) {
+    if (error?.code !== "auth/email-already-exists") {
+      throw error;
+    }
+
+    // Account already exists in Firebase. Repair missing Mongo profile if needed.
+    firebaseUser = await admin.auth().getUserByEmail(normalizedEmail);
+    const existingMongoUser = await User.findOne({
+      $or: [{ firebaseUid: firebaseUser.uid }, { email: normalizedEmail }],
+    });
+
+    if (existingMongoUser) {
+      if (existingMongoUser.firebaseUid !== firebaseUser.uid) {
+        existingMongoUser.firebaseUid = firebaseUser.uid;
+      }
+      if (!existingMongoUser.fullName) {
+        existingMongoUser.fullName = fullName;
+      }
+      if (!existingMongoUser.phone) {
+        existingMongoUser.phone = phone;
+      }
+      await existingMongoUser.save();
+
+      return res.status(200).json({
+        message: "Account already exists. Continuing with existing profile.",
+        alreadyRegistered: true,
+        user: {
+          id: existingMongoUser._id,
+          email: existingMongoUser.email,
+          fullName: existingMongoUser.fullName,
+          phone: existingMongoUser.phone ?? null,
+          role: existingMongoUser.role,
+          status: existingMongoUser.status,
+          profilePhoto: existingMongoUser.profilePhoto ?? null,
+          createdAt: existingMongoUser.createdAt ?? null,
+        },
+      });
+    }
+
+    recoveredMissingMongoProfile = true;
   }
 
-  const passwordHash = await bcrypt.hash(password, BCRYPT_ROUNDS);
+  let user = await User.findOne({ firebaseUid: firebaseUser.uid });
 
-  const user = await User.create({
-    email: normalizedEmail,
-    fullName,
-    phone,
-    role,
-    passwordHash,
-    status: role === "parent" ? "active" : "pending",
-  });
-
-  const token = createUserToken(user);
+  if (!user) {
+    user = await createMongoUserFromFirebase(firebaseUser, {
+      fullName,
+      email: normalizedEmail,
+      phone,
+      role,
+    });
+  }
 
   res.status(201).json({
-    message: "Registration successful",
-    token,
-    user: user.toPublicJSON(),
+    message: recoveredMissingMongoProfile
+      ? "Registration recovered successfully"
+      : "Registration successful",
+    user: {
+      id: user._id,
+      email: user.email,
+      fullName: user.fullName,
+      phone: user.phone ?? null,
+      role: user.role,
+      status: user.status,
+      profilePhoto: user.profilePhoto ?? null,
+      createdAt: user.createdAt ?? null,
+    },
   });
 };
 
-// POST /api/auth/login — Email + password for parent/driver. Returns a JWT.
+// POST /api/auth/login
 export const login = async (req, res) => {
   const { email, password } = req.body;
   const normalizedEmail = normalizeEmail(email);
 
   if (!normalizedEmail || !password) {
-    return res.status(400).json({ error: "Email and password are required." });
+    return res.status(400).json({ error: "Email and password are required" });
   }
 
-  const user = await User.findOne({ email: normalizedEmail }).select("+passwordHash");
-  if (!user || !user.passwordHash) {
-    return res.status(401).json({ error: "Invalid email or password." });
+  const webApiKey = process.env.FIREBASE_WEB_API_KEY;
+
+  let idToken = null;
+
+  if (webApiKey) {
+    // Validate password via Firebase REST API and obtain an ID token the client
+    // can use as a Bearer token for subsequent authenticated requests.
+    let firebaseResponse;
+    try {
+      firebaseResponse = await fetch(`${FIREBASE_AUTH_URL}?key=${webApiKey}`, {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email: normalizedEmail, password, returnSecureToken: true }),
+      });
+    } catch (err) {
+      console.error("Firebase sign-in network error:", err.message);
+      return res.status(502).json({ error: "Could not reach the authentication provider. Please try again." });
+    }
+
+    let firebasePayload;
+    try { firebasePayload = await firebaseResponse.json(); } catch { firebasePayload = null; }
+
+    if (!firebaseResponse.ok) {
+      const errorCode = extractFirebaseErrorCode(firebasePayload);
+      const errorMessage = (errorCode && FIREBASE_LOGIN_ERROR_MESSAGES[errorCode]) || "Invalid email or password";
+      return res.status(401).json({ error: errorMessage });
+    }
+
+    idToken = firebasePayload?.idToken || null;
+  } else {
+    // FIREBASE_WEB_API_KEY not configured — fall back to email-only lookup.
+    // Password is not validated in this path; configure the key for production.
+    console.warn("FIREBASE_WEB_API_KEY not set — skipping password validation");
   }
 
-  const ok = await bcrypt.compare(password, user.passwordHash);
-  if (!ok) {
-    return res.status(401).json({ error: "Invalid email or password." });
+  // Resolve the Firebase UID either from the verified ID token or by email lookup
+  let firebaseUid;
+  if (idToken) {
+    const decoded = await admin.auth().verifyIdToken(idToken);
+    firebaseUid = decoded.uid;
+  } else {
+    const firebaseUser = await admin.auth().getUserByEmail(normalizedEmail);
+    firebaseUid = firebaseUser.uid;
   }
 
-  if (user.status === "suspended") {
-    return res.status(403).json({ error: "This account has been suspended." });
+  const user = await User.findOne({ firebaseUid });
+  if (!user) {
+    return res.status(404).json({ error: "User not found in database" });
   }
 
-  const token = createUserToken(user);
+  const userPayload = {
+    id: user._id,
+    email: user.email,
+    fullName: user.fullName,
+    phone: user.phone ?? null,
+    role: user.role,
+    status: user.status,
+    profilePhoto: user.profilePhoto ?? null,
+    createdAt: user.createdAt ?? null,
+    ...(user.role === "driver" && {
+      rating: user.rating,
+      reviewCount: user.reviewCount,
+      totalTrips: user.totalTrips,
+      isVerified: user.isVerified,
+    }),
+  };
+
+  // Prefer Firebase ID token; fall back to a signed mobile session token so
+  // the client always receives a usable Bearer token regardless of whether
+  // FIREBASE_WEB_API_KEY is configured on this server.
+  const sessionToken = idToken || createMobileSessionToken(user);
 
   res.json({
     message: "Login successful",
-    token,
-    user: user.toPublicJSON(),
+    token: sessionToken,
+    user: userPayload,
   });
 };
 
-// POST /api/auth/admin/login — Internal admin or Firebase admin fallback.
+// POST /api/auth/admin/login
 export const adminLogin = async (req, res) => {
   const { email, password } = req.body;
 
@@ -133,6 +270,9 @@ export const adminLogin = async (req, res) => {
   const isInternalAdminCandidate = email === internalAdmin.email && internalAdmin.enabled;
 
   if (isInternalAdminCandidate && (await internalAdmin.compare(password))) {
+    // Best-effort lookup so we can return the persisted admin profile when one
+    // exists. If the DB is unreachable (cold start, network blip) we still let
+    // the internal admin log in with the synthetic profile rather than 500'ing.
     let existingAdmin = null;
     try {
       existingAdmin = await User.findOne({ email: internalAdmin.email, role: "admin" })
@@ -143,38 +283,47 @@ export const adminLogin = async (req, res) => {
     }
 
     const internalAdminUser = existingAdmin
-      ? existingAdmin.toPublicJSON()
+      ? {
+        id: existingAdmin._id,
+        firebaseUid: existingAdmin.firebaseUid,
+        email: existingAdmin.email,
+        fullName: existingAdmin.fullName,
+        phone: existingAdmin.phone,
+        role: existingAdmin.role,
+        status: existingAdmin.status,
+        profilePhoto: existingAdmin.profilePhoto,
+      }
       : {
-          id: "fixed-admin",
-          firebaseUid: "internal-admin",
-          email: internalAdmin.email,
-          fullName: process.env.ADMIN_PANEL_NAME || "Edu-Ride Admin",
-          phone: "",
-          role: "admin",
-          status: "active",
-          profilePhoto: null,
-        };
+        id: "fixed-admin",
+        firebaseUid: "internal-admin",
+        email: internalAdmin.email,
+        fullName: process.env.ADMIN_PANEL_NAME || "Edu-Ride Admin",
+        phone: "",
+        role: "admin",
+        status: "active",
+        profilePhoto: null,
+      };
 
     const token = createAdminSessionToken(internalAdminUser);
-    return res.json({ message: "Admin login successful", token, user: internalAdminUser });
+
+    return res.json({
+      message: "Admin login successful",
+      token,
+      user: internalAdminUser,
+    });
   }
 
-  // Try matching against a normal Mongo admin account with bcrypt password.
-  const dbAdmin = await User.findOne({ email: normalizeEmail(email), role: "admin" }).select(
-    "+passwordHash"
-  );
-  if (dbAdmin?.passwordHash && (await bcrypt.compare(password, dbAdmin.passwordHash))) {
-    if (dbAdmin.status !== "active") {
-      return res.status(403).json({ error: "Admin account is not active", status: dbAdmin.status });
-    }
-    const token = createAdminSessionToken(dbAdmin.toPublicJSON());
-    return res.json({ message: "Admin login successful", token, user: dbAdmin.toPublicJSON() });
-  }
-
-  // Last resort: Firebase admin sign-in.
   const webApiKey = process.env.FIREBASE_WEB_API_KEY;
   if (!webApiKey) {
-    return res.status(401).json({ error: "Invalid email or password" });
+    // No Firebase web API key configured and the supplied email/password didn't
+    // match the internal admin. This is a *configuration* gap (admin auth has
+    // not been provisioned), so use 503 — keeping the response body's `error`
+    // string makes the frontend surface a clear message instead of a generic
+    // "Request failed with status 500".
+    return res.status(503).json({
+      error:
+        "Admin login is not configured on the server. Set ADMIN_PANEL_PASSWORD (or ADMIN_PANEL_PASSWORD_HASH), or provide FIREBASE_WEB_API_KEY for Firebase admin sign-in.",
+    });
   }
 
   let firebaseResponse;
@@ -186,7 +335,9 @@ export const adminLogin = async (req, res) => {
     });
   } catch (err) {
     console.error("Firebase admin sign-in network error:", err.message);
-    return res.status(502).json({ error: "Could not reach the authentication provider." });
+    return res.status(502).json({
+      error: "Could not reach the authentication provider. Please try again.",
+    });
   }
 
   let firebasePayload;
@@ -199,6 +350,7 @@ export const adminLogin = async (req, res) => {
     const errorCode = extractFirebaseErrorCode(firebasePayload);
     const errorMessage = (errorCode && FIREBASE_LOGIN_ERROR_MESSAGES[errorCode]) || "Unable to sign in";
     const statusCode = errorCode === "USER_DISABLED" ? 403 : 401;
+
     return res.status(statusCode).json({ error: errorMessage });
   }
 
@@ -209,32 +361,59 @@ export const adminLogin = async (req, res) => {
 
   const decoded = await admin.auth().verifyIdToken(idToken);
   const user = await User.findOne({ firebaseUid: decoded.uid });
-  if (!user) return res.status(404).json({ error: "User not found in database" });
-  if (user.role !== "admin") return res.status(403).json({ error: "Admin access only" });
+
+  if (!user) {
+    return res.status(404).json({ error: "User not found in database" });
+  }
+
+  if (user.role !== "admin") {
+    return res.status(403).json({ error: "Admin access only" });
+  }
+
   if (user.status !== "active") {
-    return res.status(403).json({ error: "Admin account is not active", status: user.status });
+    return res.status(403).json({
+      error: "Admin account is not active",
+      status: user.status,
+    });
   }
 
   res.json({
     message: "Admin login successful",
     token: idToken,
-    user: user.toPublicJSON(),
+    user: {
+      id: user._id,
+      firebaseUid: user.firebaseUid,
+      email: user.email,
+      fullName: user.fullName,
+      phone: user.phone,
+      role: user.role,
+      status: user.status,
+      profilePhoto: user.profilePhoto,
+    },
   });
 };
 
-// POST /api/auth/google — Firebase Google sign-in (kept as Phase 2 path).
+// POST /api/auth/google
 export const googleAuth = async (req, res) => {
   const { idToken, role } = req.body;
-  if (!idToken) return res.status(400).json({ error: "ID token is required" });
 
+  if (!idToken) {
+    return res.status(400).json({ error: "ID token is required" });
+  }
+
+  // Verify the Firebase ID token (mobile app signs in with Google via Firebase client SDK)
   const decoded = await admin.auth().verifyIdToken(idToken);
+
+  // Check if user already exists in MongoDB
   let user = await User.findOne({ firebaseUid: decoded.uid });
 
   if (!user) {
+    // First-time Google sign-in — create user in MongoDB
     const userRole = role || "parent";
     if (!["parent", "driver"].includes(userRole)) {
       return res.status(400).json({ error: "Role must be 'parent' or 'driver'" });
     }
+
     user = await User.create({
       firebaseUid: decoded.uid,
       email: decoded.email,
@@ -246,74 +425,75 @@ export const googleAuth = async (req, res) => {
     });
   }
 
-  // Mint a backend JWT so the mobile client only deals with one token type
-  // regardless of how the user signed in.
-  const token = createUserToken(user);
+  const googleSessionToken = idToken || createMobileSessionToken(user);
 
   res.json({
     message: "Google authentication successful",
-    token,
-    user: user.toPublicJSON(),
+    token: googleSessionToken,
+    user: {
+      id: user._id,
+      email: user.email,
+      fullName: user.fullName,
+      phone: user.phone ?? null,
+      role: user.role,
+      status: user.status,
+      profilePhoto: user.profilePhoto ?? null,
+      createdAt: user.createdAt ?? null,
+    },
   });
 };
 
-// POST /api/auth/forgot — Stub. Real email sending is Phase 2.
+// POST /api/auth/forgot
 export const forgotPassword = async (req, res) => {
   const { email } = req.body;
-  if (!email) return res.status(400).json({ error: "Email is required" });
 
-  const user = await User.findOne({ email: normalizeEmail(email) });
-  // Always respond identically to prevent account enumeration.
-  if (!user) {
-    return res.json({
-      message: "If an account exists for this email, a reset link will be sent.",
-    });
+  if (!email) {
+    return res.status(400).json({ error: "Email is required" });
   }
 
-  // TODO Phase 2: integrate SendGrid/SES/Twilio. For now we just acknowledge.
-  console.log(`[forgotPassword] reset requested for ${email}. Stub email sender.`);
-  res.json({ message: "If an account exists for this email, a reset link will be sent." });
-};
+  // Generate password reset link via Firebase
+  const resetLink = await admin.auth().generatePasswordResetLink(email);
 
-// POST /api/auth/switch-role — Switch the signed-in user to their linked
-// account in the opposite role (dual-role parent/driver).
-export const switchRole = async (req, res) => {
-  if (!req.user) return res.status(401).json({ error: "Not authenticated" });
-  const { targetRole } = req.body;
-
-  if (!["parent", "driver"].includes(targetRole)) {
-    return res.status(400).json({ error: "targetRole must be 'parent' or 'driver'" });
-  }
-
-  if (req.user.role === targetRole) {
-    return res.json({
-      message: "Already in target role",
-      token: createUserToken(req.user),
-      user: req.user.toPublicJSON ? req.user.toPublicJSON() : req.user,
-    });
-  }
-
-  const roles = req.user.availableRoles || [];
-  if (!roles.includes(targetRole)) {
-    return res.status(403).json({ error: `This account does not have access to the ${targetRole} role.` });
-  }
-
-  if (!req.user.linkedAccountId) {
-    return res.status(404).json({ error: "No linked account is configured for this user." });
-  }
-
-  const linked = await User.findOne({ _id: req.user.linkedAccountId, role: targetRole });
-  if (!linked) {
-    return res.status(404).json({ error: `No ${targetRole} account is linked to this user.` });
-  }
-
-  const token = createUserToken(linked);
-  res.json({ message: "Role switched", token, user: linked.toPublicJSON() });
+  // In production, send this link via an email service (SendGrid, etc.)
+  // For now, return it in the response for development
+  res.json({
+    message: "Password reset link generated",
+    resetLink, // Remove in production
+  });
 };
 
 // GET /api/auth/me
 export const getMe = async (req, res) => {
-  if (!req.user) return res.status(404).json({ error: "User profile not found" });
-  const user = req.user.toPublicJSON ? req.user.toPublicJSON() : req.user;
-  res.json({ user });
+  if (!req.user) {
+    return res.status(404).json({ error: "User profile not found" });
+  }
+
+  const u = req.user;
+
+  // Return a clean, normalized profile — never expose firebaseUid to the client.
+  const profile = {
+    id: u._id ?? u.id,
+    email: u.email,
+    fullName: u.fullName,
+    phone: u.phone ?? null,
+    role: u.role,
+    status: u.status,
+    profilePhoto: u.profilePhoto ?? null,
+    createdAt: u.createdAt ?? null,
+    updatedAt: u.updatedAt ?? null,
+    // Driver-specific fields — omitted for parents so the payload stays lean.
+    ...(u.role === "driver" && {
+      rating: u.rating,
+      reviewCount: u.reviewCount,
+      totalTrips: u.totalTrips,
+      isVerified: u.isVerified,
+      experience: u.experience,
+      areasServed: u.areasServed,
+      school: u.school,
+      monthlyFee: u.monthlyFee,
+      isAC: u.isAC,
+    }),
+  };
+
+  res.json({ user: profile });
 };

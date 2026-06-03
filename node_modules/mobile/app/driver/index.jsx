@@ -1,680 +1,494 @@
-import React, { useEffect, useRef, useState, useCallback } from 'react';
+import React, { useEffect, useMemo, useRef, useState } from 'react';
 import {
   View,
   Text,
   StyleSheet,
   ScrollView,
-  SafeAreaView,
   TouchableOpacity,
-  StatusBar,
   Animated,
+  RefreshControl,
 } from 'react-native';
-import { useRouter, useFocusEffect } from 'expo-router';
+import { useRouter } from 'expo-router';
 import { LinearGradient } from 'expo-linear-gradient';
 import {
-  Profile2User,
-  Star1,
-  Calendar,
-  Notification,
-  Sun1,
   ArrowRight2,
-  RouteSquare,
-  Sms,
-  Message,
-  Play,
-  Wallet3,
-  Setting2,
+  Bus,
+  Calendar,
+  Call,
   Clock,
-  TickCircle,
+  Flash,
+  MessageText1,
+  People,
+  Profile2User,
+  Routing2,
+  Star1,
+  Notification as NotificationIcon,
+  Wallet3,
+  Receipt1,
+  Play,
+  Shield,
+  Sun1,
 } from 'iconsax-react-native';
-import { wp, hp, fs } from '../utils/responsive';
-import { useTheme } from '../contexts/ThemeContext';
-import { useAuth } from '../contexts/AuthContext';
-import {
-  getStudents,
-  getDriver,
-  getBookingRequests,
-  getConversations,
-  getEarnings,
-  getRoutesForDriver,
-} from '../../services/mock';
 
-const DEMO_DRIVER_ID = 'd-1';
-const DEMO_USER_ID = 'u-driver-1';
+import HeroHeader from '../components/driver/HeroHeader';
+import StatTile from '../components/driver/StatTile';
+import SectionHeader from '../components/driver/SectionHeader';
+import ScreenContainer from '../components/driver/ScreenContainer';
+import Card from '../components/driver/Card';
+import Avatar from '../components/driver/Avatar';
+import Badge from '../components/driver/Badge';
+
+import {
+  colors,
+  gradients,
+  spacing,
+  typography,
+  radii,
+  shadows,
+  wp,
+  hp,
+  fs,
+  layout,
+} from '../theme';
+
+import {
+  getDriverProfile,
+  getNextTrip,
+  getStudents,
+  getTodaySummary,
+  getEarningsForPeriod,
+  getUnreadNotificationCount,
+} from '../../services/mock/driver';
+
+const greetingFor = () => {
+  const hour = new Date().getHours();
+  if (hour < 12) return 'Good Morning';
+  if (hour < 17) return 'Good Afternoon';
+  return 'Good Evening';
+};
 
 export default function DriverHome() {
-  const theme = useTheme();
-  const styles = useStyles(theme);
   const router = useRouter();
-  const { user } = useAuth();
+  const [refreshing, setRefreshing] = useState(false);
 
-  const driverUserId = user?.id || DEMO_USER_ID;
-  const fullName = user?.name || 'Kasun Perera';
-  const initials = fullName.split(' ').map((n) => n[0]).join('').toUpperCase().slice(0, 2);
+  const profile = useMemo(() => getDriverProfile(), []);
+  const nextTrip = useMemo(() => getNextTrip(), []);
+  const students = useMemo(() => getStudents(), []);
+  const summary = useMemo(() => getTodaySummary(), []);
+  const earnings = useMemo(() => getEarningsForPeriod('today'), []);
+  const unread = useMemo(() => getUnreadNotificationCount(), []);
 
-  const fadeAnim = useRef(new Animated.Value(0)).current;
-  const slideAnim = useRef(new Animated.Value(20)).current;
-
-  const [studentsCount, setStudentsCount] = useState(0);
-  const [driver, setDriver] = useState(null);
-  const [pendingRequests, setPendingRequests] = useState(0);
-  const [unreadMessages, setUnreadMessages] = useState(0);
-  const [earnings, setEarnings] = useState(null);
-  const [nextRoute, setNextRoute] = useState(null);
+  const fade = useRef(new Animated.Value(0)).current;
+  const slide = useRef(new Animated.Value(24)).current;
 
   useEffect(() => {
     Animated.parallel([
-      Animated.timing(fadeAnim, { toValue: 1, duration: 500, useNativeDriver: true }),
-      Animated.timing(slideAnim, { toValue: 0, duration: 400, useNativeDriver: true }),
+      Animated.timing(fade, { toValue: 1, duration: 480, useNativeDriver: true }),
+      Animated.spring(slide, { toValue: 0, useNativeDriver: true, bounciness: 4 }),
     ]).start();
-  }, [fadeAnim, slideAnim]);
+  }, [fade, slide]);
 
-  const loadData = useCallback(async () => {
-    const [students, d, requests, convos, earn, routes] = await Promise.all([
-      getStudents(),
-      getDriver(DEMO_DRIVER_ID),
-      getBookingRequests(DEMO_DRIVER_ID),
-      getConversations(driverUserId),
-      getEarnings(DEMO_DRIVER_ID),
-      getRoutesForDriver(DEMO_DRIVER_ID),
-    ]);
-    setStudentsCount(students.length);
-    setDriver(d);
-    setPendingRequests(requests.length);
-    setUnreadMessages(convos.reduce((acc, c) => acc + (c.unreadCount || 0), 0));
-    setEarnings(earn);
-    setNextRoute(routes.find((r) => r.direction === 'pickup') || routes[0] || null);
-  }, [driverUserId]);
-
-  useEffect(() => {
-    loadData();
-  }, [loadData]);
-
-  useFocusEffect(
-    useCallback(() => {
-      loadData();
-    }, [loadData])
-  );
-
-  const getGreeting = () => {
-    const hour = new Date().getHours();
-    if (hour < 12) return 'Good Morning';
-    if (hour < 17) return 'Good Afternoon';
-    return 'Good Evening';
+  const onRefresh = () => {
+    setRefreshing(true);
+    setTimeout(() => setRefreshing(false), 900);
   };
 
-  const c = theme.colors;
-
-  const stats = [
-    {
-      Icon: Profile2User,
-      value: String(studentsCount),
-      label: 'Students',
-      color: c.primary,
-      bg: c.primarySoft,
-    },
-    {
-      Icon: Star1,
-      value: driver?.rating ? driver.rating.toFixed(1) : '—',
-      label: 'Rating',
-      color: c.warning,
-      bg: c.warningSoft,
-    },
-    {
-      Icon: Calendar,
-      value: earnings ? String(earnings.history?.length * 20 ?? 0) : '—',
-      label: 'Trips',
-      color: c.success,
-      bg: c.successSoft,
-    },
+  const heroStats = [
+    { icon: People, value: String(students.length), label: 'Students' },
+    { icon: Star1, value: String(profile.rating), label: 'Rating' },
+    { icon: Receipt1, value: String(profile.totalTrips), label: 'Trips' },
+    { icon: Shield, value: `${profile.acceptanceRate}%`, label: 'Acceptance' },
   ];
 
   const quickActions = [
-    {
-      Icon: RouteSquare,
-      label: 'Routes',
-      subtitle: 'Manage stops',
-      route: '/driver/route-management',
-      color: c.primary,
-      bg: c.primarySoft,
-    },
-    {
-      Icon: Profile2User,
-      label: 'Students',
-      subtitle: `${studentsCount} enrolled`,
-      route: '/driver/students',
-      color: c.success,
-      bg: c.successSoft,
-    },
-    {
-      Icon: Sms,
-      label: 'Requests',
-      subtitle: `${pendingRequests} pending`,
-      route: '/driver/booking-requests',
-      color: c.warning,
-      bg: c.warningSoft,
-      badge: pendingRequests || null,
-    },
-    {
-      Icon: Message,
-      label: 'Messages',
-      subtitle: `${unreadMessages} unread`,
-      route: '/driver/messages',
-      color: c.accent,
-      bg: c.accentSoft,
-      badge: unreadMessages || null,
-    },
-  ];
-
-  const menuItems = [
-    {
-      Icon: Play,
-      label: 'Start Active Trip',
-      route: '/driver/active-trip',
-      color: c.danger,
-    },
-    { Icon: Clock, label: 'Ride History', route: '/driver/rides', color: c.primary },
-    { Icon: Wallet3, label: 'Earnings', route: '/driver/earnings', color: c.success },
-    { Icon: Setting2, label: 'Settings', route: '/driver/Profile', color: c.textMuted },
+    { icon: Routing2, label: 'Routes', subtitle: 'Plan stops', route: '/driver/route-management', tone: colors.primary, surface: colors.primarySurface },
+    { icon: Profile2User, label: 'Students', subtitle: `${students.length} enrolled`, route: '/driver/students', tone: colors.success, surface: colors.successSurface },
+    { icon: Bus, label: 'Requests', subtitle: '3 pending', route: '/driver/booking-requests', tone: colors.warning, surface: colors.warningSurface, badge: 3 },
+    { icon: MessageText1, label: 'Messages', subtitle: `${unread} unread`, route: '/driver/messages', tone: colors.info, surface: colors.infoSurface, badge: unread },
   ];
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-
-      <ScrollView
-        style={styles.scrollView}
-        showsVerticalScrollIndicator={false}
-        contentContainerStyle={styles.scrollContent}
-      >
-        <Animated.View style={{ opacity: fadeAnim, transform: [{ translateY: slideAnim }] }}>
-          <View style={styles.header}>
-            <View style={styles.headerLeft}>
-              <Text style={styles.greeting}>{getGreeting()} 👋</Text>
-              <Text style={styles.userName}>{fullName}</Text>
-            </View>
-            <View style={styles.headerRight}>
-              <TouchableOpacity style={styles.notificationBtn} activeOpacity={0.85}>
-                <Notification size={22} color={theme.colors.textPrimary} variant="Outline" />
-                {pendingRequests > 0 && <View style={styles.notificationDot} />}
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={styles.avatarBtn}
-                onPress={() => router.push('/driver/Profile')}
-                activeOpacity={0.85}
-              >
-                <LinearGradient colors={theme.colors.primaryGradient} style={styles.avatarGradient}>
-                  <Text style={styles.avatarText}>{initials}</Text>
-                </LinearGradient>
-              </TouchableOpacity>
-            </View>
-          </View>
-
-          <View style={styles.statsRow}>
-            {stats.map((stat, index) => {
-              const StatIcon = stat.Icon;
-              return (
-                <View key={index} style={styles.statCard}>
-                  <View style={[styles.statIcon, { backgroundColor: stat.bg }]}>
-                    <StatIcon size={20} color={stat.color} variant="Bold" />
-                  </View>
-                  <Text style={styles.statValue}>{stat.value}</Text>
-                  <Text style={styles.statLabel}>{stat.label}</Text>
-                </View>
-              );
-            })}
-          </View>
-
-          <View style={styles.section}>
-            <View style={styles.sectionHeader}>
-              <Text style={styles.sectionTitle}>Next Scheduled Trip</Text>
-              <TouchableOpacity activeOpacity={0.7} onPress={() => router.push('/driver/rides')}>
-                <Text style={styles.seeAllText}>View All</Text>
-              </TouchableOpacity>
-            </View>
-
-            <TouchableOpacity
-              style={styles.tripCard}
-              onPress={() => router.push('/driver/active-trip')}
-              activeOpacity={0.95}
+    <ScreenContainer edges={['left', 'right']} statusBarStyle="light-content">
+      <Animated.View style={{ flex: 1, opacity: fade, transform: [{ translateY: slide }] }}>
+        <ScrollView
+          style={{ flex: 1 }}
+          showsVerticalScrollIndicator={false}
+          contentContainerStyle={{ paddingBottom: layout.tabBarHeight + spacing.xl }}
+          refreshControl={
+            <RefreshControl
+              refreshing={refreshing}
+              onRefresh={onRefresh}
+              tintColor={colors.primary}
+              colors={[colors.primary]}
+              progressViewOffset={spacing.lg}
+            />
+          }
+        >
+          <HeroHeader
+            greeting={`${greetingFor()} 👋`}
+            title={profile.firstName}
+            initials={profile.initials}
+            notificationCount={unread}
+            onNotification={() => router.push('/driver/messages')}
+            onAvatarPress={() => router.push('/driver/Profile/profile')}
+          >
+            <ScrollView
+              horizontal
+              showsHorizontalScrollIndicator={false}
+              contentContainerStyle={styles.statsRow}
             >
-              <LinearGradient
-                colors={theme.colors.primaryGradient}
-                start={{ x: 0, y: 0 }}
-                end={{ x: 1, y: 1 }}
-                style={styles.tripCardGradient}
-              >
-                <View style={styles.tripBadge}>
-                  <Sun1 size={12} color="#fff" variant="Bold" />
-                  <Text style={styles.tripBadgeText}>
-                    {nextRoute?.name || 'Morning Route'}
-                  </Text>
-                </View>
+              {heroStats.map((s, i) => (
+                <StatTile
+                  key={i}
+                  icon={s.icon}
+                  value={s.value}
+                  label={s.label}
+                  tone="onDark"
+                  variant="inline"
+                  style={styles.heroStat}
+                />
+              ))}
+            </ScrollView>
+          </HeroHeader>
 
-                <View style={styles.tripTimeRow}>
-                  <Text style={styles.tripTime}>
-                    {nextRoute?.stops?.[0]?.time || '7:00 AM'}
-                  </Text>
-                  <View style={styles.tripArrow}>
-                    <ArrowRight2 size={16} color="rgba(255,255,255,0.75)" />
-                  </View>
-                  <Text style={styles.tripTimeEnd}>
-                    {nextRoute?.stops?.[nextRoute.stops.length - 1]?.time || '7:45 AM'}
-                  </Text>
-                </View>
-
-                <View style={styles.tripDetails}>
-                  <View style={styles.tripDetail}>
-                    <TickCircle size={14} color="rgba(255,255,255,0.85)" />
-                    <Text style={styles.tripDetailText}>Royal College, Colombo</Text>
-                  </View>
-                  <View style={styles.tripDetail}>
-                    <Profile2User size={14} color="rgba(255,255,255,0.85)" />
-                    <Text style={styles.tripDetailText}>{studentsCount} students</Text>
-                  </View>
-                </View>
-
-                <View style={styles.tripAction}>
-                  <View style={styles.startTripBtn}>
-                    <Play size={16} color={theme.colors.primary} variant="Bold" />
-                    <Text style={styles.startTripText}>Start Trip</Text>
-                  </View>
-                </View>
-              </LinearGradient>
-            </TouchableOpacity>
+          {/* Next Scheduled Trip */}
+          <View style={styles.section}>
+            <SectionHeader
+              title="Next Scheduled Trip"
+              action="View all"
+              onActionPress={() => router.push('/driver/rides')}
+            />
+            <TripHeroCard
+              trip={nextTrip}
+              onStart={() => router.push('/driver/active-trip')}
+            />
           </View>
 
+          {/* Quick Actions */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>Quick Actions</Text>
+            <SectionHeader title="Quick Actions" />
             <View style={styles.actionsGrid}>
-              {quickActions.map((action, index) => {
-                const ActionIcon = action.Icon;
-                return (
-                  <TouchableOpacity
-                    key={index}
-                    style={styles.actionCard}
-                    onPress={() => router.push(action.route)}
-                    activeOpacity={0.85}
-                  >
-                    <View style={[styles.actionIcon, { backgroundColor: action.bg }]}>
-                      <ActionIcon size={22} color={action.color} variant="Bold" />
-                      {action.badge ? (
-                        <View style={styles.actionBadge}>
-                          <Text style={styles.actionBadgeText}>{action.badge}</Text>
-                        </View>
-                      ) : null}
-                    </View>
-                    <Text style={styles.actionLabel}>{action.label}</Text>
-                    <Text style={styles.actionSubtitle}>{action.subtitle}</Text>
-                  </TouchableOpacity>
-                );
-              })}
+              {quickActions.map((action, i) => (
+                <QuickActionTile
+                  key={i}
+                  {...action}
+                  onPress={() => router.push(action.route)}
+                />
+              ))}
             </View>
           </View>
 
+          {/* Earnings snapshot */}
           <View style={styles.section}>
-            <Text style={styles.sectionTitle}>More Options</Text>
-            <View style={styles.menuCard}>
-              {menuItems.map((item, index) => {
-                const MenuIcon = item.Icon;
-                return (
-                  <TouchableOpacity
-                    key={index}
-                    style={[styles.menuItem, index < menuItems.length - 1 && styles.menuItemBorder]}
-                    onPress={() => router.push(item.route)}
-                    activeOpacity={0.85}
-                  >
-                    <View style={[styles.menuIcon, { backgroundColor: `${item.color}1A` }]}>
-                      <MenuIcon size={20} color={item.color} variant="Bold" />
-                    </View>
-                    <Text style={styles.menuLabel}>{item.label}</Text>
-                    <ArrowRight2 size={18} color={theme.colors.borderStrong} />
-                  </TouchableOpacity>
-                );
-              })}
-            </View>
+            <SectionHeader
+              title="Today's Earnings"
+              action="Details"
+              onActionPress={() => router.push('/driver/earnings')}
+            />
+            <EarningsSnapshot
+              earnings={earnings}
+              onPress={() => router.push('/driver/earnings')}
+            />
           </View>
 
-          {earnings && (
-            <View style={styles.section}>
-              <Text style={styles.sectionTitle}>This Month</Text>
-              <View style={styles.summaryCard}>
-                <View style={styles.summaryRow}>
-                  <View style={styles.summaryItem}>
-                    <Text style={styles.summaryValue}>
-                      Rs. {Math.round(earnings.thisMonth / 1000)}K
-                    </Text>
-                    <Text style={styles.summaryLabel}>Earned</Text>
-                  </View>
-                  <View style={styles.summaryDivider} />
-                  <View style={styles.summaryItem}>
-                    <Text style={styles.summaryValue}>{studentsCount}</Text>
-                    <Text style={styles.summaryLabel}>Students</Text>
-                  </View>
-                  <View style={styles.summaryDivider} />
-                  <View style={styles.summaryItem}>
-                    <Text style={[styles.summaryValue, { color: theme.colors.success }]}>
-                      Rs. {Math.round((earnings.pendingPayout || 0) / 1000)}K
-                    </Text>
-                    <Text style={styles.summaryLabel}>Pending</Text>
-                  </View>
-                </View>
+          {/* Active Roster preview */}
+          <View style={styles.section}>
+            <SectionHeader
+              title="Active Roster"
+              action="Manage"
+              onActionPress={() => router.push('/driver/students')}
+            />
+            <Card padding="none">
+              {students.slice(0, 3).map((student, idx) => (
+                <RosterRow
+                  key={student.id}
+                  student={student}
+                  divider={idx < 2}
+                  onPress={() => router.push('/driver/students')}
+                />
+              ))}
+            </Card>
+          </View>
+
+          {/* Today's summary */}
+          <View style={styles.section}>
+            <SectionHeader title="Today's Summary" />
+            <Card padding="lg">
+              <View style={styles.summaryRow}>
+                <SummaryItem
+                  value={summary.tripsCompleted}
+                  label="Trips Completed"
+                  color={colors.primary}
+                />
+                <View style={styles.summaryDivider} />
+                <SummaryItem
+                  value={summary.studentsServed}
+                  label="Students Served"
+                  color={colors.info}
+                />
+                <View style={styles.summaryDivider} />
+                <SummaryItem
+                  value={`Rs. ${(summary.earnedToday / 1000).toFixed(1)}K`}
+                  label="Earned"
+                  color={colors.success}
+                />
               </View>
-            </View>
-          )}
-        </Animated.View>
-      </ScrollView>
-    </SafeAreaView>
+            </Card>
+          </View>
+        </ScrollView>
+      </Animated.View>
+    </ScreenContainer>
   );
 }
 
-const useStyles = (theme) =>
-  StyleSheet.create({
-    container: {
-      flex: 1,
-      backgroundColor: theme.colors.background,
-    },
-    scrollView: {
-      flex: 1,
-    },
-    scrollContent: {
-      paddingBottom: hp(40),
-    },
-    header: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      paddingHorizontal: wp(20),
-      paddingTop: hp(8),
-      paddingBottom: hp(18),
-      backgroundColor: theme.colors.surface,
-    },
-    headerLeft: {
-      flex: 1,
-    },
-    greeting: {
-      fontFamily: theme.fontFamily.regular,
-      fontSize: fs(13),
-      color: theme.colors.textMuted,
-      marginBottom: 4,
-    },
-    userName: {
-      fontFamily: theme.fontFamily.bold,
-      fontSize: fs(22),
-      color: theme.colors.textPrimary,
-    },
-    headerRight: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 10,
-    },
-    notificationBtn: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      backgroundColor: theme.colors.surfaceMuted,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    notificationDot: {
-      position: 'absolute',
-      top: 10,
-      right: 10,
-      width: 10,
-      height: 10,
-      borderRadius: 5,
-      backgroundColor: theme.colors.danger,
-      borderWidth: 2,
-      borderColor: theme.colors.surface,
-    },
-    avatarBtn: {},
-    avatarGradient: {
-      width: 44,
-      height: 44,
-      borderRadius: 22,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    avatarText: {
-      fontFamily: theme.fontFamily.bold,
-      fontSize: fs(14),
-      color: '#fff',
-    },
-    statsRow: {
-      flexDirection: 'row',
-      paddingHorizontal: wp(20),
-      marginTop: hp(8),
-      gap: 10,
-    },
-    statCard: {
-      flex: 1,
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.radius.lg,
-      padding: 14,
-      alignItems: 'center',
-      ...theme.shadows.sm,
-    },
-    statIcon: {
-      width: 42,
-      height: 42,
-      borderRadius: 21,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 8,
-    },
-    statValue: {
-      fontFamily: theme.fontFamily.bold,
-      fontSize: fs(18),
-      color: theme.colors.textPrimary,
-    },
-    statLabel: {
-      fontFamily: theme.fontFamily.regular,
-      fontSize: fs(11),
-      color: theme.colors.textMuted,
-      marginTop: 2,
-    },
-    section: {
-      marginTop: hp(20),
-      paddingHorizontal: wp(20),
-    },
-    sectionHeader: {
-      flexDirection: 'row',
-      justifyContent: 'space-between',
-      alignItems: 'center',
-      marginBottom: hp(12),
-    },
-    sectionTitle: {
-      fontFamily: theme.fontFamily.bold,
-      fontSize: fs(17),
-      color: theme.colors.textPrimary,
-      marginBottom: hp(12),
-    },
-    seeAllText: {
-      fontFamily: theme.fontFamily.medium,
-      fontSize: fs(13),
-      color: theme.colors.primary,
-      marginBottom: hp(12),
-    },
-    tripCard: {
-      borderRadius: theme.radius.xl,
-      overflow: 'hidden',
-      ...theme.shadows.primaryMd,
-    },
-    tripCardGradient: {
-      padding: 18,
-    },
-    tripBadge: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: 'rgba(255,255,255,0.22)',
-      paddingHorizontal: 10,
-      paddingVertical: 5,
-      borderRadius: theme.radius.pill,
-      alignSelf: 'flex-start',
-      marginBottom: 14,
-      gap: 6,
-    },
-    tripBadgeText: {
-      fontFamily: theme.fontFamily.medium,
-      fontSize: fs(11),
-      color: '#fff',
-    },
-    tripTimeRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      flexWrap: 'wrap',
-      marginBottom: 14,
-      gap: 8,
-    },
-    tripTime: {
-      fontFamily: theme.fontFamily.bold,
-      fontSize: fs(26),
-      color: '#fff',
-    },
-    tripArrow: {
-      paddingHorizontal: 6,
-    },
-    tripTimeEnd: {
-      fontFamily: theme.fontFamily.bold,
-      fontSize: fs(26),
-      color: 'rgba(255,255,255,0.75)',
-    },
-    tripDetails: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      gap: 16,
-      marginBottom: 16,
-    },
-    tripDetail: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      gap: 6,
-    },
-    tripDetailText: {
-      fontFamily: theme.fontFamily.regular,
-      fontSize: fs(12),
-      color: 'rgba(255,255,255,0.85)',
-    },
-    tripAction: {
-      alignItems: 'flex-start',
-    },
-    startTripBtn: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      backgroundColor: '#fff',
-      paddingHorizontal: 16,
-      paddingVertical: 10,
-      borderRadius: theme.radius.pill,
-      gap: 6,
-    },
-    startTripText: {
-      fontFamily: theme.fontFamily.bold,
-      fontSize: fs(13),
-      color: theme.colors.primary,
-    },
-    actionsGrid: {
-      flexDirection: 'row',
-      flexWrap: 'wrap',
-      marginHorizontal: -5,
-    },
-    actionCard: {
-      width: '50%',
-      paddingHorizontal: 5,
-      marginBottom: 12,
-    },
-    actionIcon: {
-      width: 52,
-      height: 52,
-      borderRadius: theme.radius.lg,
-      alignItems: 'center',
-      justifyContent: 'center',
-      marginBottom: 8,
-    },
-    actionBadge: {
-      position: 'absolute',
-      top: -6,
-      right: -6,
-      backgroundColor: theme.colors.danger,
-      borderRadius: 10,
-      minWidth: 20,
-      height: 20,
-      alignItems: 'center',
-      justifyContent: 'center',
-      paddingHorizontal: 6,
-    },
-    actionBadgeText: {
-      fontFamily: theme.fontFamily.bold,
-      fontSize: 10,
-      color: '#fff',
-    },
-    actionLabel: {
-      fontFamily: theme.fontFamily.bold,
-      fontSize: fs(14),
-      color: theme.colors.textPrimary,
-      marginBottom: 2,
-    },
-    actionSubtitle: {
-      fontFamily: theme.fontFamily.regular,
-      fontSize: fs(12),
-      color: theme.colors.textMuted,
-    },
-    menuCard: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.radius.lg,
-      ...theme.shadows.sm,
-    },
-    menuItem: {
-      flexDirection: 'row',
-      alignItems: 'center',
-      padding: 14,
-      gap: 12,
-    },
-    menuItemBorder: {
-      borderBottomWidth: 1,
-      borderBottomColor: theme.colors.divider,
-    },
-    menuIcon: {
-      width: 38,
-      height: 38,
-      borderRadius: 19,
-      alignItems: 'center',
-      justifyContent: 'center',
-    },
-    menuLabel: {
-      flex: 1,
-      fontFamily: theme.fontFamily.medium,
-      fontSize: fs(14),
-      color: theme.colors.textPrimary,
-    },
-    summaryCard: {
-      backgroundColor: theme.colors.surface,
-      borderRadius: theme.radius.lg,
-      padding: 18,
-      ...theme.shadows.sm,
-    },
-    summaryRow: {
-      flexDirection: 'row',
-      alignItems: 'center',
-    },
-    summaryItem: {
-      flex: 1,
-      alignItems: 'center',
-    },
-    summaryValue: {
-      fontFamily: theme.fontFamily.bold,
-      fontSize: fs(18),
-      color: theme.colors.textPrimary,
-      marginBottom: 4,
-    },
-    summaryLabel: {
-      fontFamily: theme.fontFamily.regular,
-      fontSize: fs(11),
-      color: theme.colors.textMuted,
-      textAlign: 'center',
-    },
-    summaryDivider: {
-      width: 1,
-      height: 36,
-      backgroundColor: theme.colors.divider,
-    },
-  });
+// ---------------------------------------------------------------------------
+// Sub-components (kept here because they're tightly coupled to this screen)
+// ---------------------------------------------------------------------------
+
+const TripHeroCard = ({ trip, onStart }) => (
+  <View style={styles.tripCardShadow}>
+    <LinearGradient
+      colors={gradients.headerHero}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.tripCard}
+    >
+      <View style={styles.tripTopRow}>
+        <Badge label={trip.label} tone="primary" variant="soft" style={{ backgroundColor: colors.onDark.surface }} />
+        <View style={styles.tripMetaRow}>
+          <Sun1 size={fs(14)} color={colors.onDark.text} variant="Bold" />
+          <Text style={styles.tripMetaText}>{trip.startTime}</Text>
+        </View>
+      </View>
+
+      <View style={styles.tripTimeRow}>
+        <Text style={styles.tripTimeBig}>{trip.startTime}</Text>
+        <View style={styles.tripArrowWrap}>
+          <ArrowRight2 size={fs(16)} color={colors.onDark.textMuted} variant="Linear" />
+        </View>
+        <Text style={styles.tripTimeBigMuted}>{trip.endTime}</Text>
+      </View>
+
+      <View style={styles.tripDetailsRow}>
+        <View style={styles.tripDetailItem}>
+          <Routing2 size={fs(14)} color={colors.onDark.textMuted} variant="Bold" />
+          <Text style={styles.tripDetailText} numberOfLines={1}>{trip.school}</Text>
+        </View>
+        <View style={styles.tripDetailItem}>
+          <People size={fs(14)} color={colors.onDark.textMuted} variant="Bold" />
+          <Text style={styles.tripDetailText}>{trip.studentCount} students</Text>
+        </View>
+        <View style={styles.tripDetailItem}>
+          <Clock size={fs(14)} color={colors.onDark.textMuted} variant="Bold" />
+          <Text style={styles.tripDetailText}>{trip.estimatedDurationMins}m</Text>
+        </View>
+      </View>
+
+      <TouchableOpacity style={styles.startTripBtn} activeOpacity={0.85} onPress={onStart}>
+        <Play size={fs(16)} color={colors.primary} variant="Bold" />
+        <Text style={styles.startTripText}>Start Trip</Text>
+      </TouchableOpacity>
+    </LinearGradient>
+  </View>
+);
+
+const QuickActionTile = ({ icon: Icon, label, subtitle, tone, surface, badge, onPress }) => (
+  <TouchableOpacity style={styles.quickAction} activeOpacity={0.8} onPress={onPress}>
+    <View style={[styles.quickIconWrap, { backgroundColor: surface }]}>
+      <Icon size={fs(24)} color={tone} variant="Bold" />
+      {badge ? (
+        <View style={styles.quickBadge}>
+          <Text style={styles.quickBadgeText}>{badge}</Text>
+        </View>
+      ) : null}
+    </View>
+    <Text style={styles.quickLabel}>{label}</Text>
+    <Text style={styles.quickSubtitle}>{subtitle}</Text>
+  </TouchableOpacity>
+);
+
+const EarningsSnapshot = ({ earnings, onPress }) => (
+  <TouchableOpacity activeOpacity={0.9} onPress={onPress} style={styles.earningsShadow}>
+    <LinearGradient
+      colors={gradients.earnings}
+      start={{ x: 0, y: 0 }}
+      end={{ x: 1, y: 1 }}
+      style={styles.earningsCard}
+    >
+      <View style={styles.earningsLeft}>
+        <View style={styles.earningsIconWrap}>
+          <Wallet3 size={fs(22)} color="#fff" variant="Bold" />
+        </View>
+        <View>
+          <Text style={styles.earningsLabel}>Earned Today</Text>
+          <Text style={styles.earningsAmount}>Rs. {earnings.total.toLocaleString()}</Text>
+        </View>
+      </View>
+      <View style={styles.earningsRight}>
+        <Text style={styles.earningsChange}>
+          {earnings.change > 0 ? '+' : ''}
+          {earnings.change}%
+        </Text>
+        <Text style={styles.earningsHint}>vs. yesterday</Text>
+      </View>
+    </LinearGradient>
+  </TouchableOpacity>
+);
+
+const RosterRow = ({ student, divider, onPress }) => (
+  <TouchableOpacity
+    activeOpacity={0.85}
+    onPress={onPress}
+    style={[styles.rosterRow, divider && styles.rosterDivider]}
+  >
+    <Avatar name={student.name} tone={student.avatarColor} size={44} />
+    <View style={styles.rosterBody}>
+      <Text style={styles.rosterName}>{student.name}</Text>
+      <Text style={styles.rosterMeta} numberOfLines={1}>
+        {student.grade} • {student.pickupTime}
+      </Text>
+    </View>
+    <TouchableOpacity style={styles.rosterCall} hitSlop={6}>
+      <Call size={fs(16)} color={colors.primary} variant="Bold" />
+    </TouchableOpacity>
+  </TouchableOpacity>
+);
+
+const SummaryItem = ({ value, label, color }) => (
+  <View style={styles.summaryItem}>
+    <Text style={[styles.summaryValue, color && { color }]}>{value}</Text>
+    <Text style={styles.summaryLabel}>{label}</Text>
+  </View>
+);
+
+const styles = StyleSheet.create({
+  statsRow: {
+    paddingHorizontal: spacing.lg,
+    gap: spacing.md,
+  },
+  heroStat: {
+    minWidth: wp(110),
+    backgroundColor: colors.onDark.surface,
+    marginRight: 0,
+  },
+
+  section: {
+    paddingHorizontal: spacing.lg,
+    marginTop: spacing.xl,
+  },
+
+  // Trip hero card
+  tripCardShadow: { ...shadows.brand, borderRadius: radii.xl },
+  tripCard: {
+    borderRadius: radii.xl,
+    padding: spacing.lg,
+    overflow: 'hidden',
+  },
+  tripTopRow: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
+  },
+  tripMetaRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  tripMetaText: { color: colors.onDark.text, fontSize: typography.size.xs, fontFamily: typography.fontFamily.medium },
+  tripTimeRow: { flexDirection: 'row', alignItems: 'baseline', gap: spacing.sm, marginBottom: spacing.md, flexWrap: 'wrap' },
+  tripTimeBig: { color: colors.onDark.text, fontSize: fs(30), fontFamily: typography.fontFamily.bold, letterSpacing: -1 },
+  tripArrowWrap: { paddingHorizontal: spacing.sm },
+  tripTimeBigMuted: { color: colors.onDark.textSubtle, fontSize: fs(26), fontFamily: typography.fontFamily.bold },
+  tripDetailsRow: { flexDirection: 'row', flexWrap: 'wrap', gap: spacing.lg, marginBottom: spacing.lg },
+  tripDetailItem: { flexDirection: 'row', alignItems: 'center', gap: 6 },
+  tripDetailText: { color: colors.onDark.textMuted, fontSize: typography.size.sm, fontFamily: typography.fontFamily.medium },
+  startTripBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 6,
+    backgroundColor: '#fff',
+    paddingHorizontal: spacing.lg,
+    paddingVertical: spacing.sm + 2,
+    borderRadius: radii.full,
+    alignSelf: 'flex-start',
+  },
+  startTripText: { color: colors.primary, fontSize: typography.size.md, fontFamily: typography.fontFamily.bold },
+
+  // Quick actions grid
+  actionsGrid: {
+    flexDirection: 'row',
+    flexWrap: 'wrap',
+    gap: spacing.md,
+  },
+  quickAction: {
+    flexBasis: '47%',
+    flexGrow: 1,
+    backgroundColor: colors.surface,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    ...shadows.sm,
+  },
+  quickIconWrap: {
+    width: 52, height: 52, borderRadius: radii.md,
+    alignItems: 'center', justifyContent: 'center',
+    marginBottom: spacing.sm,
+    position: 'relative',
+  },
+  quickBadge: {
+    position: 'absolute', top: -4, right: -4,
+    minWidth: 20, height: 20, borderRadius: 10,
+    paddingHorizontal: 4,
+    backgroundColor: colors.danger,
+    alignItems: 'center', justifyContent: 'center',
+    borderWidth: 2, borderColor: colors.surface,
+  },
+  quickBadgeText: { color: '#fff', fontSize: 10, fontFamily: typography.fontFamily.bold },
+  quickLabel: { fontSize: typography.size.md, color: colors.textPrimary, fontFamily: typography.fontFamily.bold },
+  quickSubtitle: { fontSize: typography.size.xs, color: colors.textSecondary, marginTop: 2 },
+
+  // Earnings snapshot
+  earningsShadow: { ...shadows.success, borderRadius: radii.lg },
+  earningsCard: {
+    borderRadius: radii.lg,
+    padding: spacing.lg,
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+  },
+  earningsLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flex: 1 },
+  earningsIconWrap: {
+    width: 48, height: 48, borderRadius: 24,
+    backgroundColor: 'rgba(255,255,255,0.2)',
+    alignItems: 'center', justifyContent: 'center',
+  },
+  earningsLabel: { color: 'rgba(255,255,255,0.85)', fontSize: typography.size.sm, fontFamily: typography.fontFamily.medium },
+  earningsAmount: { color: '#fff', fontSize: typography.size.xl, fontFamily: typography.fontFamily.bold, marginTop: 2 },
+  earningsRight: { alignItems: 'flex-end' },
+  earningsChange: { color: '#fff', fontSize: typography.size.lg, fontFamily: typography.fontFamily.bold },
+  earningsHint: { color: 'rgba(255,255,255,0.8)', fontSize: typography.size.xs },
+
+  // Roster preview
+  rosterRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
+    gap: spacing.md,
+  },
+  rosterDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.divider,
+  },
+  rosterBody: { flex: 1 },
+  rosterName: { fontSize: typography.size.md, color: colors.textPrimary, fontFamily: typography.fontFamily.semibold },
+  rosterMeta: { fontSize: typography.size.xs, color: colors.textSecondary, marginTop: 2 },
+  rosterCall: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: colors.primarySurface,
+    alignItems: 'center', justifyContent: 'center',
+  },
+
+  // Summary
+  summaryRow: { flexDirection: 'row', alignItems: 'center' },
+  summaryItem: { flex: 1, alignItems: 'center' },
+  summaryDivider: { width: 1, height: 36, backgroundColor: colors.divider },
+  summaryValue: { fontSize: typography.size.xl, color: colors.textPrimary, fontFamily: typography.fontFamily.bold },
+  summaryLabel: { fontSize: typography.size.xs, color: colors.textSecondary, marginTop: 4, textAlign: 'center' },
+});

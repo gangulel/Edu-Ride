@@ -1,419 +1,313 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, StatusBar } from "react-native";
-import { Ionicons } from "@expo/vector-icons";
-import { responsive, fs } from "../utils/responsive";
+import React, { useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import {
+  ArrowDown2,
+  Card as CardIcon,
+  Clock,
+  Routing2,
+  Star1,
+  TrendUp,
+  Wallet3,
+  Add,
+  ArrowUp,
+  Bank,
+} from 'iconsax-react-native';
 
-export default function DriverEarnings() {
-  const [selectedPeriod, setSelectedPeriod] = useState("today");
+import ScreenContainer from '../components/driver/ScreenContainer';
+import HeroHeader from '../components/driver/HeroHeader';
+import SectionHeader from '../components/driver/SectionHeader';
+import Card from '../components/driver/Card';
+import Badge from '../components/driver/Badge';
+import FilterChip from '../components/driver/FilterChip';
+import PrimaryButton from '../components/driver/PrimaryButton';
+import StatTile from '../components/driver/StatTile';
+import {
+  colors,
+  gradients,
+  spacing,
+  typography,
+  radii,
+  shadows,
+  fs,
+} from '../theme';
+import {
+  getEarningsForPeriod,
+  getEarningsTransactions,
+  getPaymentMethods,
+} from '../../services/mock/driver';
 
-  const todayStats = {
-    total: 12550.00,
-    trips: 5,
-    hours: 6.5,
-    avgPerTrip: 2510.00,
-  };
+const PERIODS = [
+  { id: 'today', label: 'Today' },
+  { id: 'week', label: 'This Week' },
+  { id: 'month', label: 'This Month' },
+];
 
-  const weekStats = {
-    total: 68730.00,
-    trips: 28,
-    hours: 35,
-    avgPerTrip: 2455.00,
-  };
-
-  const monthStats = {
-    total: 284580.00,
-    trips: 112,
-    hours: 145,
-    avgPerTrip: 2541.00,
-  };
-
-  const currentStats = selectedPeriod === "today" ? todayStats : selectedPeriod === "week" ? weekStats : monthStats;
-
-  const recentTransactions = [
-    { id: 1, student: "Amaya Perera", amount: 1850.00, time: "2:30 PM", destination: "Main Campus" },
-    { id: 2, student: "Sahan Silva", amount: 2200.00, time: "1:15 PM", destination: "Sports Complex" },
-    { id: 3, student: "Dilini Fernando", amount: 1500.00, time: "12:00 PM", destination: "Library" },
-    { id: 4, student: "Roshan Jayawardena", amount: 2800.00, time: "10:30 AM", destination: "Downtown" },
-    { id: 5, student: "Malini Dissanayake", amount: 1900.00, time: "9:00 AM", destination: "Main Campus" },
-  ];
+export default function EarningsScreen() {
+  const router = useRouter();
+  const [period, setPeriod] = useState('today');
+  const stats = useMemo(() => getEarningsForPeriod(period), [period]);
+  const transactions = useMemo(() => getEarningsTransactions(), []);
+  const paymentMethods = useMemo(() => getPaymentMethods(), []);
 
   return (
-    <SafeAreaView style={styles.container}>
-      <StatusBar barStyle="dark-content" />
-
-      {/* Header */}
-      <View style={styles.header}>
-        <Text style={styles.headerTitle}>Earnings</Text>
-      </View>
-
-      <ScrollView style={styles.scrollView} contentContainerStyle={styles.scrollContent}>
-        {/* Period Selector */}
-        <View style={styles.periodSelector}>
-          <TouchableOpacity
-            style={[styles.periodButton, selectedPeriod === "today" && styles.periodButtonActive]}
-            onPress={() => setSelectedPeriod("today")}
-          >
-            <Text style={[styles.periodText, selectedPeriod === "today" && styles.periodTextActive]}>
-              Today
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.periodButton, selectedPeriod === "week" && styles.periodButtonActive]}
-            onPress={() => setSelectedPeriod("week")}
-          >
-            <Text style={[styles.periodText, selectedPeriod === "week" && styles.periodTextActive]}>
-              This Week
-            </Text>
-          </TouchableOpacity>
-          <TouchableOpacity
-            style={[styles.periodButton, selectedPeriod === "month" && styles.periodButtonActive]}
-            onPress={() => setSelectedPeriod("month")}
-          >
-            <Text style={[styles.periodText, selectedPeriod === "month" && styles.periodTextActive]}>
-              This Month
-            </Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Total Earnings Card */}
-        <View style={styles.totalCard}>
-          <View style={styles.totalIconContainer}>
-            <Ionicons name="wallet" size={32} color="#34C759" />
-          </View>
-          <Text style={styles.totalLabel}>Total Earnings</Text>
-          <Text style={styles.totalAmount}>Rs. {currentStats.total.toLocaleString()}</Text>
-          <TouchableOpacity style={styles.withdrawButton}>
-            <Ionicons name="arrow-down-circle" size={20} color="#fff" />
-            <Text style={styles.withdrawButtonText}>Withdraw</Text>
-          </TouchableOpacity>
-        </View>
-
-        {/* Stats Grid */}
-        <View style={styles.statsGrid}>
-          <View style={styles.statCard}>
-            <View style={styles.statIconContainer}>
-              <Ionicons name="car" size={24} color="#007AFF" />
-            </View>
-            <Text style={styles.statValue}>{currentStats.trips}</Text>
-            <Text style={styles.statLabel}>Total Trips</Text>
-          </View>
-
-          <View style={styles.statCard}>
-            <View style={styles.statIconContainer}>
-              <Ionicons name="time" size={24} color="#FF9500" />
-            </View>
-            <Text style={styles.statValue}>{currentStats.hours}h</Text>
-            <Text style={styles.statLabel}>Hours Online</Text>
-          </View>
-
-          <View style={styles.statCard}>
-            <View style={styles.statIconContainer}>
-              <Ionicons name="trending-up" size={24} color="#34C759" />
-            </View>
-            <Text style={styles.statValue}>Rs. {currentStats.avgPerTrip.toLocaleString()}</Text>
-            <Text style={styles.statLabel}>Avg per Trip</Text>
-          </View>
-        </View>
-
-        {/* Recent Transactions */}
-        <View style={styles.section}>
-          <View style={styles.sectionHeader}>
-            <Text style={styles.sectionTitle}>Recent Transactions</Text>
-            <TouchableOpacity>
-              <Text style={styles.seeAllText}>See all</Text>
-            </TouchableOpacity>
-          </View>
-
-          {recentTransactions.map((transaction) => (
-            <View key={transaction.id} style={styles.transactionCard}>
-              <View style={styles.transactionIcon}>
-                <Ionicons name="arrow-up" size={20} color="#34C759" />
-              </View>
-              <View style={styles.transactionDetails}>
-                <Text style={styles.transactionStudent}>{transaction.student}</Text>
-                <Text style={styles.transactionDestination}>{transaction.destination}</Text>
-                <Text style={styles.transactionTime}>{transaction.time}</Text>
-              </View>
-              <Text style={styles.transactionAmount}>+Rs. {transaction.amount.toLocaleString()}</Text>
-            </View>
+    <ScreenContainer edges={['left', 'right']} statusBarStyle="light-content">
+      <HeroHeader
+        greeting="Earnings"
+        title={`Rs. ${stats.total.toLocaleString()}`}
+        subtitle={`${stats.trips} trips • ${stats.hours} hrs online`}
+        notificationCount={0}
+        onAvatarPress={() => router.push('/driver/Profile/profile')}
+        initials="KP"
+      >
+        <View style={styles.periodRow}>
+          {PERIODS.map((p) => (
+            <FilterChip
+              key={p.id}
+              label={p.label}
+              variant="tab"
+              active={period === p.id}
+              onPress={() => setPeriod(p.id)}
+              style={[
+                { flex: 1, backgroundColor: period === p.id ? '#fff' : colors.onDark.surface },
+              ]}
+            />
           ))}
         </View>
+      </HeroHeader>
 
-        {/* Payment Methods */}
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: spacing['3xl'] }}
+      >
+        {/* Earnings hero card */}
         <View style={styles.section}>
-          <Text style={styles.sectionTitle}>Payment Methods</Text>
-          <TouchableOpacity style={styles.paymentCard}>
-            <View style={styles.paymentIconContainer}>
-              <Ionicons name="card" size={24} color="#007AFF" />
-            </View>
-            <View style={styles.paymentDetails}>
-              <Text style={styles.paymentTitle}>Bank Account</Text>
-              <Text style={styles.paymentDescription}>•••• •••• •••• 4242</Text>
-            </View>
-            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-          </TouchableOpacity>
+          <View style={styles.earningsShadow}>
+            <LinearGradient
+              colors={gradients.earnings}
+              start={{ x: 0, y: 0 }}
+              end={{ x: 1, y: 1 }}
+              style={styles.earningsCard}
+            >
+              <View style={styles.earningsHeader}>
+                <View style={styles.earningsIconWrap}>
+                  <Wallet3 size={fs(26)} color="#fff" variant="Bold" />
+                </View>
+                <View style={styles.earningsChangeWrap}>
+                  <TrendUp size={fs(12)} color="#fff" variant="Bold" />
+                  <Text style={styles.earningsChangeText}>
+                    {stats.change > 0 ? '+' : ''}{stats.change}%
+                  </Text>
+                </View>
+              </View>
+              <Text style={styles.earningsLabel}>Total Earnings</Text>
+              <Text style={styles.earningsAmount}>Rs. {stats.total.toLocaleString()}</Text>
+              <PrimaryButton
+                title="Withdraw to Bank"
+                variant="dark"
+                size="md"
+                fullWidth
+                iconLeft={<ArrowDown2 size={fs(16)} color="#fff" variant="Bold" />}
+                style={styles.withdrawBtn}
+              />
+            </LinearGradient>
+          </View>
+        </View>
 
-          <TouchableOpacity style={styles.addPaymentButton}>
-            <Ionicons name="add-circle-outline" size={20} color="#007AFF" />
-            <Text style={styles.addPaymentText}>Add Payment Method</Text>
+        {/* Stat grid */}
+        <View style={styles.section}>
+          <View style={styles.statRow}>
+            <StatTile
+              icon={Routing2}
+              iconColor={colors.primary}
+              iconBg={colors.primarySurface}
+              value={String(stats.trips)}
+              label="Trips"
+            />
+            <StatTile
+              icon={Clock}
+              iconColor={colors.warning}
+              iconBg={colors.warningSurface}
+              value={`${stats.hours}h`}
+              label="Hours online"
+            />
+            <StatTile
+              icon={Star1}
+              iconColor={colors.success}
+              iconBg={colors.successSurface}
+              value={`Rs. ${(stats.avgPerTrip / 1000).toFixed(1)}K`}
+              label="Avg trip"
+            />
+          </View>
+        </View>
+
+        {/* Transactions */}
+        <View style={styles.section}>
+          <SectionHeader title="Recent Transactions" action="View all" />
+          <Card padding="none">
+            {transactions.map((tx, idx) => (
+              <View
+                key={tx.id}
+                style={[
+                  styles.txRow,
+                  idx < transactions.length - 1 && styles.txDivider,
+                ]}
+              >
+                <View style={styles.txIcon}>
+                  <ArrowUp size={fs(16)} color={colors.success} variant="Bold" />
+                </View>
+                <View style={{ flex: 1 }}>
+                  <Text style={styles.txStudent}>{tx.studentName}</Text>
+                  <Text style={styles.txDestination}>{tx.destination}</Text>
+                </View>
+                <View style={styles.txRight}>
+                  <Text style={styles.txAmount}>+Rs. {tx.amount.toLocaleString()}</Text>
+                  <Text style={styles.txTime}>{tx.time}</Text>
+                </View>
+              </View>
+            ))}
+          </Card>
+        </View>
+
+        {/* Payment methods */}
+        <View style={styles.section}>
+          <SectionHeader title="Payment Methods" action="Manage" />
+          {paymentMethods.map((pm) => (
+            <Card
+              key={pm.id}
+              padding="md"
+              style={{ marginBottom: spacing.sm }}
+              onPress={() => router.push('/driver/Profile/payment-methods')}
+            >
+              <View style={styles.pmRow}>
+                <View style={[styles.pmIcon, { backgroundColor: pm.type === 'bank' ? colors.primarySurface : colors.infoSurface }]}>
+                  {pm.type === 'bank' ? (
+                    <Bank size={fs(20)} color={colors.primary} variant="Bold" />
+                  ) : (
+                    <CardIcon size={fs(20)} color={colors.info} variant="Bold" />
+                  )}
+                </View>
+                <View style={{ flex: 1 }}>
+                  <View style={styles.pmHeaderRow}>
+                    <Text style={styles.pmLabel}>{pm.label}</Text>
+                    {pm.isPrimary ? (
+                      <Badge label="Primary" tone="primary" variant="soft" size="xs" />
+                    ) : null}
+                  </View>
+                  <Text style={styles.pmDetail}>{pm.detail}</Text>
+                </View>
+              </View>
+            </Card>
+          ))}
+
+          <TouchableOpacity
+            style={styles.addPmBtn}
+            activeOpacity={0.85}
+            onPress={() => router.push('/driver/Profile/payment-methods')}
+          >
+            <Add size={fs(18)} color={colors.primary} variant="Bold" />
+            <Text style={styles.addPmText}>Add Payment Method</Text>
           </TouchableOpacity>
         </View>
       </ScrollView>
-    </SafeAreaView>
+    </ScreenContainer>
   );
 }
 
 const styles = StyleSheet.create({
-  container: {
-    flex: 1,
-    backgroundColor: "#F2F2F7",
+  periodRow: {
+    flexDirection: 'row',
+    gap: spacing.sm,
+    paddingHorizontal: spacing.lg,
   },
-  header: {
-    backgroundColor: "#fff",
-    paddingHorizontal: responsive.paddingLG,
-    paddingVertical: responsive.paddingMD,
-    borderBottomWidth: 1,
-    borderBottomColor: "#E5E5EA",
+
+  section: { paddingHorizontal: spacing.lg, marginTop: spacing.xl },
+
+  earningsShadow: { ...shadows.success, borderRadius: radii.xl },
+  earningsCard: { borderRadius: radii.xl, padding: spacing.xl },
+  earningsHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginBottom: spacing.md,
   },
-  headerTitle: {
-    fontSize: fs(28),
-    fontWeight: "bold",
-    color: "#000",
+  earningsIconWrap: {
+    width: 52, height: 52, borderRadius: 26,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    alignItems: 'center', justifyContent: 'center',
   },
-  scrollView: {
-    flex: 1,
+  earningsChangeWrap: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: 4,
+    backgroundColor: 'rgba(255,255,255,0.22)',
+    paddingHorizontal: spacing.md - 2,
+    paddingVertical: 4,
+    borderRadius: radii.full,
   },
-  scrollContent: {
-    paddingBottom: responsive.tabBarHeight + responsive.paddingLG,
-  },
-  periodSelector: {
-    flexDirection: "row",
-    padding: responsive.paddingLG,
-    gap: 8,
-  },
-  periodButton: {
-    flex: 1,
-    paddingVertical: responsive.paddingSM,
-    paddingHorizontal: responsive.paddingMD,
-    borderRadius: 8,
-    backgroundColor: "#fff",
-    alignItems: "center",
-    borderWidth: 1,
-    borderColor: "#E5E5EA",
-  },
-  periodButtonActive: {
-    backgroundColor: "#007AFF",
-    borderColor: "#007AFF",
-  },
-  periodText: {
-    fontSize: responsive.fontSM,
-    color: "#000",
-    fontWeight: "500",
-  },
-  periodTextActive: {
-    color: "#fff",
-    fontWeight: "600",
-  },
-  totalCard: {
-    backgroundColor: "#fff",
-    marginHorizontal: responsive.paddingLG,
-    marginBottom: responsive.paddingLG,
-    padding: responsive.paddingXL,
-    borderRadius: 16,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.1,
-    shadowRadius: 8,
-    elevation: 4,
-  },
-  totalIconContainer: {
-    width: fs(60),
-    height: fs(60),
-    borderRadius: fs(30),
-    backgroundColor: "#E8F5E9",
-    justifyContent: "center",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  totalLabel: {
-    fontSize: responsive.fontMD,
-    color: "#8E8E93",
-    marginBottom: responsive.paddingSM,
-  },
-  totalAmount: {
+  earningsChangeText: { color: '#fff', fontSize: typography.size.xs, fontFamily: typography.fontFamily.bold },
+  earningsLabel: { color: 'rgba(255,255,255,0.85)', fontSize: typography.size.sm, fontFamily: typography.fontFamily.medium },
+  earningsAmount: {
+    color: '#fff',
     fontSize: fs(34),
-    fontWeight: "bold",
-    color: "#000",
-    marginBottom: responsive.paddingLG,
-    textAlign: "center",
+    fontFamily: typography.fontFamily.bold,
+    marginTop: 4,
+    marginBottom: spacing.lg,
+    letterSpacing: -0.5,
   },
-  withdrawButton: {
-    flexDirection: "row",
-    backgroundColor: "#34C759",
-    paddingVertical: responsive.paddingSM,
-    paddingHorizontal: responsive.paddingXL,
-    borderRadius: 8,
-    alignItems: "center",
-    gap: 8,
+  withdrawBtn: { marginTop: 0 },
+
+  statRow: { flexDirection: 'row', gap: spacing.sm },
+
+  txRow: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    gap: spacing.md,
+    paddingHorizontal: spacing.md,
+    paddingVertical: spacing.md,
   },
-  withdrawButtonText: {
-    color: "#fff",
-    fontSize: responsive.fontMD,
-    fontWeight: "600",
+  txDivider: {
+    borderBottomWidth: StyleSheet.hairlineWidth,
+    borderBottomColor: colors.divider,
   },
-  statsGrid: {
-    flexDirection: "row",
-    paddingHorizontal: responsive.paddingLG,
-    flexWrap: "wrap",
-    gap: 12,
-    marginBottom: responsive.paddingLG,
+  txIcon: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: colors.successSurface,
+    alignItems: 'center', justifyContent: 'center',
   },
-  statCard: {
-    flexGrow: 1,
-    flexBasis: fs(110),
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: 16,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
+  txStudent: { fontSize: typography.size.md, color: colors.textPrimary, fontFamily: typography.fontFamily.semibold },
+  txDestination: { fontSize: typography.size.xs, color: colors.textSecondary, marginTop: 2 },
+  txRight: { alignItems: 'flex-end' },
+  txAmount: { fontSize: typography.size.md, color: colors.success, fontFamily: typography.fontFamily.bold },
+  txTime: { fontSize: typography.size.xs, color: colors.textTertiary, marginTop: 2 },
+
+  pmRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  pmIcon: {
+    width: 44, height: 44, borderRadius: 22,
+    alignItems: 'center', justifyContent: 'center',
   },
-  statIconContainer: {
-    marginBottom: 8,
+  pmHeaderRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  pmLabel: { fontSize: typography.size.md, color: colors.textPrimary, fontFamily: typography.fontFamily.semibold },
+  pmDetail: { fontSize: typography.size.sm, color: colors.textSecondary, marginTop: 2 },
+
+  addPmBtn: {
+    flexDirection: 'row',
+    alignItems: 'center',
+    justifyContent: 'center',
+    gap: spacing.sm,
+    paddingVertical: spacing.md,
+    borderWidth: 1.5,
+    borderStyle: 'dashed',
+    borderColor: colors.primary,
+    borderRadius: radii.md,
+    backgroundColor: colors.primarySurface,
   },
-  statValue: {
-    fontSize: responsive.fontXL,
-    fontWeight: "bold",
-    color: "#000",
-    marginBottom: 4,
-  },
-  statLabel: {
-    fontSize: responsive.fontXS,
-    color: "#8E8E93",
-    textAlign: "center",
-  },
-  section: {
-    paddingHorizontal: responsive.paddingLG,
-    marginBottom: responsive.paddingXL,
-  },
-  sectionHeader: {
-    flexDirection: "row",
-    justifyContent: "space-between",
-    alignItems: "center",
-    marginBottom: 12,
-  },
-  sectionTitle: {
-    fontSize: responsive.fontXL,
-    fontWeight: "600",
-    color: "#000",
-    marginBottom: responsive.paddingMD,
-  },
-  seeAllText: {
-    fontSize: responsive.fontSM,
-    color: "#007AFF",
-    fontWeight: "500",
-  },
-  transactionCard: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: responsive.paddingMD,
-    marginBottom: 8,
-    alignItems: "center",
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 1 },
-    shadowOpacity: 0.05,
-    shadowRadius: 2,
-    elevation: 1,
-  },
-  transactionIcon: {
-    width: fs(40),
-    height: fs(40),
-    borderRadius: fs(20),
-    backgroundColor: "#E8F5E9",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  transactionDetails: {
-    flex: 1,
-  },
-  transactionStudent: {
-    fontSize: responsive.fontMD,
-    fontWeight: "600",
-    color: "#000",
-    marginBottom: 2,
-  },
-  transactionDestination: {
-    fontSize: responsive.fontSM,
-    color: "#8E8E93",
-    marginBottom: 2,
-  },
-  transactionTime: {
-    fontSize: responsive.fontXS,
-    color: "#8E8E93",
-  },
-  transactionAmount: {
-    fontSize: responsive.fontLG,
-    fontWeight: "bold",
-    color: "#34C759",
-    maxWidth: "42%",
-    textAlign: "right",
-  },
-  paymentCard: {
-    flexDirection: "row",
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: responsive.paddingMD,
-    alignItems: "center",
-    marginBottom: 12,
-    shadowColor: "#000",
-    shadowOffset: { width: 0, height: 2 },
-    shadowOpacity: 0.05,
-    shadowRadius: 4,
-    elevation: 2,
-  },
-  paymentIconContainer: {
-    width: fs(46),
-    height: fs(46),
-    borderRadius: fs(23),
-    backgroundColor: "#E3F2FD",
-    justifyContent: "center",
-    alignItems: "center",
-    marginRight: 12,
-  },
-  paymentDetails: {
-    flex: 1,
-  },
-  paymentTitle: {
-    fontSize: responsive.fontMD,
-    fontWeight: "600",
-    color: "#000",
-    marginBottom: 4,
-  },
-  paymentDescription: {
-    fontSize: responsive.fontSM,
-    color: "#8E8E93",
-  },
-  addPaymentButton: {
-    flexDirection: "row",
-    alignItems: "center",
-    justifyContent: "center",
-    backgroundColor: "#fff",
-    borderRadius: 12,
-    padding: responsive.paddingMD,
-    borderWidth: 1,
-    borderColor: "#E5E5EA",
-    borderStyle: "dashed",
-    gap: 8,
-  },
-  addPaymentText: {
-    fontSize: responsive.fontMD,
-    color: "#007AFF",
-    fontWeight: "500",
-  },
+  addPmText: { color: colors.primary, fontSize: typography.size.md, fontFamily: typography.fontFamily.bold },
 });

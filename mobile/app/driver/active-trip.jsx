@@ -1,509 +1,365 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, StatusBar } from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { responsive, wp, hp } from "../utils/responsive";
+import React, { useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Animated,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import { LinearGradient } from 'expo-linear-gradient';
+import {
+  Call,
+  Danger,
+  Flash,
+  Location,
+  Map1,
+  MessageNotif,
+  People,
+  Routing2,
+  TickCircle,
+  TickSquare,
+  Timer1,
+  Warning2,
+} from 'iconsax-react-native';
+
+import ScreenContainer from '../components/driver/ScreenContainer';
+import HeroHeader from '../components/driver/HeroHeader';
+import SectionHeader from '../components/driver/SectionHeader';
+import Card from '../components/driver/Card';
+import Badge from '../components/driver/Badge';
+import PrimaryButton from '../components/driver/PrimaryButton';
+import {
+  colors,
+  gradients,
+  spacing,
+  typography,
+  radii,
+  shadows,
+  fs,
+  layout,
+  hp,
+} from '../theme';
+import { getActiveTrip } from '../../services/mock/driver';
+
+const STATUS_CYCLE = {
+  waiting: 'picked-up',
+  'picked-up': 'dropped-off',
+  'dropped-off': 'waiting',
+};
+
+const STATUS_META = {
+  waiting: { label: 'Waiting', color: colors.textTertiary, surface: colors.surfaceMuted, icon: Timer1, tone: 'neutral' },
+  'picked-up': { label: 'Picked Up', color: colors.success, surface: colors.successSurface, icon: TickCircle, tone: 'success' },
+  'dropped-off': { label: 'Dropped Off', color: colors.primary, surface: colors.primarySurface, icon: TickSquare, tone: 'primary' },
+};
 
 export default function ActiveTrip() {
-    const router = useRouter();
-    const [tripStatus, setTripStatus] = useState("in-progress"); // "not-started", "in-progress", "completed"
-    const [currentStop, setCurrentStop] = useState(1);
+  const router = useRouter();
+  const initial = useMemo(() => getActiveTrip(), []);
+  const [tripStatus, setTripStatus] = useState('in-progress'); // not-started | in-progress | completed
+  const [students, setStudents] = useState(initial.students);
 
-    const [students, setStudents] = useState([
-        {
-            id: 1,
-            name: "Ashan Perera",
-            pickup: "45, Galle Road, Colombo 03",
-            pickupTime: "6:45 AM",
-            status: "picked-up", // "waiting", "picked-up", "dropped-off"
-            parentPhone: "+94 77 123 4567",
-        },
-        {
-            id: 2,
-            name: "Sithmi Fernando",
-            pickup: "12, Duplication Road, Colombo 04",
-            pickupTime: "6:50 AM",
-            status: "picked-up",
-            parentPhone: "+94 76 234 5678",
-        },
-        {
-            id: 3,
-            name: "Kavindu Silva",
-            pickup: "78, Baseline Road, Colombo 09",
-            pickupTime: "7:00 AM",
-            status: "waiting",
-            parentPhone: "+94 75 345 6789",
-        },
-        {
-            id: 4,
-            name: "Nethmi Wickramasinghe",
-            pickup: "23, Green Path, Colombo 07",
-            pickupTime: "7:10 AM",
-            status: "waiting",
-            parentPhone: "+94 74 456 7890",
-        },
-    ]);
+  const totalStudents = students.length;
+  const pickedUpCount = students.filter((s) => s.status === 'picked-up' || s.status === 'dropped-off').length;
+  const progress = totalStudents > 0 ? pickedUpCount / totalStudents : 0;
+  const progressPct = Math.round(progress * 100);
 
-    const toggleStudentStatus = (id) => {
-        setStudents(students.map(student => {
-            if (student.id === id) {
-                const newStatus = student.status === "waiting" ? "picked-up" :
-                    student.status === "picked-up" ? "dropped-off" : "waiting";
-                return { ...student, status: newStatus };
-            }
-            return student;
-        }));
-    };
-
-    const pickedUpCount = students.filter(s => s.status === "picked-up" || s.status === "dropped-off").length;
-    const totalStudents = students.length;
-
-    const startTrip = () => {
-        setTripStatus("in-progress");
-    };
-
-    const endTrip = () => {
-        setTripStatus("completed");
-        router.back();
-    };
-
-    return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="dark-content" />
-
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#000" />
-                </TouchableOpacity>
-                <View style={styles.headerCenter}>
-                    <Text style={styles.headerTitle}>Morning Trip</Text>
-                    <Text style={styles.headerSubtitle}>Royal College Route</Text>
-                </View>
-                <TouchableOpacity style={styles.emergencyButton}>
-                    <Ionicons name="warning" size={24} color="#FF3B30" />
-                </TouchableOpacity>
-            </View>
-
-            {/* Trip Stats */}
-            <View style={styles.statsContainer}>
-                <View style={styles.statCard}>
-                    <Ionicons name="people" size={24} color="#007AFF" />
-                    <Text style={styles.statValue}>{pickedUpCount}/{totalStudents}</Text>
-                    <Text style={styles.statLabel}>Students</Text>
-                </View>
-                <View style={styles.statCard}>
-                    <Ionicons name="time" size={24} color="#34C759" />
-                    <Text style={styles.statValue}>25m</Text>
-                    <Text style={styles.statLabel}>Duration</Text>
-                </View>
-                <View style={styles.statCard}>
-                    <Ionicons name="navigate" size={24} color="#FF9500" />
-                    <Text style={styles.statValue}>4.2 km</Text>
-                    <Text style={styles.statLabel}>Distance</Text>
-                </View>
-            </View>
-
-            {/* Progress Bar */}
-            <View style={styles.progressSection}>
-                <View style={styles.progressHeader}>
-                    <Text style={styles.progressTitle}>Trip Progress</Text>
-                    <Text style={styles.progressPercentage}>{Math.round((pickedUpCount / totalStudents) * 100)}%</Text>
-                </View>
-                <View style={styles.progressBarContainer}>
-                    <View style={[styles.progressBar, { width: `${(pickedUpCount / totalStudents) * 100}%` }]} />
-                </View>
-            </View>
-
-            <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-                <View style={styles.content}>
-                    {/* Student Checklist */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Student Checklist</Text>
-
-                        {students.map((student, index) => (
-                            <View key={student.id} style={styles.studentCard}>
-                                <View style={styles.studentRow}>
-                                    <View style={styles.studentNumber}>
-                                        <Text style={styles.studentNumberText}>{index + 1}</Text>
-                                    </View>
-
-                                    <View style={styles.studentInfo}>
-                                        <Text style={styles.studentName}>{student.name}</Text>
-                                        <View style={styles.locationRow}>
-                                            <Ionicons name="location" size={14} color="#8E8E93" />
-                                            <Text style={styles.locationText} numberOfLines={1}>{student.pickup}</Text>
-                                        </View>
-                                        <View style={styles.timeRow}>
-                                            <Ionicons name="time" size={14} color="#8E8E93" />
-                                            <Text style={styles.timeText}>{student.pickupTime}</Text>
-                                        </View>
-                                    </View>
-
-                                    <View style={styles.studentActions}>
-                                        <TouchableOpacity
-                                            style={[
-                                                styles.statusButton,
-                                                student.status === "picked-up" && styles.statusButtonPickedUp,
-                                                student.status === "dropped-off" && styles.statusButtonDropped
-                                            ]}
-                                            onPress={() => toggleStudentStatus(student.id)}
-                                        >
-                                            <Ionicons
-                                                name={
-                                                    student.status === "waiting" ? "ellipse-outline" :
-                                                        student.status === "picked-up" ? "checkmark-circle" :
-                                                            "checkmark-done-circle"
-                                                }
-                                                size={24}
-                                                color={
-                                                    student.status === "waiting" ? "#8E8E93" :
-                                                        student.status === "picked-up" ? "#34C759" :
-                                                            "#007AFF"
-                                                }
-                                            />
-                                        </TouchableOpacity>
-
-                                        <TouchableOpacity style={styles.callButton}>
-                                            <Ionicons name="call" size={18} color="#007AFF" />
-                                        </TouchableOpacity>
-                                    </View>
-                                </View>
-
-                                {student.status !== "waiting" && (
-                                    <View style={[
-                                        styles.statusBadge,
-                                        student.status === "picked-up" && styles.statusBadgePickedUp,
-                                        student.status === "dropped-off" && styles.statusBadgeDropped
-                                    ]}>
-                                        <Ionicons
-                                            name={student.status === "picked-up" ? "checkmark" : "checkmark-done"}
-                                            size={14}
-                                            color={student.status === "picked-up" ? "#34C759" : "#007AFF"}
-                                        />
-                                        <Text style={[
-                                            styles.statusBadgeText,
-                                            student.status === "picked-up" && styles.statusBadgeTextPickedUp,
-                                            student.status === "dropped-off" && styles.statusBadgeTextDropped
-                                        ]}>
-                                            {student.status === "picked-up" ? "Picked Up" : "Dropped Off"}
-                                        </Text>
-                                    </View>
-                                )}
-                            </View>
-                        ))}
-                    </View>
-
-                    {/* Quick Actions */}
-                    <View style={styles.section}>
-                        <Text style={styles.sectionTitle}>Quick Actions</Text>
-                        <TouchableOpacity style={styles.actionButton}>
-                            <Ionicons name="navigation" size={22} color="#007AFF" />
-                            <Text style={styles.actionButtonText}>Open Navigation</Text>
-                            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.actionButton}>
-                            <Ionicons name="megaphone" size={22} color="#FF9500" />
-                            <Text style={styles.actionButtonText}>Send Broadcast Message</Text>
-                            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-                        </TouchableOpacity>
-                        <TouchableOpacity style={styles.actionButton}>
-                            <Ionicons name="alert-circle" size={22} color="#FF3B30" />
-                            <Text style={styles.actionButtonText}>Report Issue</Text>
-                            <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-                        </TouchableOpacity>
-                    </View>
-                </View>
-
-                <View style={{ height: 120 }} />
-            </ScrollView>
-
-            {/* Bottom Action Button */}
-            <View style={styles.bottomActions}>
-                {tripStatus === "not-started" ? (
-                    <TouchableOpacity style={styles.startTripButton} onPress={startTrip}>
-                        <Ionicons name="play-circle" size={24} color="#fff" />
-                        <Text style={styles.startTripButtonText}>Start Trip</Text>
-                    </TouchableOpacity>
-                ) : tripStatus === "in-progress" ? (
-                    <TouchableOpacity style={styles.endTripButton} onPress={endTrip}>
-                        <Ionicons name="checkmark-circle" size={24} color="#fff" />
-                        <Text style={styles.endTripButtonText}>End Trip</Text>
-                    </TouchableOpacity>
-                ) : null}
-            </View>
-        </SafeAreaView>
+  const toggle = (id) => {
+    setStudents((prev) =>
+      prev.map((s) => (s.id === id ? { ...s, status: STATUS_CYCLE[s.status] } : s))
     );
+  };
+
+  const startTrip = () => setTripStatus('in-progress');
+  const endTrip = () => {
+    setTripStatus('completed');
+    router.back();
+  };
+
+  return (
+    <ScreenContainer edges={['left', 'right']} statusBarStyle="light-content">
+      <HeroHeader
+        showBack
+        onBack={() => router.back()}
+        title={initial.label}
+        subtitle={initial.school}
+        rightSlot={
+          <TouchableOpacity style={styles.emergencyBtn} hitSlop={6} activeOpacity={0.85}>
+            <Warning2 size={fs(20)} color={colors.danger} variant="Bold" />
+          </TouchableOpacity>
+        }
+      >
+        <View style={styles.heroStats}>
+          <HeroStat icon={People} value={`${pickedUpCount}/${totalStudents}`} label="Students" />
+          <View style={styles.heroDivider} />
+          <HeroStat icon={Timer1} value={`${initial.durationMins}m`} label="Duration" />
+          <View style={styles.heroDivider} />
+          <HeroStat icon={Routing2} value={`${initial.distanceKm} km`} label="Covered" />
+        </View>
+      </HeroHeader>
+
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: spacing['3xl'] + 80 }}
+      >
+        {/* Progress */}
+        <View style={styles.section}>
+          <Card padding="lg">
+            <View style={styles.progressHeader}>
+              <View>
+                <Text style={styles.progressTitle}>Trip Progress</Text>
+                <Text style={styles.progressSubtitle}>
+                  {pickedUpCount} of {totalStudents} students on board
+                </Text>
+              </View>
+              <Text style={styles.progressPct}>{progressPct}%</Text>
+            </View>
+            <View style={styles.progressTrack}>
+              <Animated.View style={[styles.progressFill, { width: `${progressPct}%` }]} />
+            </View>
+          </Card>
+        </View>
+
+        {/* Student Checklist */}
+        <View style={styles.section}>
+          <SectionHeader
+            title="Student Checklist"
+            action={`${pickedUpCount}/${totalStudents}`}
+            hideChevron
+          />
+          {students.map((student, idx) => {
+            const meta = STATUS_META[student.status];
+            const StatusIcon = meta.icon;
+            return (
+              <Card key={student.id} padding="md" style={styles.studentCard}>
+                <View style={styles.studentRow}>
+                  <View style={styles.studentNum}>
+                    <Text style={styles.studentNumText}>{idx + 1}</Text>
+                  </View>
+                  <View style={styles.studentInfo}>
+                    <Text style={styles.studentName} numberOfLines={1}>{student.name}</Text>
+                    <View style={styles.studentDetailRow}>
+                      <Location size={fs(13)} color={colors.textTertiary} variant="Linear" />
+                      <Text style={styles.studentDetailText} numberOfLines={1}>
+                        {student.pickup}
+                      </Text>
+                    </View>
+                    <View style={styles.studentDetailRow}>
+                      <Timer1 size={fs(13)} color={colors.textTertiary} variant="Linear" />
+                      <Text style={styles.studentDetailText}>{student.pickupTime}</Text>
+                    </View>
+                  </View>
+                  <View style={styles.studentActions}>
+                    <TouchableOpacity
+                      style={[styles.statusBtn, { backgroundColor: meta.surface }]}
+                      activeOpacity={0.85}
+                      onPress={() => toggle(student.id)}
+                    >
+                      <StatusIcon size={fs(22)} color={meta.color} variant="Bold" />
+                    </TouchableOpacity>
+                    <TouchableOpacity style={styles.callBtn} hitSlop={6}>
+                      <Call size={fs(16)} color={colors.primary} variant="Bold" />
+                    </TouchableOpacity>
+                  </View>
+                </View>
+                {student.status !== 'waiting' ? (
+                  <View style={styles.studentStatusRow}>
+                    <Badge label={meta.label} tone={meta.tone} variant="soft" size="xs" />
+                  </View>
+                ) : null}
+              </Card>
+            );
+          })}
+        </View>
+
+        {/* Quick Actions */}
+        <View style={styles.section}>
+          <SectionHeader title="Quick Actions" />
+          <ActionRow
+            icon={Map1}
+            tone={colors.primary}
+            label="Open Navigation"
+            description="Pickup turn-by-turn directions"
+          />
+          <ActionRow
+            icon={MessageNotif}
+            tone={colors.warning}
+            label="Send Broadcast Message"
+            description="Notify all parents on this route"
+          />
+          <ActionRow
+            icon={Danger}
+            tone={colors.danger}
+            label="Report Issue"
+            description="Flag a safety or vehicle concern"
+            isLast
+          />
+        </View>
+      </ScrollView>
+
+      {/* Sticky bottom CTA */}
+      <View style={styles.bottomBar}>
+        {tripStatus === 'not-started' ? (
+          <PrimaryButton
+            title="Start Trip"
+            variant="gradient"
+            size="lg"
+            fullWidth
+            iconLeft={<Flash size={fs(20)} color="#fff" variant="Bold" />}
+            onPress={startTrip}
+          />
+        ) : (
+          <PrimaryButton
+            title={`Complete Trip (${pickedUpCount}/${totalStudents})`}
+            variant="success"
+            size="lg"
+            fullWidth
+            iconLeft={<TickCircle size={fs(20)} color="#fff" variant="Bold" />}
+            onPress={endTrip}
+          />
+        )}
+      </View>
+    </ScreenContainer>
+  );
+}
+
+const HeroStat = ({ icon: Icon, value, label }) => (
+  <View style={styles.heroStat}>
+    <View style={styles.heroStatIcon}>
+      <Icon size={fs(16)} color={colors.onDark.text} variant="Bold" />
+    </View>
+    <Text style={styles.heroStatValue}>{value}</Text>
+    <Text style={styles.heroStatLabel}>{label}</Text>
+  </View>
+);
+
+const ActionRow = ({ icon: Icon, tone, label, description, isLast }) => (
+  <Card
+    onPress={() => {}}
+    padding="md"
+    style={{ marginBottom: isLast ? 0 : spacing.sm }}
+  >
+    <View style={styles.actionRow}>
+      <View style={[styles.actionIcon, { backgroundColor: hexAlpha(tone, 0.12) }]}>
+        <Icon size={fs(20)} color={tone} variant="Bold" />
+      </View>
+      <View style={{ flex: 1 }}>
+        <Text style={styles.actionLabel}>{label}</Text>
+        <Text style={styles.actionDescription}>{description}</Text>
+      </View>
+    </View>
+  </Card>
+);
+
+function hexAlpha(hex, alpha) {
+  const clean = (hex ?? '').replace('#', '');
+  if (clean.length !== 6) return 'rgba(59,130,246,0.12)';
+  const r = parseInt(clean.slice(0, 2), 16);
+  const g = parseInt(clean.slice(2, 4), 16);
+  const b = parseInt(clean.slice(4, 6), 16);
+  return `rgba(${r}, ${g}, ${b}, ${alpha})`;
 }
 
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: "#F2F2F7",
-    },
-    header: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: responsive.paddingLG,
-        backgroundColor: "#fff",
-        borderBottomWidth: 1,
-        borderBottomColor: "#E5E5EA",
-    },
-    backButton: {
-        padding: responsive.paddingSM,
-    },
-    headerCenter: {
-        flex: 1,
-        alignItems: "center",
-    },
-    headerTitle: {
-        fontSize: responsive.fontXL,
-        fontWeight: "bold",
-        color: "#000",
-    },
-    headerSubtitle: {
-        fontSize: responsive.fontMD,
-        color: "#8E8E93",
-        marginTop: 2,
-    },
-    emergencyButton: {
-        padding: responsive.paddingSM,
-    },
-    statsContainer: {
-        flexDirection: "row",
-        padding: responsive.paddingLG,
-        gap: responsive.paddingMD,
-        backgroundColor: "#fff",
-    },
-    statCard: {
-        flex: 1,
-        backgroundColor: "#F2F2F7",
-        borderRadius: responsive.radiusLG,
-        padding: responsive.paddingMD,
-        alignItems: "center",
-    },
-    statValue: {
-        fontSize: responsive.fontXL,
-        fontWeight: "bold",
-        color: "#000",
-        marginTop: responsive.paddingSM,
-    },
-    statLabel: {
-        fontSize: responsive.fontSM,
-        color: "#8E8E93",
-        marginTop: 2,
-    },
-    progressSection: {
-        backgroundColor: "#fff",
-        padding: responsive.paddingLG,
-        borderBottomWidth: 1,
-        borderBottomColor: "#E5E5EA",
-    },
-    progressHeader: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: responsive.paddingSM,
-    },
-    progressTitle: {
-        fontSize: responsive.fontLG,
-        fontWeight: "600",
-        color: "#000",
-    },
-    progressPercentage: {
-        fontSize: responsive.fontLG,
-        fontWeight: "bold",
-        color: "#007AFF",
-    },
-    progressBarContainer: {
-        height: hp(8),
-        backgroundColor: "#E5E5EA",
-        borderRadius: responsive.radiusSM,
-        overflow: "hidden",
-    },
-    progressBar: {
-        height: "100%",
-        backgroundColor: "#34C759",
-        borderRadius: responsive.radiusSM,
-    },
-    scrollView: {
-        flex: 1,
-    },
-    content: {
-        paddingHorizontal: responsive.paddingLG,
-    },
-    section: {
-        marginTop: responsive.paddingLG,
-    },
-    sectionTitle: {
-        fontSize: responsive.fontXL,
-        fontWeight: "600",
-        color: "#000",
-        marginBottom: responsive.paddingMD,
-    },
-    studentCard: {
-        backgroundColor: "#fff",
-        borderRadius: responsive.radiusLG,
-        padding: responsive.paddingLG,
-        marginBottom: responsive.paddingMD,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
-    },
-    studentRow: {
-        flexDirection: "row",
-        alignItems: "center",
-    },
-    studentNumber: {
-        width: wp(32),
-        height: wp(32),
-        borderRadius: wp(16),
-        backgroundColor: "#E3F2FD",
-        justifyContent: "center",
-        alignItems: "center",
-        marginRight: responsive.paddingMD,
-    },
-    studentNumberText: {
-        fontSize: responsive.fontLG,
-        fontWeight: "bold",
-        color: "#007AFF",
-    },
-    studentInfo: {
-        flex: 1,
-    },
-    studentName: {
-        fontSize: responsive.fontLG,
-        fontWeight: "600",
-        color: "#000",
-        marginBottom: 4,
-    },
-    locationRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 4,
-        marginBottom: 2,
-    },
-    locationText: {
-        flex: 1,
-        fontSize: responsive.fontSM,
-        color: "#8E8E93",
-    },
-    timeRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 4,
-    },
-    timeText: {
-        fontSize: responsive.fontSM,
-        color: "#8E8E93",
-    },
-    studentActions: {
-        flexDirection: "row",
-        gap: responsive.paddingSM,
-        alignItems: "center",
-    },
-    statusButton: {
-        width: wp(44),
-        height: wp(44),
-        borderRadius: wp(22),
-        backgroundColor: "#F2F2F7",
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    statusButtonPickedUp: {
-        backgroundColor: "#E8F5E9",
-    },
-    statusButtonDropped: {
-        backgroundColor: "#E3F2FD",
-    },
-    callButton: {
-        width: wp(36),
-        height: wp(36),
-        borderRadius: wp(18),
-        backgroundColor: "#E3F2FD",
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    statusBadge: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 4,
-        marginTop: responsive.paddingMD,
-        paddingTop: responsive.paddingMD,
-        borderTopWidth: 1,
-        borderTopColor: "#E5E5EA",
-    },
-    statusBadgePickedUp: {
-        borderTopColor: "#C8E6C9",
-    },
-    statusBadgeDropped: {
-        borderTopColor: "#BBDEFB",
-    },
-    statusBadgeText: {
-        fontSize: responsive.fontSM,
-        fontWeight: "600",
-        color: "#8E8E93",
-    },
-    statusBadgeTextPickedUp: {
-        color: "#34C759",
-    },
-    statusBadgeTextDropped: {
-        color: "#007AFF",
-    },
-    actionButton: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "#fff",
-        borderRadius: responsive.radiusLG,
-        padding: responsive.paddingLG,
-        marginBottom: responsive.paddingMD,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
-    },
-    actionButtonText: {
-        flex: 1,
-        fontSize: responsive.fontLG,
-        color: "#000",
-        marginLeft: responsive.paddingMD,
-    },
-    bottomActions: {
-        backgroundColor: "#fff",
-        padding: responsive.paddingLG,
-        borderTopWidth: 1,
-        borderTopColor: "#E5E5EA",
-    },
-    startTripButton: {
-        flexDirection: "row",
-        backgroundColor: "#34C759",
-        padding: responsive.paddingLG,
-        borderRadius: responsive.radiusMD,
-        justifyContent: "center",
-        alignItems: "center",
-        gap: responsive.paddingSM,
-    },
-    startTripButtonText: {
-        fontSize: responsive.fontXL,
-        fontWeight: "600",
-        color: "#fff",
-    },
-    endTripButton: {
-        flexDirection: "row",
-        backgroundColor: "#007AFF",
-        padding: responsive.paddingLG,
-        borderRadius: responsive.radiusMD,
-        justifyContent: "center",
-        alignItems: "center",
-        gap: responsive.paddingSM,
-    },
-    endTripButtonText: {
-        fontSize: responsive.fontXL,
-        fontWeight: "600",
-        color: "#fff",
-    },
+  emergencyBtn: {
+    width: 40,
+    height: 40,
+    borderRadius: 20,
+    backgroundColor: 'rgba(255,255,255,0.92)',
+    alignItems: 'center',
+    justifyContent: 'center',
+  },
+
+  heroStats: {
+    marginHorizontal: spacing.lg,
+    backgroundColor: colors.onDark.surface,
+    borderRadius: radii.lg,
+    padding: spacing.md,
+    flexDirection: 'row',
+    alignItems: 'center',
+  },
+  heroStat: { flex: 1, alignItems: 'center' },
+  heroDivider: { width: 1, height: 36, backgroundColor: colors.onDark.border },
+  heroStatIcon: {
+    width: 32, height: 32, borderRadius: 16,
+    backgroundColor: 'rgba(255,255,255,0.18)',
+    alignItems: 'center', justifyContent: 'center', marginBottom: 6,
+  },
+  heroStatValue: { color: colors.onDark.text, fontFamily: typography.fontFamily.bold, fontSize: typography.size.lg },
+  heroStatLabel: { color: colors.onDark.textMuted, fontSize: 11, marginTop: 2 },
+
+  section: { paddingHorizontal: spacing.lg, marginTop: spacing.xl },
+
+  progressHeader: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'flex-start',
+    marginBottom: spacing.md,
+  },
+  progressTitle: { fontSize: typography.size.md, color: colors.textPrimary, fontFamily: typography.fontFamily.bold },
+  progressSubtitle: { fontSize: typography.size.xs, color: colors.textSecondary, marginTop: 2 },
+  progressPct: { fontSize: typography.size.xl, color: colors.primary, fontFamily: typography.fontFamily.bold },
+  progressTrack: {
+    height: 10,
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.sm,
+    overflow: 'hidden',
+  },
+  progressFill: {
+    height: '100%',
+    backgroundColor: colors.success,
+    borderRadius: radii.sm,
+  },
+
+  studentCard: { marginBottom: spacing.sm },
+  studentRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  studentNum: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: colors.primarySurface,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  studentNumText: { color: colors.primary, fontFamily: typography.fontFamily.bold, fontSize: typography.size.md },
+  studentInfo: { flex: 1 },
+  studentName: { fontSize: typography.size.md, color: colors.textPrimary, fontFamily: typography.fontFamily.semibold },
+  studentDetailRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 2 },
+  studentDetailText: { fontSize: typography.size.xs, color: colors.textSecondary, flex: 1 },
+  studentActions: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  statusBtn: {
+    width: 44, height: 44, borderRadius: 22,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  callBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: colors.primarySurface,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  studentStatusRow: {
+    marginTop: spacing.sm,
+    paddingTop: spacing.sm,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.divider,
+  },
+
+  actionRow: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  actionIcon: {
+    width: 44, height: 44, borderRadius: radii.md,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  actionLabel: { fontSize: typography.size.md, color: colors.textPrimary, fontFamily: typography.fontFamily.semibold },
+  actionDescription: { fontSize: typography.size.xs, color: colors.textSecondary, marginTop: 2 },
+
+  bottomBar: {
+    position: 'absolute',
+    bottom: layout.tabBarHeight,
+    left: 0, right: 0,
+    backgroundColor: colors.surface,
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.md,
+    borderTopWidth: StyleSheet.hairlineWidth,
+    borderTopColor: colors.divider,
+    ...shadows.lg,
+  },
 });

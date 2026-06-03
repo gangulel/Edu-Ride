@@ -1,76 +1,72 @@
-import React, { useState } from 'react';
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, Image } from 'react-native';
+import React, { useState, useEffect, useCallback } from 'react';
+import {
+    View, Text, StyleSheet, ScrollView, SafeAreaView,
+    TouchableOpacity, ActivityIndicator,
+} from 'react-native';
 import { useRouter, useLocalSearchParams } from 'expo-router';
 import { Ionicons } from '@expo/vector-icons';
 import { responsive, wp, hp } from '../utils/responsive';
-
-// Components
-import { Button, Badge, Avatar, RatingStars, Card, Divider } from '../components/atoms';
+import { Button, Badge, Avatar, RatingStars, Card } from '../components/atoms';
 import { ReviewCard } from '../components/molecules';
 import { Header, ScheduleTimeline } from '../components/organisms';
+import { getRouteById } from '../../services/parentApi';
+
+function formatTime(hhmm) {
+    if (!hhmm) return '—';
+    const [h, m] = hhmm.split(':').map(Number);
+    const ampm = h >= 12 ? 'PM' : 'AM';
+    const hour = h % 12 || 12;
+    return `${hour}:${String(m).padStart(2, '0')} ${ampm}`;
+}
+
+function buildInsuranceLabel(vehicle) {
+    if (!vehicle) return null;
+    if (vehicle.insuranceExpiry) {
+        const exp = new Date(vehicle.insuranceExpiry);
+        return `Valid until ${exp.toLocaleDateString('en-US', { month: 'short', year: 'numeric' })}`;
+    }
+    if (vehicle.insuranceProvider) return vehicle.insuranceProvider;
+    return null;
+}
+
+function buildSafetyFeatures(vehicle) {
+    const features = [];
+    if (!vehicle) return features;
+    if (vehicle.isAC) features.push('Air Conditioning');
+    features.push('GPS Tracking');
+    features.push('First Aid Kit');
+    if (vehicle.insuranceProvider || vehicle.insuranceExpiry) features.push('Fully Insured');
+    return features.length ? features : ['GPS Tracking', 'First Aid Kit'];
+}
 
 export default function ServiceDetailScreen() {
     const router = useRouter();
-    const { id } = useLocalSearchParams();
+    const { id, routeId } = useLocalSearchParams();
     const [activeTab, setActiveTab] = useState('info');
+    const [route, setRoute] = useState(null);
+    const [loading, setLoading] = useState(true);
+    const [error, setError] = useState(null);
 
-    // Mock driver data
-    const driver = {
-        id: 1,
-        name: 'Kasun Perera',
-        photo: null,
-        verified: true,
-        yearsExperience: 8,
-        totalStudents: 156,
-        rating: 4.9,
-        reviewCount: 234,
-        monthlyFee: 8500,
-        weeklyFee: 2500,
-        school: 'Royal College',
-        schoolArrival: '7:45 AM',
-        schoolDeparture: '2:30 PM',
-        vehicle: {
-            make: 'Toyota',
-            model: 'HiAce',
-            year: 2021,
-            licensePlate: 'CAB-1234',
-            seatingCapacity: 28,
-            availableSeats: 4,
-            photos: [],
-            safetyFeatures: ['Air Conditioning', 'GPS Tracking', 'First Aid Kit', 'Fire Extinguisher'],
-            insurance: 'Valid until Dec 2026',
-        },
-        stops: [
-            { id: 1, location: 'Colombo 07', pickupTime: '6:45 AM', dropoffTime: '3:30 PM' },
-            { id: 2, location: 'Dehiwala', pickupTime: '7:00 AM', dropoffTime: '3:15 PM' },
-            { id: 3, location: 'Mount Lavinia', pickupTime: '7:15 AM', dropoffTime: '3:00 PM' },
-            { id: 4, location: 'Bambalapitiya', pickupTime: '7:30 AM', dropoffTime: '2:45 PM' },
-        ],
-        daysOfOperation: ['Mon', 'Tue', 'Wed', 'Thu', 'Fri'],
-        cancellationPolicy: 'Cancellations with 7+ days notice receive full refund. 3-7 days: 50% refund. Less than 3 days: no refund.',
-        acceptedPayments: ['Card', 'Bank Transfer', 'Cash'],
-    };
+    const fetchRoute = useCallback(async () => {
+        const targetId = routeId || id;
+        if (!targetId) {
+            setError('No route information provided.');
+            setLoading(false);
+            return;
+        }
+        try {
+            setLoading(true);
+            setError(null);
+            const data = await getRouteById(targetId);
+            setRoute(data?.route || data);
+        } catch (err) {
+            setError(err.message || 'Failed to load service details.');
+        } finally {
+            setLoading(false);
+        }
+    }, [routeId, id]);
 
-    const reviews = [
-        {
-            id: 1,
-            author: { name: 'Parent of Grade 5 student', photo: null },
-            rating: 5,
-            date: '2026-01-15',
-            comment: 'Excellent service! Mr. Perera is very punctual and my child loves the friendly atmosphere. Highly recommended!',
-            driverResponse: {
-                text: 'Thank you for your kind words! Safety and punctuality are my top priorities.',
-                date: '2026-01-16',
-            },
-        },
-        {
-            id: 2,
-            author: { name: 'Parent of Grade 3 student', photo: null },
-            rating: 4,
-            date: '2026-01-10',
-            comment: 'Good service overall. The bus is clean and well-maintained. Sometimes arrives a few minutes late during traffic.',
-        },
-    ];
+    useEffect(() => { fetchRoute(); }, [fetchRoute]);
 
     const tabs = [
         { key: 'info', label: 'Info' },
@@ -78,25 +74,78 @@ export default function ServiceDetailScreen() {
         { key: 'reviews', label: 'Reviews' },
     ];
 
+    if (loading) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <Header title="Service Details" showBack />
+                <View style={styles.centered}>
+                    <ActivityIndicator size="large" color="#007AFF" />
+                    <Text style={styles.loadingText}>Loading details...</Text>
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    if (error || !route) {
+        return (
+            <SafeAreaView style={styles.container}>
+                <Header title="Service Details" showBack />
+                <View style={styles.centered}>
+                    <Ionicons name="alert-circle-outline" size={48} color="#EF4444" />
+                    <Text style={styles.errorTitle}>Unable to load</Text>
+                    <Text style={styles.errorText}>{error || 'Service details not available.'}</Text>
+                    <Button title="Try Again" onPress={fetchRoute} style={{ marginTop: 16 }} />
+                </View>
+            </SafeAreaView>
+        );
+    }
+
+    const driver = route.driver || {};
+    const vehicle = route.vehicle || {};
+    const stops = (route.stops || []).slice().sort((a, b) => a.order - b.order);
+    const daysOfOperation = route.daysOfOperation || [];
+    const safetyFeatures = buildSafetyFeatures(vehicle);
+    const insuranceLabel = buildInsuranceLabel(vehicle);
+    const driverId = driver._id || id;
+    const monthlyFee = driver.monthlyFee || 0;
+
+    // Map stops to ScheduleTimeline format
+    const timelineStops = stops.map((s) => ({
+        ...s,
+        pickupTime: formatTime(s.pickupTime),
+        dropoffTime: s.dropoffTime ? formatTime(s.dropoffTime) : null,
+    }));
+
+    const schoolArrivalDisplay = route.schoolArrival ? formatTime(route.schoolArrival) : null;
+    const schoolDepartureDisplay = route.schoolDeparture ? formatTime(route.schoolDeparture) : null;
+
     const renderTabContent = () => {
         switch (activeTab) {
             case 'schedule':
                 return (
                     <View style={styles.tabContent}>
-                        <ScheduleTimeline
-                            stops={driver.stops}
-                            school={driver.school}
-                            schoolArrival={driver.schoolArrival}
-                            schoolDeparture={driver.schoolDeparture}
-                            type="morning"
-                        />
-                        <ScheduleTimeline
-                            stops={driver.stops}
-                            school={driver.school}
-                            schoolArrival={driver.schoolArrival}
-                            schoolDeparture={driver.schoolDeparture}
-                            type="afternoon"
-                        />
+                        {stops.length === 0 ? (
+                            <Card style={styles.infoCard}>
+                                <Text style={styles.emptyText}>No stops have been added to this route yet.</Text>
+                            </Card>
+                        ) : (
+                            <>
+                                <ScheduleTimeline
+                                    stops={timelineStops}
+                                    school={route.school}
+                                    schoolArrival={schoolArrivalDisplay}
+                                    schoolDeparture={schoolDepartureDisplay}
+                                    type="morning"
+                                />
+                                <ScheduleTimeline
+                                    stops={timelineStops}
+                                    school={route.school}
+                                    schoolArrival={schoolArrivalDisplay}
+                                    schoolDeparture={schoolDepartureDisplay}
+                                    type="afternoon"
+                                />
+                            </>
+                        )}
 
                         <Card style={styles.daysCard}>
                             <Text style={styles.cardTitle}>Days of Operation</Text>
@@ -106,13 +155,13 @@ export default function ServiceDetailScreen() {
                                         key={day}
                                         style={[
                                             styles.dayBadge,
-                                            driver.daysOfOperation.includes(day) && styles.dayBadgeActive,
+                                            daysOfOperation.includes(day) && styles.dayBadgeActive,
                                         ]}
                                     >
                                         <Text
                                             style={[
                                                 styles.dayText,
-                                                driver.daysOfOperation.includes(day) && styles.dayTextActive,
+                                                daysOfOperation.includes(day) && styles.dayTextActive,
                                             ]}
                                         >
                                             {day}
@@ -129,22 +178,16 @@ export default function ServiceDetailScreen() {
                     <View style={styles.tabContent}>
                         <Card style={styles.ratingOverview}>
                             <View style={styles.ratingMain}>
-                                <Text style={styles.ratingBig}>{driver.rating}</Text>
-                                <RatingStars rating={driver.rating} size="medium" />
-                                <Text style={styles.reviewCountText}>{driver.reviewCount} reviews</Text>
+                                <Text style={styles.ratingBig}>{(driver.rating || 0).toFixed(1)}</Text>
+                                <RatingStars rating={driver.rating || 0} size="medium" />
+                                <Text style={styles.reviewCountText}>{driver.reviewCount || 0} reviews</Text>
                             </View>
                         </Card>
-
-                        {reviews.map((review) => (
-                            <ReviewCard key={review.id} review={review} />
-                        ))}
-
-                        <Button
-                            title="See All Reviews"
-                            variant="outline"
-                            fullWidth
-                            onPress={() => { }}
-                        />
+                        <Card style={styles.infoCard}>
+                            <Text style={styles.emptyText}>
+                                Reviews will appear here once parents submit them after trips.
+                            </Text>
+                        </Card>
                     </View>
                 );
 
@@ -159,26 +202,32 @@ export default function ServiceDetailScreen() {
                                     <Ionicons name="car" size={20} color="#8E8E93" />
                                     <Text style={styles.infoLabel}>Vehicle</Text>
                                     <Text style={styles.infoValue}>
-                                        {driver.vehicle.make} {driver.vehicle.model} ({driver.vehicle.year})
+                                        {vehicle.make && vehicle.model
+                                            ? `${vehicle.make} ${vehicle.model}${vehicle.year ? ` (${vehicle.year})` : ''}`
+                                            : 'Not specified'}
                                     </Text>
                                 </View>
                                 <View style={styles.infoItem}>
                                     <Ionicons name="document-text" size={20} color="#8E8E93" />
                                     <Text style={styles.infoLabel}>License Plate</Text>
-                                    <Text style={styles.infoValue}>{driver.vehicle.licensePlate}</Text>
+                                    <Text style={styles.infoValue}>{vehicle.licensePlate || '—'}</Text>
                                 </View>
                                 <View style={styles.infoItem}>
                                     <Ionicons name="people" size={20} color="#8E8E93" />
                                     <Text style={styles.infoLabel}>Capacity</Text>
                                     <Text style={styles.infoValue}>
-                                        {driver.vehicle.seatingCapacity} seats ({driver.vehicle.availableSeats} available)
+                                        {vehicle.capacity
+                                            ? `${vehicle.capacity} seats`
+                                            : '—'}
                                     </Text>
                                 </View>
-                                <View style={styles.infoItem}>
-                                    <Ionicons name="shield-checkmark" size={20} color="#8E8E93" />
-                                    <Text style={styles.infoLabel}>Insurance</Text>
-                                    <Text style={styles.infoValue}>{driver.vehicle.insurance}</Text>
-                                </View>
+                                {insuranceLabel ? (
+                                    <View style={styles.infoItem}>
+                                        <Ionicons name="shield-checkmark" size={20} color="#8E8E93" />
+                                        <Text style={styles.infoLabel}>Insurance</Text>
+                                        <Text style={styles.infoValue}>{insuranceLabel}</Text>
+                                    </View>
+                                ) : null}
                             </View>
                         </Card>
 
@@ -186,7 +235,7 @@ export default function ServiceDetailScreen() {
                         <Card style={styles.infoCard}>
                             <Text style={styles.cardTitle}>Safety Features</Text>
                             <View style={styles.featuresList}>
-                                {driver.vehicle.safetyFeatures.map((feature, index) => (
+                                {safetyFeatures.map((feature, index) => (
                                     <View key={index} style={styles.featureItem}>
                                         <Ionicons name="checkmark-circle" size={18} color="#34C759" />
                                         <Text style={styles.featureText}>{feature}</Text>
@@ -201,11 +250,9 @@ export default function ServiceDetailScreen() {
                             <View style={styles.pricingRow}>
                                 <View style={styles.priceOption}>
                                     <Text style={styles.priceLabel}>Monthly</Text>
-                                    <Text style={styles.priceValue}>LKR {driver.monthlyFee.toLocaleString()}</Text>
-                                </View>
-                                <View style={styles.priceOption}>
-                                    <Text style={styles.priceLabel}>Weekly</Text>
-                                    <Text style={styles.priceValue}>LKR {driver.weeklyFee.toLocaleString()}</Text>
+                                    <Text style={styles.priceValue}>
+                                        {monthlyFee ? `LKR ${monthlyFee.toLocaleString()}` : 'Contact driver'}
+                                    </Text>
                                 </View>
                             </View>
                         </Card>
@@ -214,7 +261,7 @@ export default function ServiceDetailScreen() {
                         <Card style={styles.infoCard}>
                             <Text style={styles.cardTitle}>Accepted Payments</Text>
                             <View style={styles.paymentMethods}>
-                                {driver.acceptedPayments.map((method, index) => (
+                                {['Cash', 'Bank Transfer'].map((method, index) => (
                                     <Badge key={index} label={method} variant="neutral" size="medium" />
                                 ))}
                             </View>
@@ -223,7 +270,9 @@ export default function ServiceDetailScreen() {
                         {/* Cancellation Policy */}
                         <Card style={styles.infoCard}>
                             <Text style={styles.cardTitle}>Cancellation Policy</Text>
-                            <Text style={styles.policyText}>{driver.cancellationPolicy}</Text>
+                            <Text style={styles.policyText}>
+                                Cancellations with 7+ days notice receive a full refund. 3–7 days: 50% refund. Less than 3 days: no refund.
+                            </Text>
                         </Card>
                     </View>
                 );
@@ -237,35 +286,51 @@ export default function ServiceDetailScreen() {
             <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
                 {/* Driver Profile Header */}
                 <View style={styles.profileHeader}>
-                    <Avatar source={driver.photo} name={driver.name} size="xlarge" verified={driver.verified} />
-                    <Text style={styles.driverName}>{driver.name}</Text>
+                    <Avatar
+                        source={driver.profilePhoto ? { uri: driver.profilePhoto } : null}
+                        name={driver.fullName}
+                        size="xlarge"
+                        verified={driver.isVerified}
+                    />
+                    <Text style={styles.driverName}>{driver.fullName || 'Driver'}</Text>
 
                     <View style={styles.ratingRow}>
-                        <RatingStars rating={driver.rating} size="small" />
-                        <Text style={styles.rating}>{driver.rating}</Text>
-                        <Text style={styles.reviewCount}>({driver.reviewCount} reviews)</Text>
+                        <RatingStars rating={driver.rating || 0} size="small" />
+                        <Text style={styles.rating}>{(driver.rating || 0).toFixed(1)}</Text>
+                        <Text style={styles.reviewCount}>({driver.reviewCount || 0} reviews)</Text>
                     </View>
 
                     <View style={styles.statsRow}>
+                        {driver.experience != null && (
+                            <>
+                                <View style={styles.statItem}>
+                                    <Text style={styles.statValue}>{driver.experience}</Text>
+                                    <Text style={styles.statLabel}>Years Exp.</Text>
+                                </View>
+                                <View style={styles.statDivider} />
+                            </>
+                        )}
                         <View style={styles.statItem}>
-                            <Text style={styles.statValue}>{driver.yearsExperience}</Text>
-                            <Text style={styles.statLabel}>Years</Text>
+                            <Text style={styles.statValue}>{route.studentCount || 0}</Text>
+                            <Text style={styles.statLabel}>Students</Text>
                         </View>
-                        <View style={styles.statDivider} />
-                        <View style={styles.statItem}>
-                            <Text style={styles.statValue}>{driver.totalStudents}</Text>
-                            <Text style={styles.statLabel}>Students Served</Text>
-                        </View>
-                        <View style={styles.statDivider} />
-                        <View style={styles.statItem}>
-                            <Text style={styles.statValue}>{driver.vehicle.availableSeats}</Text>
-                            <Text style={styles.statLabel}>Seats Left</Text>
-                        </View>
+                        {vehicle.capacity != null && (
+                            <>
+                                <View style={styles.statDivider} />
+                                <View style={styles.statItem}>
+                                    <Text style={styles.statValue}>{vehicle.capacity}</Text>
+                                    <Text style={styles.statLabel}>Capacity</Text>
+                                </View>
+                            </>
+                        )}
                     </View>
 
                     {/* Quick Actions */}
                     <View style={styles.quickActions}>
-                        <TouchableOpacity style={styles.quickAction} onPress={() => router.push(`/parent/chat?driverId=${driver.id}`)}>
+                        <TouchableOpacity
+                            style={styles.quickAction}
+                            onPress={() => router.push(`/parent/chat?driverId=${driverId}`)}
+                        >
                             <Ionicons name="chatbubble-outline" size={22} color="#007AFF" />
                             <Text style={styles.quickActionText}>Message</Text>
                         </TouchableOpacity>
@@ -300,11 +365,13 @@ export default function ServiceDetailScreen() {
             <View style={styles.bookingBar}>
                 <View style={styles.priceInfo}>
                     <Text style={styles.priceFromLabel}>Starting from</Text>
-                    <Text style={styles.priceFromValue}>LKR {driver.monthlyFee.toLocaleString()}/mo</Text>
+                    <Text style={styles.priceFromValue}>
+                        {monthlyFee ? `LKR ${monthlyFee.toLocaleString()}/mo` : 'Contact driver'}
+                    </Text>
                 </View>
                 <Button
                     title="Book Service"
-                    onPress={() => router.push(`/parent/booking?driverId=${driver.id}`)}
+                    onPress={() => router.push(`/parent/booking?driverId=${driverId}&routeId=${route._id}`)}
                     size="large"
                     style={styles.bookButton}
                 />
@@ -320,6 +387,35 @@ const styles = StyleSheet.create({
     },
     scrollView: {
         flex: 1,
+    },
+    centered: {
+        flex: 1,
+        alignItems: 'center',
+        justifyContent: 'center',
+        padding: 24,
+    },
+    loadingText: {
+        marginTop: 12,
+        fontSize: responsive.fontMD,
+        color: '#64748B',
+    },
+    errorTitle: {
+        fontSize: responsive.fontLG,
+        fontWeight: '600',
+        color: '#000',
+        marginTop: 12,
+    },
+    errorText: {
+        fontSize: responsive.fontMD,
+        color: '#64748B',
+        textAlign: 'center',
+        marginTop: 8,
+    },
+    emptyText: {
+        fontSize: responsive.fontMD,
+        color: '#8E8E93',
+        textAlign: 'center',
+        paddingVertical: 8,
     },
     profileHeader: {
         alignItems: 'center',

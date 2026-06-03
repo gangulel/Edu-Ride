@@ -1,597 +1,395 @@
-import React, { useState } from "react";
-import { View, Text, StyleSheet, ScrollView, SafeAreaView, TouchableOpacity, StatusBar, TextInput, Modal } from "react-native";
-import { useRouter } from "expo-router";
-import { Ionicons } from "@expo/vector-icons";
-import { responsive, wp, hp } from "../utils/responsive";
+import React, { useMemo, useState } from 'react';
+import {
+  View,
+  Text,
+  StyleSheet,
+  ScrollView,
+  TouchableOpacity,
+  Modal,
+} from 'react-native';
+import { useRouter } from 'expo-router';
+import {
+  AddSquare,
+  Call,
+  CloseSquare,
+  InfoCircle,
+  Location,
+  MessageText1,
+  Profile2User,
+  Timer1,
+  TickCircle,
+  Buildings2,
+} from 'iconsax-react-native';
 
-export default function StudentManagement() {
-    const router = useRouter();
-    const [searchQuery, setSearchQuery] = useState("");
-    const [selectedFilter, setSelectedFilter] = useState("all");
-    const [showStudentDetails, setShowStudentDetails] = useState(false);
-    const [selectedStudent, setSelectedStudent] = useState(null);
+import ScreenContainer from '../components/driver/ScreenContainer';
+import PageHeader from '../components/driver/PageHeader';
+import SearchField from '../components/driver/SearchField';
+import FilterChip from '../components/driver/FilterChip';
+import Card from '../components/driver/Card';
+import Avatar from '../components/driver/Avatar';
+import Badge from '../components/driver/Badge';
+import EmptyState from '../components/driver/EmptyState';
+import PrimaryButton from '../components/driver/PrimaryButton';
+import {
+  colors,
+  spacing,
+  typography,
+  radii,
+  shadows,
+  fs,
+} from '../theme';
+import { getStudents } from '../../services/mock/driver';
 
-    const students = [
-        {
-            id: 1,
-            name: "Ashan Perera",
-            grade: "Grade 10",
-            school: "Royal College",
-            pickupAddress: "45, Galle Road, Colombo 03",
-            dropoffAddress: "Royal College, Colombo 07",
-            pickupTime: "6:45 AM",
-            parentName: "Mr. Perera",
-            parentPhone: "+94 77 123 4567",
-            status: "active",
-            attendance: "95%",
-            specialNotes: "Please call 5 minutes before arrival",
-        },
-        {
-            id: 2,
-            name: "Sithmi Fernando",
-            grade: "Grade 8",
-            school: "Royal College",
-            pickupAddress: "12, Duplication Road, Colombo 04",
-            dropoffAddress: "Royal College, Colombo 07",
-            pickupTime: "6:50 AM",
-            parentName: "Mrs. Fernando",
-            parentPhone: "+94 76 234 5678",
-            status: "active",
-            attendance: "98%",
-            specialNotes: "Pickup from grandmother's house on Wednesdays",
-        },
-        {
-            id: 3,
-            name: "Kavindu Silva",
-            grade: "Grade 9",
-            school: "Royal College",
-            pickupAddress: "78, Baseline Road, Colombo 09",
-            dropoffAddress: "Royal College, Colombo 07",
-            pickupTime: "7:00 AM",
-            parentName: "Mr. Silva",
-            parentPhone: "+94 75 345 6789",
-            status: "active",
-            attendance: "92%",
-            specialNotes: "",
-        },
-    ];
+const FILTERS = [
+  { id: 'all', label: 'All' },
+  { id: 'active', label: 'Active' },
+  { id: 'absent', label: 'Absent' },
+];
 
-    const filteredStudents = students.filter(student => {
-        const matchesSearch = student.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-            student.parentName.toLowerCase().includes(searchQuery.toLowerCase());
-        const matchesFilter = selectedFilter === "all" || student.status === selectedFilter;
-        return matchesSearch && matchesFilter;
-    });
+export default function StudentsScreen() {
+  const router = useRouter();
+  const allStudents = useMemo(() => getStudents(), []);
+  const [search, setSearch] = useState('');
+  const [filter, setFilter] = useState('all');
+  const [selected, setSelected] = useState(null);
+  const [showDetails, setShowDetails] = useState(false);
 
-    const openStudentDetails = (student) => {
-        setSelectedStudent(student);
-        setShowStudentDetails(true);
-    };
+  const filtered = allStudents.filter((s) => {
+    const matchesSearch =
+      s.name.toLowerCase().includes(search.toLowerCase()) ||
+      s.parentName.toLowerCase().includes(search.toLowerCase());
+    const matchesFilter = filter === 'all' || s.status === filter;
+    return matchesSearch && matchesFilter;
+  });
 
-    return (
-        <SafeAreaView style={styles.container}>
-            <StatusBar barStyle="dark-content" />
+  const counts = {
+    all: allStudents.length,
+    active: allStudents.filter((s) => s.status === 'active').length,
+    absent: allStudents.filter((s) => s.status === 'absent').length,
+  };
 
-            {/* Header */}
-            <View style={styles.header}>
-                <TouchableOpacity onPress={() => router.back()} style={styles.backButton}>
-                    <Ionicons name="arrow-back" size={24} color="#000" />
-                </TouchableOpacity>
-                <Text style={styles.headerTitle}>Student Management</Text>
-                <TouchableOpacity style={styles.addButton}>
-                    <Ionicons name="person-add" size={24} color="#007AFF" />
-                </TouchableOpacity>
+  const openDetails = (student) => {
+    setSelected(student);
+    setShowDetails(true);
+  };
+
+  return (
+    <ScreenContainer>
+      <PageHeader
+        title="Students"
+        subtitle={`${counts.active} active • ${counts.all} total`}
+        onBack={() => router.back()}
+        rightSlot={
+          <TouchableOpacity hitSlop={6} style={styles.addBtn}>
+            <AddSquare size={fs(22)} color={colors.primary} variant="Bold" />
+          </TouchableOpacity>
+        }
+      />
+
+      <View style={styles.searchSection}>
+        <SearchField
+          value={search}
+          onChangeText={setSearch}
+          placeholder="Search students or parents..."
+        />
+        <ScrollView
+          horizontal
+          showsHorizontalScrollIndicator={false}
+          contentContainerStyle={styles.filterRow}
+        >
+          {FILTERS.map((f) => (
+            <FilterChip
+              key={f.id}
+              label={f.label}
+              count={counts[f.id]}
+              active={filter === f.id}
+              onPress={() => setFilter(f.id)}
+              style={{ marginRight: spacing.sm }}
+            />
+          ))}
+        </ScrollView>
+      </View>
+
+      <ScrollView
+        contentContainerStyle={{ padding: spacing.lg, paddingTop: 0, paddingBottom: spacing['3xl'] }}
+        showsVerticalScrollIndicator={false}
+      >
+        {filtered.length === 0 ? (
+          <EmptyState
+            icon={Profile2User}
+            title="No students yet"
+            description={
+              search
+                ? 'Try a different search term or clear the filters.'
+                : 'Once parents enroll students with you, they will appear here.'
+            }
+          />
+        ) : (
+          filtered.map((student) => (
+            <StudentCard
+              key={student.id}
+              student={student}
+              onPress={() => openDetails(student)}
+            />
+          ))
+        )}
+      </ScrollView>
+
+      <Modal
+        visible={showDetails}
+        animationType="slide"
+        transparent
+        onRequestClose={() => setShowDetails(false)}
+      >
+        <View style={styles.modalOverlay}>
+          <View style={styles.sheet}>
+            <View style={styles.sheetHandle} />
+            <View style={styles.sheetHeader}>
+              <Text style={styles.sheetTitle}>Student Profile</Text>
+              <TouchableOpacity onPress={() => setShowDetails(false)} hitSlop={6}>
+                <CloseSquare size={fs(26)} color={colors.textSecondary} variant="Linear" />
+              </TouchableOpacity>
             </View>
 
-            {/* Search Bar */}
-            <View style={styles.searchContainer}>
-                <View style={styles.searchBar}>
-                    <Ionicons name="search" size={20} color="#8E8E93" />
-                    <TextInput
-                        style={styles.searchInput}
-                        placeholder="Search students or parents..."
-                        value={searchQuery}
-                        onChangeText={setSearchQuery}
-                        placeholderTextColor="#8E8E93"
+            {selected ? (
+              <ScrollView showsVerticalScrollIndicator={false}>
+                <View style={styles.sheetHero}>
+                  <Avatar
+                    name={selected.name}
+                    tone={selected.avatarColor}
+                    size={80}
+                    border
+                  />
+                  <Text style={styles.sheetName}>{selected.name}</Text>
+                  <Text style={styles.sheetSub}>{selected.grade} • {selected.school}</Text>
+                  <View style={styles.sheetBadges}>
+                    <Badge
+                      label={selected.status === 'active' ? 'Active' : 'Absent'}
+                      tone={selected.status === 'active' ? 'success' : 'warning'}
+                      variant="soft"
                     />
-                    {searchQuery.length > 0 && (
-                        <TouchableOpacity onPress={() => setSearchQuery("")}>
-                            <Ionicons name="close-circle" size={20} color="#8E8E93" />
-                        </TouchableOpacity>
-                    )}
-                </View>
-            </View>
-
-            {/* Filter Tabs */}
-            <View style={styles.filterContainer}>
-                <ScrollView horizontal showsHorizontalScrollIndicator={false}>
-                    <TouchableOpacity
-                        style={[styles.filterButton, selectedFilter === "all" && styles.filterButtonActive]}
-                        onPress={() => setSelectedFilter("all")}
-                    >
-                        <Text style={[styles.filterText, selectedFilter === "all" && styles.filterTextActive]}>
-                            All ({students.length})
-                        </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.filterButton, selectedFilter === "active" && styles.filterButtonActive]}
-                        onPress={() => setSelectedFilter("active")}
-                    >
-                        <Text style={[styles.filterText, selectedFilter === "active" && styles.filterTextActive]}>
-                            Active
-                        </Text>
-                    </TouchableOpacity>
-                    <TouchableOpacity
-                        style={[styles.filterButton, selectedFilter === "absent" && styles.filterButtonActive]}
-                        onPress={() => setSelectedFilter("absent")}
-                    >
-                        <Text style={[styles.filterText, selectedFilter === "absent" && styles.filterTextActive]}>
-                            Absent Today
-                        </Text>
-                    </TouchableOpacity>
-                </ScrollView>
-            </View>
-
-            {/* Student List */}
-            <ScrollView style={styles.scrollView} showsVerticalScrollIndicator={false}>
-                <View style={styles.content}>
-                    {filteredStudents.map((student) => (
-                        <TouchableOpacity
-                            key={student.id}
-                            style={styles.studentCard}
-                            onPress={() => openStudentDetails(student)}
-                            activeOpacity={0.7}
-                        >
-                            <View style={styles.studentHeader}>
-                                <View style={styles.avatarContainer}>
-                                    <View style={styles.avatar}>
-                                        <Text style={styles.avatarText}>{student.name.charAt(0)}</Text>
-                                    </View>
-                                    <View style={[styles.statusDot, student.status === "active" && styles.statusDotActive]} />
-                                </View>
-
-                                <View style={styles.studentInfo}>
-                                    <Text style={styles.studentName}>{student.name}</Text>
-                                    <Text style={styles.studentGrade}>{student.grade} • {student.school}</Text>
-                                    <View style={styles.pickupInfo}>
-                                        <Ionicons name="time-outline" size={14} color="#8E8E93" />
-                                        <Text style={styles.pickupTime}>{student.pickupTime}</Text>
-                                    </View>
-                                </View>
-
-                                <View style={styles.studentActions}>
-                                    <TouchableOpacity style={styles.iconButton}>
-                                        <Ionicons name="call" size={20} color="#007AFF" />
-                                    </TouchableOpacity>
-                                    <TouchableOpacity style={styles.iconButton}>
-                                        <Ionicons name="chatbubble" size={20} color="#007AFF" />
-                                    </TouchableOpacity>
-                                </View>
-                            </View>
-
-                            <View style={styles.studentDetails}>
-                                <View style={styles.detailRow}>
-                                    <Ionicons name="location" size={16} color="#8E8E93" />
-                                    <Text style={styles.detailText} numberOfLines={1}>{student.pickupAddress}</Text>
-                                </View>
-                                <View style={styles.detailRow}>
-                                    <Ionicons name="person" size={16} color="#8E8E93" />
-                                    <Text style={styles.detailText}>{student.parentName} • {student.parentPhone}</Text>
-                                </View>
-                            </View>
-
-                            <View style={styles.studentFooter}>
-                                <View style={styles.attendanceBadge}>
-                                    <Ionicons name="checkmark-circle" size={16} color="#34C759" />
-                                    <Text style={styles.attendanceText}>Attendance: {student.attendance}</Text>
-                                </View>
-                                <Ionicons name="chevron-forward" size={20} color="#8E8E93" />
-                            </View>
-                        </TouchableOpacity>
-                    ))}
+                    <Badge
+                      label={`${selected.attendance}% attendance`}
+                      tone="primary"
+                      variant="soft"
+                    />
+                  </View>
                 </View>
 
-                <View style={{ height: 100 }} />
-            </ScrollView>
+                <DetailSection title="Pickup & Drop-off">
+                  <DetailRow icon={Location} label="Pickup" value={selected.pickupAddress} multiline />
+                  <DetailRow icon={Timer1} label="Pickup Time" value={selected.pickupTime} />
+                  <DetailRow icon={Buildings2} label="Drop-off" value={selected.dropoffAddress} multiline />
+                </DetailSection>
 
-            {/* Student Details Modal */}
-            <Modal
-                visible={showStudentDetails}
-                animationType="slide"
-                transparent={true}
-                onRequestClose={() => setShowStudentDetails(false)}
-            >
-                <View style={styles.modalOverlay}>
-                    <View style={styles.modalContent}>
-                        <View style={styles.modalHeader}>
-                            <Text style={styles.modalTitle}>Student Details</Text>
-                            <TouchableOpacity onPress={() => setShowStudentDetails(false)}>
-                                <Ionicons name="close" size={28} color="#000" />
-                            </TouchableOpacity>
-                        </View>
+                <DetailSection title="Parent / Guardian">
+                  <DetailRow icon={Profile2User} label="Name" value={selected.parentName} />
+                  <DetailRow icon={Call} label="Phone" value={selected.parentPhone} />
+                </DetailSection>
 
-                        <ScrollView showsVerticalScrollIndicator={false}>
-                            {selectedStudent && (
-                                <>
-                                    <View style={styles.modalStudentHeader}>
-                                        <View style={styles.modalAvatar}>
-                                            <Text style={styles.modalAvatarText}>{selectedStudent.name.charAt(0)}</Text>
-                                        </View>
-                                        <Text style={styles.modalStudentName}>{selectedStudent.name}</Text>
-                                        <Text style={styles.modalStudentGrade}>{selectedStudent.grade}</Text>
-                                    </View>
-
-                                    <View style={styles.infoSection}>
-                                        <Text style={styles.infoSectionTitle}>School Information</Text>
-                                        <View style={styles.infoItem}>
-                                            <Text style={styles.infoLabel}>School</Text>
-                                            <Text style={styles.infoValue}>{selectedStudent.school}</Text>
-                                        </View>
-                                        <View style={styles.infoItem}>
-                                            <Text style={styles.infoLabel}>Grade</Text>
-                                            <Text style={styles.infoValue}>{selectedStudent.grade}</Text>
-                                        </View>
-                                    </View>
-
-                                    <View style={styles.infoSection}>
-                                        <Text style={styles.infoSectionTitle}>Pickup & Drop-off</Text>
-                                        <View style={styles.infoItem}>
-                                            <Text style={styles.infoLabel}>Pickup Location</Text>
-                                            <Text style={styles.infoValue}>{selectedStudent.pickupAddress}</Text>
-                                        </View>
-                                        <View style={styles.infoItem}>
-                                            <Text style={styles.infoLabel}>Pickup Time</Text>
-                                            <Text style={styles.infoValue}>{selectedStudent.pickupTime}</Text>
-                                        </View>
-                                        <View style={styles.infoItem}>
-                                            <Text style={styles.infoLabel}>Drop-off Location</Text>
-                                            <Text style={styles.infoValue}>{selectedStudent.dropoffAddress}</Text>
-                                        </View>
-                                    </View>
-
-                                    <View style={styles.infoSection}>
-                                        <Text style={styles.infoSectionTitle}>Parent/Guardian</Text>
-                                        <View style={styles.infoItem}>
-                                            <Text style={styles.infoLabel}>Name</Text>
-                                            <Text style={styles.infoValue}>{selectedStudent.parentName}</Text>
-                                        </View>
-                                        <View style={styles.infoItem}>
-                                            <Text style={styles.infoLabel}>Phone</Text>
-                                            <Text style={styles.infoValue}>{selectedStudent.parentPhone}</Text>
-                                        </View>
-                                    </View>
-
-                                    <View style={styles.infoSection}>
-                                        <Text style={styles.infoSectionTitle}>Performance</Text>
-                                        <View style={styles.infoItem}>
-                                            <Text style={styles.infoLabel}>Attendance Rate</Text>
-                                            <Text style={[styles.infoValue, { color: "#34C759" }]}>{selectedStudent.attendance}</Text>
-                                        </View>
-                                    </View>
-
-                                    {selectedStudent.specialNotes && (
-                                        <View style={styles.infoSection}>
-                                            <Text style={styles.infoSectionTitle}>Special Notes</Text>
-                                            <View style={styles.notesCard}>
-                                                <Ionicons name="information-circle" size={20} color="#FF9500" />
-                                                <Text style={styles.notesText}>{selectedStudent.specialNotes}</Text>
-                                            </View>
-                                        </View>
-                                    )}
-
-                                    <View style={styles.modalActions}>
-                                        <TouchableOpacity style={styles.modalActionButton}>
-                                            <Ionicons name="call" size={20} color="#fff" />
-                                            <Text style={styles.modalActionText}>Call Parent</Text>
-                                        </TouchableOpacity>
-                                        <TouchableOpacity style={[styles.modalActionButton, styles.modalActionButtonSecondary]}>
-                                            <Ionicons name="chatbubble" size={20} color="#007AFF" />
-                                            <Text style={[styles.modalActionText, { color: "#007AFF" }]}>Message</Text>
-                                        </TouchableOpacity>
-                                    </View>
-                                </>
-                            )}
-                        </ScrollView>
+                {selected.specialNotes ? (
+                  <DetailSection title="Special Notes">
+                    <View style={styles.noteCard}>
+                      <InfoCircle size={fs(18)} color={colors.warning} variant="Bold" />
+                      <Text style={styles.noteText}>{selected.specialNotes}</Text>
                     </View>
+                  </DetailSection>
+                ) : null}
+
+                <View style={styles.sheetActions}>
+                  <PrimaryButton
+                    title="Call Parent"
+                    variant="gradient"
+                    size="md"
+                    style={{ flex: 1 }}
+                    iconLeft={<Call size={fs(16)} color="#fff" variant="Bold" />}
+                  />
+                  <PrimaryButton
+                    title="Message"
+                    variant="outline"
+                    size="md"
+                    style={{ flex: 1 }}
+                    iconLeft={<MessageText1 size={fs(16)} color={colors.primary} variant="Bold" />}
+                  />
                 </View>
-            </Modal>
-        </SafeAreaView>
-    );
+              </ScrollView>
+            ) : null}
+          </View>
+        </View>
+      </Modal>
+    </ScreenContainer>
+  );
 }
 
+const StudentCard = ({ student, onPress }) => (
+  <Card padding="lg" style={styles.card} onPress={onPress}>
+    <View style={styles.cardTop}>
+      <View style={styles.cardLeft}>
+        <Avatar
+          name={student.name}
+          tone={student.avatarColor}
+          size={52}
+          online={student.status === 'active'}
+        />
+        <View style={{ flex: 1 }}>
+          <Text style={styles.studentName} numberOfLines={1}>{student.name}</Text>
+          <Text style={styles.studentMeta} numberOfLines={1}>
+            {student.grade} • {student.school}
+          </Text>
+          <View style={styles.pickupRow}>
+            <Timer1 size={fs(13)} color={colors.textSecondary} variant="Bold" />
+            <Text style={styles.pickupText}>{student.pickupTime}</Text>
+          </View>
+        </View>
+      </View>
+      <View style={styles.cardActions}>
+        <TouchableOpacity style={styles.iconBtn} hitSlop={6}>
+          <Call size={fs(16)} color={colors.primary} variant="Bold" />
+        </TouchableOpacity>
+        <TouchableOpacity style={styles.iconBtn} hitSlop={6}>
+          <MessageText1 size={fs(16)} color={colors.primary} variant="Bold" />
+        </TouchableOpacity>
+      </View>
+    </View>
+
+    <View style={styles.cardDivider} />
+
+    <View style={styles.cardDetails}>
+      <View style={styles.detailLine}>
+        <Location size={fs(14)} color={colors.textTertiary} variant="Bold" />
+        <Text style={styles.detailLineText} numberOfLines={1}>{student.pickupAddress}</Text>
+      </View>
+      <View style={styles.detailLine}>
+        <Profile2User size={fs(14)} color={colors.textTertiary} variant="Bold" />
+        <Text style={styles.detailLineText} numberOfLines={1}>
+          {student.parentName} • {student.parentPhone}
+        </Text>
+      </View>
+    </View>
+
+    <View style={styles.cardFooter}>
+      <View style={styles.attendanceRow}>
+        <TickCircle size={fs(14)} color={colors.success} variant="Bold" />
+        <Text style={styles.attendanceText}>Attendance {student.attendance}%</Text>
+      </View>
+      {student.status === 'absent' ? (
+        <Badge label="Absent today" tone="warning" variant="soft" size="xs" />
+      ) : null}
+    </View>
+  </Card>
+);
+
+const DetailSection = ({ title, children }) => (
+  <View style={styles.detailSection}>
+    <Text style={styles.detailSectionTitle}>{title}</Text>
+    <View style={styles.detailSectionBody}>{children}</View>
+  </View>
+);
+
+const DetailRow = ({ icon: Icon, label, value, multiline }) => (
+  <View style={styles.detailRow}>
+    {Icon ? <Icon size={fs(16)} color={colors.textSecondary} variant="Bold" /> : <View style={{ width: fs(16) }} />}
+    <View style={{ flex: 1 }}>
+      <Text style={styles.detailLabel}>{label}</Text>
+      <Text style={styles.detailValue} numberOfLines={multiline ? 0 : 1}>{value}</Text>
+    </View>
+  </View>
+);
+
 const styles = StyleSheet.create({
-    container: {
-        flex: 1,
-        backgroundColor: "#F2F2F7",
-    },
-    header: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        padding: responsive.paddingLG,
-        backgroundColor: "#fff",
-        borderBottomWidth: 1,
-        borderBottomColor: "#E5E5EA",
-    },
-    backButton: {
-        padding: responsive.paddingSM,
-    },
-    headerTitle: {
-        fontSize: responsive.fontXL,
-        fontWeight: "bold",
-        color: "#000",
-    },
-    addButton: {
-        padding: responsive.paddingSM,
-    },
-    searchContainer: {
-        padding: responsive.paddingLG,
-        backgroundColor: "#fff",
-    },
-    searchBar: {
-        flexDirection: "row",
-        alignItems: "center",
-        backgroundColor: "#F2F2F7",
-        borderRadius: responsive.radiusMD,
-        paddingHorizontal: responsive.paddingMD,
-        paddingVertical: responsive.paddingSM,
-    },
-    searchInput: {
-        flex: 1,
-        fontSize: responsive.fontLG,
-        color: "#000",
-        marginLeft: responsive.paddingSM,
-    },
-    filterContainer: {
-        paddingHorizontal: responsive.paddingLG,
-        paddingVertical: responsive.paddingMD,
-        backgroundColor: "#fff",
-        borderBottomWidth: 1,
-        borderBottomColor: "#E5E5EA",
-    },
-    filterButton: {
-        paddingHorizontal: responsive.paddingLG,
-        paddingVertical: responsive.paddingSM,
-        borderRadius: responsive.radiusFull,
-        backgroundColor: "#F2F2F7",
-        marginRight: responsive.paddingSM,
-    },
-    filterButtonActive: {
-        backgroundColor: "#007AFF",
-    },
-    filterText: {
-        fontSize: responsive.fontMD,
-        color: "#8E8E93",
-        fontWeight: "500",
-    },
-    filterTextActive: {
-        color: "#fff",
-    },
-    scrollView: {
-        flex: 1,
-    },
-    content: {
-        padding: responsive.paddingLG,
-    },
-    studentCard: {
-        backgroundColor: "#fff",
-        borderRadius: responsive.radiusLG,
-        padding: responsive.paddingLG,
-        marginBottom: responsive.paddingMD,
-        shadowColor: "#000",
-        shadowOffset: { width: 0, height: 2 },
-        shadowOpacity: 0.05,
-        shadowRadius: 4,
-        elevation: 2,
-    },
-    studentHeader: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: responsive.paddingMD,
-    },
-    avatarContainer: {
-        position: "relative",
-        marginRight: responsive.paddingMD,
-    },
-    avatar: {
-        width: wp(56),
-        height: wp(56),
-        borderRadius: wp(28),
-        backgroundColor: "#007AFF",
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    avatarText: {
-        fontSize: responsive.font2XL,
-        fontWeight: "bold",
-        color: "#fff",
-    },
-    statusDot: {
-        position: "absolute",
-        bottom: 2,
-        right: 2,
-        width: wp(14),
-        height: wp(14),
-        borderRadius: wp(7),
-        backgroundColor: "#8E8E93",
-        borderWidth: 2,
-        borderColor: "#fff",
-    },
-    statusDotActive: {
-        backgroundColor: "#34C759",
-    },
-    studentInfo: {
-        flex: 1,
-    },
-    studentName: {
-        fontSize: responsive.fontLG,
-        fontWeight: "600",
-        color: "#000",
-        marginBottom: 2,
-    },
-    studentGrade: {
-        fontSize: responsive.fontMD,
-        color: "#8E8E93",
-        marginBottom: responsive.paddingXS,
-    },
-    pickupInfo: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 4,
-    },
-    pickupTime: {
-        fontSize: responsive.fontSM,
-        color: "#8E8E93",
-    },
-    studentActions: {
-        flexDirection: "row",
-        gap: responsive.paddingSM,
-    },
-    iconButton: {
-        width: wp(40),
-        height: wp(40),
-        borderRadius: wp(20),
-        backgroundColor: "#F2F2F7",
-        justifyContent: "center",
-        alignItems: "center",
-    },
-    studentDetails: {
-        marginBottom: responsive.paddingMD,
-    },
-    detailRow: {
-        flexDirection: "row",
-        alignItems: "center",
-        marginBottom: responsive.paddingSM,
-        gap: responsive.paddingSM,
-    },
-    detailText: {
-        flex: 1,
-        fontSize: responsive.fontSM,
-        color: "#8E8E93",
-    },
-    studentFooter: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        paddingTop: responsive.paddingMD,
-        borderTopWidth: 1,
-        borderTopColor: "#E5E5EA",
-    },
-    attendanceBadge: {
-        flexDirection: "row",
-        alignItems: "center",
-        gap: 4,
-    },
-    attendanceText: {
-        fontSize: responsive.fontSM,
-        color: "#34C759",
-        fontWeight: "500",
-    },
-    modalOverlay: {
-        flex: 1,
-        backgroundColor: "rgba(0,0,0,0.5)",
-        justifyContent: "flex-end",
-    },
-    modalContent: {
-        backgroundColor: "#fff",
-        borderTopLeftRadius: responsive.radiusXL,
-        borderTopRightRadius: responsive.radiusXL,
-        padding: responsive.paddingXL,
-        maxHeight: "90%",
-    },
-    modalHeader: {
-        flexDirection: "row",
-        justifyContent: "space-between",
-        alignItems: "center",
-        marginBottom: responsive.paddingXL,
-    },
-    modalTitle: {
-        fontSize: responsive.font2XL,
-        fontWeight: "bold",
-        color: "#000",
-    },
-    modalStudentHeader: {
-        alignItems: "center",
-        marginBottom: responsive.paddingXL,
-    },
-    modalAvatar: {
-        width: wp(80),
-        height: wp(80),
-        borderRadius: wp(40),
-        backgroundColor: "#007AFF",
-        justifyContent: "center",
-        alignItems: "center",
-        marginBottom: responsive.paddingMD,
-    },
-    modalAvatarText: {
-        fontSize: responsive.font3XL,
-        fontWeight: "bold",
-        color: "#fff",
-    },
-    modalStudentName: {
-        fontSize: responsive.font2XL,
-        fontWeight: "bold",
-        color: "#000",
-        marginBottom: responsive.paddingXS,
-    },
-    modalStudentGrade: {
-        fontSize: responsive.fontLG,
-        color: "#8E8E93",
-    },
-    infoSection: {
-        marginBottom: responsive.paddingXL,
-    },
-    infoSectionTitle: {
-        fontSize: responsive.fontLG,
-        fontWeight: "600",
-        color: "#000",
-        marginBottom: responsive.paddingMD,
-    },
-    infoItem: {
-        marginBottom: responsive.paddingMD,
-    },
-    infoLabel: {
-        fontSize: responsive.fontSM,
-        color: "#8E8E93",
-        marginBottom: 4,
-    },
-    infoValue: {
-        fontSize: responsive.fontLG,
-        color: "#000",
-    },
-    notesCard: {
-        flexDirection: "row",
-        backgroundColor: "#FFF3E0",
-        padding: responsive.paddingMD,
-        borderRadius: responsive.radiusMD,
-        gap: responsive.paddingMD,
-    },
-    notesText: {
-        flex: 1,
-        fontSize: responsive.fontMD,
-        color: "#FF9500",
-    },
-    modalActions: {
-        flexDirection: "row",
-        gap: responsive.paddingMD,
-        marginTop: responsive.paddingLG,
-    },
-    modalActionButton: {
-        flex: 1,
-        flexDirection: "row",
-        backgroundColor: "#007AFF",
-        padding: responsive.paddingLG,
-        borderRadius: responsive.radiusMD,
-        justifyContent: "center",
-        alignItems: "center",
-        gap: responsive.paddingSM,
-    },
-    modalActionButtonSecondary: {
-        backgroundColor: "#F2F2F7",
-    },
-    modalActionText: {
-        fontSize: responsive.fontLG,
-        fontWeight: "600",
-        color: "#fff",
-    },
+  addBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: colors.primarySurface,
+    alignItems: 'center', justifyContent: 'center',
+  },
+
+  searchSection: {
+    paddingHorizontal: spacing.lg,
+    paddingTop: spacing.md,
+    paddingBottom: spacing.sm,
+    backgroundColor: colors.background,
+  },
+  filterRow: {
+    paddingTop: spacing.md,
+  },
+
+  card: { marginBottom: spacing.md },
+  cardTop: { flexDirection: 'row', alignItems: 'center', gap: spacing.md },
+  cardLeft: { flexDirection: 'row', alignItems: 'center', gap: spacing.md, flex: 1 },
+  studentName: { fontSize: typography.size.md, color: colors.textPrimary, fontFamily: typography.fontFamily.semibold },
+  studentMeta: { fontSize: typography.size.xs, color: colors.textSecondary, marginTop: 2 },
+  pickupRow: { flexDirection: 'row', alignItems: 'center', gap: 4, marginTop: 4 },
+  pickupText: { fontSize: typography.size.xs, color: colors.textSecondary, fontFamily: typography.fontFamily.medium },
+  cardActions: { flexDirection: 'row', gap: spacing.sm },
+  iconBtn: {
+    width: 36, height: 36, borderRadius: 18,
+    backgroundColor: colors.primarySurface,
+    alignItems: 'center', justifyContent: 'center',
+  },
+  cardDivider: {
+    height: StyleSheet.hairlineWidth,
+    backgroundColor: colors.divider,
+    marginVertical: spacing.md,
+  },
+  cardDetails: { gap: spacing.sm },
+  detailLine: { flexDirection: 'row', alignItems: 'center', gap: spacing.sm },
+  detailLineText: { fontSize: typography.size.xs, color: colors.textSecondary, flex: 1 },
+  cardFooter: {
+    flexDirection: 'row',
+    justifyContent: 'space-between',
+    alignItems: 'center',
+    marginTop: spacing.md,
+  },
+  attendanceRow: { flexDirection: 'row', alignItems: 'center', gap: 4 },
+  attendanceText: { fontSize: typography.size.xs, color: colors.successDark, fontFamily: typography.fontFamily.semibold },
+
+  modalOverlay: { flex: 1, backgroundColor: colors.overlay, justifyContent: 'flex-end' },
+  sheet: {
+    backgroundColor: colors.surface,
+    borderTopLeftRadius: radii.xl,
+    borderTopRightRadius: radii.xl,
+    padding: spacing.xl,
+    paddingTop: spacing.md,
+    maxHeight: '92%',
+  },
+  sheetHandle: {
+    alignSelf: 'center', width: 44, height: 5, borderRadius: 3,
+    backgroundColor: colors.border, marginBottom: spacing.md,
+  },
+  sheetHeader: { flexDirection: 'row', justifyContent: 'space-between', alignItems: 'center', marginBottom: spacing.md },
+  sheetTitle: { fontSize: typography.size.xl, color: colors.textPrimary, fontFamily: typography.fontFamily.bold },
+  sheetHero: { alignItems: 'center', paddingVertical: spacing.lg },
+  sheetName: { fontSize: typography.size.xl, color: colors.textPrimary, fontFamily: typography.fontFamily.bold, marginTop: spacing.md },
+  sheetSub: { fontSize: typography.size.sm, color: colors.textSecondary, marginTop: 4 },
+  sheetBadges: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.md },
+
+  detailSection: { marginTop: spacing.lg },
+  detailSectionTitle: {
+    fontSize: typography.size.xs,
+    color: colors.textTertiary,
+    fontFamily: typography.fontFamily.bold,
+    letterSpacing: 0.8,
+    textTransform: 'uppercase',
+    marginBottom: spacing.sm,
+  },
+  detailSectionBody: {
+    backgroundColor: colors.surfaceMuted,
+    borderRadius: radii.md,
+    padding: spacing.md,
+    gap: spacing.md,
+  },
+  detailRow: { flexDirection: 'row', alignItems: 'flex-start', gap: spacing.md },
+  detailLabel: { fontSize: typography.size.xs, color: colors.textSecondary },
+  detailValue: { fontSize: typography.size.md, color: colors.textPrimary, marginTop: 2 },
+
+  noteCard: {
+    backgroundColor: colors.warningSurface,
+    padding: spacing.md,
+    borderRadius: radii.md,
+    flexDirection: 'row',
+    gap: spacing.sm,
+  },
+  noteText: { flex: 1, color: colors.warningDark, fontSize: typography.size.sm, lineHeight: typography.size.sm * 1.4 },
+
+  sheetActions: { flexDirection: 'row', gap: spacing.sm, marginTop: spacing.xl },
 });
